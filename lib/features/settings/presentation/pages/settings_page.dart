@@ -5,6 +5,9 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/widgets/elegant_card.dart';
+import '../../../../core/widgets/tajweed_text.dart';
+import '../../../../core/models/tajweed.dart';
+import '../../../../core/services/audio_service.dart';
 import '../../../../core/utils/responsive.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -74,7 +77,7 @@ class SettingsPage extends StatelessWidget {
                   _SettingsTile(
                     icon: Icons.text_fields_rounded,
                     title: 'Arabic Font Style',
-                    subtitle: _getFontStyleName(appState.arabicFontStyle),
+                    subtitle: appState.arabicFontStyle.displayName,
                     onTap: () => _showFontStyleDialog(context, appState),
                   ),
                   _SettingsTile(
@@ -86,16 +89,28 @@ class SettingsPage extends StatelessWidget {
                   _SettingsTile(
                     icon: Icons.translate_rounded,
                     title: 'Translation Language',
-                    subtitle:
-                        _getTranslationLanguageName(appState.translationLanguage),
+                    subtitle: appState.translationLanguage.displayName,
                     onTap: () =>
                         _showTranslationLanguageDialog(context, appState),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.abc_rounded,
+                    title: 'Transliteration',
+                    subtitle: appState.transliterationLanguage.displayName,
+                    onTap: () =>
+                        _showTransliterationLanguageDialog(context, appState),
                   ),
                   _ToggleTile(
                     icon: Icons.visibility_rounded,
                     title: 'Show Translation',
                     value: appState.showTranslation,
                     onChanged: (_) => appState.toggleShowTranslation(),
+                  ),
+                  _ToggleTile(
+                    icon: Icons.text_snippet_rounded,
+                    title: 'Show Transliteration',
+                    value: appState.showTransliteration,
+                    onChanged: (_) => appState.toggleShowTransliteration(),
                   ),
                   _ToggleTile(
                     icon: Icons.auto_stories_rounded,
@@ -107,6 +122,28 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
 
+              // Tajweed settings section
+              _SettingsSection(
+                title: 'Tajweed',
+                children: [
+                  _ToggleTile(
+                    icon: Icons.palette_rounded,
+                    title: 'Show Tajweed Colors',
+                    subtitle: 'Color-coded recitation rules',
+                    value: appState.showTajweedColors,
+                    onChanged: (_) => appState.toggleShowTajweedColors(),
+                  ),
+                  _ToggleTile(
+                    icon: Icons.school_rounded,
+                    title: 'Learning Mode',
+                    subtitle: 'Tap colored text to see rule explanation',
+                    value: appState.tajweedLearningMode,
+                    onChanged: (_) => appState.toggleTajweedLearningMode(),
+                  ),
+                  _TajweedLegendTile(),
+                ],
+              ),
+
               // Audio section
               _SettingsSection(
                 title: 'Audio',
@@ -114,8 +151,21 @@ class SettingsPage extends StatelessWidget {
                   _SettingsTile(
                     icon: Icons.record_voice_over_rounded,
                     title: 'Reciter',
-                    subtitle: appState.selectedReciter,
+                    subtitle: appState.selectedReciter.displayName,
                     onTap: () => _showReciterDialog(context, appState),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.speed_rounded,
+                    title: 'Default Playback Speed',
+                    subtitle: '${appState.defaultPlaybackSpeed}x',
+                    onTap: () => _showPlaybackSpeedDialog(context, appState),
+                  ),
+                  _ToggleTile(
+                    icon: Icons.play_circle_rounded,
+                    title: 'Auto-play on Page Open',
+                    subtitle: 'Start playing when opening a surah',
+                    value: appState.autoPlayOnPageOpen,
+                    onChanged: appState.setAutoPlayOnPageOpen,
                   ),
                 ],
               ),
@@ -187,17 +237,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  String _getFontStyleName(ArabicFontStyle style) {
-    switch (style) {
-      case ArabicFontStyle.amiri:
-        return 'Amiri (Traditional)';
-      case ArabicFontStyle.scheherazade:
-        return 'Scheherazade (Classical)';
-      case ArabicFontStyle.lateef:
-        return 'Lateef (Modern)';
-    }
-  }
-
   String _getFontSizeName(double size) {
     if (size <= QuranFontSizes.extraSmall) return 'Extra Small';
     if (size <= QuranFontSizes.small) return 'Small';
@@ -205,19 +244,6 @@ class SettingsPage extends StatelessWidget {
     if (size <= QuranFontSizes.large) return 'Large';
     if (size <= QuranFontSizes.extraLarge) return 'Extra Large';
     return 'Jumbo';
-  }
-
-  String _getTranslationLanguageName(TranslationLanguage lang) {
-    switch (lang) {
-      case TranslationLanguage.english:
-        return 'English';
-      case TranslationLanguage.bengali:
-        return 'Bengali';
-      case TranslationLanguage.both:
-        return 'English & Bengali';
-      case TranslationLanguage.none:
-        return 'None';
-    }
   }
 
   void _showNameEditDialog(BuildContext context, AppStateProvider appState) {
@@ -257,35 +283,50 @@ class SettingsPage extends StatelessWidget {
       context: context,
       builder: (context) => _SelectionSheet(
         title: 'Arabic Font Style',
-        options: [
-          _SelectionOption(
-            title: 'Amiri',
-            subtitle: 'Traditional Arabic style',
-            isSelected: appState.arabicFontStyle == ArabicFontStyle.amiri,
-            onTap: () {
-              appState.setArabicFontStyle(ArabicFontStyle.amiri);
-              Navigator.pop(context);
-            },
-          ),
-          _SelectionOption(
-            title: 'Scheherazade',
-            subtitle: 'Classical Naskh style',
-            isSelected: appState.arabicFontStyle == ArabicFontStyle.scheherazade,
-            onTap: () {
-              appState.setArabicFontStyle(ArabicFontStyle.scheherazade);
-              Navigator.pop(context);
-            },
-          ),
-          _SelectionOption(
-            title: 'Lateef',
-            subtitle: 'Modern clean style',
-            isSelected: appState.arabicFontStyle == ArabicFontStyle.lateef,
-            onTap: () {
-              appState.setArabicFontStyle(ArabicFontStyle.lateef);
-              Navigator.pop(context);
-            },
-          ),
-        ],
+        options: ArabicFontStyle.values.map((style) => _SelectionOption(
+          title: style.displayName,
+          isSelected: appState.arabicFontStyle == style,
+          onTap: () {
+            appState.setArabicFontStyle(style);
+            Navigator.pop(context);
+          },
+        )).toList(),
+      ),
+    );
+  }
+
+  void _showTransliterationLanguageDialog(
+      BuildContext context, AppStateProvider appState) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => _SelectionSheet(
+        title: 'Transliteration Language',
+        options: TransliterationLanguage.values.map((lang) => _SelectionOption(
+          title: lang.displayName,
+          isSelected: appState.transliterationLanguage == lang,
+          onTap: () {
+            appState.setTransliterationLanguage(lang);
+            Navigator.pop(context);
+          },
+        )).toList(),
+      ),
+    );
+  }
+
+  void _showPlaybackSpeedDialog(BuildContext context, AppStateProvider appState) {
+    final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => _SelectionSheet(
+        title: 'Playback Speed',
+        options: speeds.map((speed) => _SelectionOption(
+          title: '${speed}x',
+          isSelected: appState.defaultPlaybackSpeed == speed,
+          onTap: () {
+            appState.setDefaultPlaybackSpeed(speed);
+            Navigator.pop(context);
+          },
+        )).toList(),
       ),
     );
   }
@@ -386,30 +427,19 @@ class SettingsPage extends StatelessWidget {
   }
 
   void _showReciterDialog(BuildContext context, AppStateProvider appState) {
-    final reciters = [
-      'Mishary Rashid Alafasy',
-      'Abdul Rahman Al-Sudais',
-      'Saud Al-Shuraim',
-      'Maher Al Muaiqly',
-      'Abu Bakr al-Shatri',
-    ];
-
     showModalBottomSheet(
       context: context,
       builder: (context) => _SelectionSheet(
         title: 'Select Reciter',
-        options: reciters
-            .map(
-              (reciter) => _SelectionOption(
-                title: reciter,
-                isSelected: appState.selectedReciter == reciter,
-                onTap: () {
-                  appState.setSelectedReciter(reciter);
-                  Navigator.pop(context);
-                },
-              ),
-            )
-            .toList(),
+        options: Reciter.values.map((reciter) => _SelectionOption(
+          title: reciter.displayName,
+          subtitle: reciter.displayNameArabic,
+          isSelected: appState.selectedReciter == reciter,
+          onTap: () {
+            appState.setSelectedReciter(reciter);
+            Navigator.pop(context);
+          },
+        )).toList(),
       ),
     );
   }
@@ -885,6 +915,105 @@ class _SelectionOption extends StatelessWidget {
               color: theme.colorScheme.primary,
             )
           : null,
+    );
+  }
+}
+
+/// Tajweed legend tile showing all color codes
+class _TajweedLegendTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return ElegantCard(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.color_lens_rounded,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Tajweed Color Legend',
+                style: AppTypography.bodyLarge(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            children: TajweedRule.values
+                .where((rule) => rule != TajweedRule.normal)
+                .map((rule) => _TajweedColorItem(rule: rule))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TajweedColorItem extends StatelessWidget {
+  final TajweedRule rule;
+
+  const _TajweedColorItem({required this.rule});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: rule.color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              rule.englishName.split(' ').first,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
+              ),
+            ),
+            Text(
+              rule.arabicName,
+              style: TextStyle(
+                fontSize: 10,
+                fontFamily: 'Amiri',
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

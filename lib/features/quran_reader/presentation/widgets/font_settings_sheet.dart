@@ -389,9 +389,11 @@ class _FontStyleOption extends StatelessWidget {
     TextStyle sampleStyle;
     switch (style) {
       case ArabicFontStyle.amiri:
+      case ArabicFontStyle.uthmani:
         sampleStyle = AppTypography.quranText(fontSize: 20);
         break;
       case ArabicFontStyle.scheherazade:
+      case ArabicFontStyle.indopak:
         sampleStyle = AppTypography.quranTextTraditional(fontSize: 20);
         break;
       case ArabicFontStyle.lateef:
@@ -615,12 +617,14 @@ class _PreviewSection extends StatelessWidget {
     TextStyle textStyle;
     switch (appState.arabicFontStyle) {
       case ArabicFontStyle.amiri:
+      case ArabicFontStyle.uthmani:
         textStyle = AppTypography.quranText(
           fontSize: appState.quranFontSize,
           height: appState.quranLineHeight,
         );
         break;
       case ArabicFontStyle.scheherazade:
+      case ArabicFontStyle.indopak:
         textStyle = AppTypography.quranTextTraditional(
           fontSize: appState.quranFontSize,
           height: appState.quranLineHeight,

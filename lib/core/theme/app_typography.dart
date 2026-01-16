@@ -112,6 +112,15 @@ class AppTypography {
     );
   }
 
+  /// Small headings
+  static TextStyle heading4({Color color = AppColors.textPrimary}) {
+    return GoogleFonts.nunito(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      color: color,
+    );
+  }
+
   /// Body text - primary
   static TextStyle bodyLarge({Color color = AppColors.textPrimary}) {
     return GoogleFonts.nunito(

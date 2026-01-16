@@ -152,12 +152,14 @@ class AyahListView extends StatelessWidget {
 
     switch (appState.arabicFontStyle) {
       case ArabicFontStyle.amiri:
+      case ArabicFontStyle.uthmani:
         return AppTypography.quranText(
           fontSize: appState.quranFontSize,
           height: appState.quranLineHeight,
           color: color,
         );
       case ArabicFontStyle.scheherazade:
+      case ArabicFontStyle.indopak:
         return AppTypography.quranTextTraditional(
           fontSize: appState.quranFontSize,
           height: appState.quranLineHeight,
