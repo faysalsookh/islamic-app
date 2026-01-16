@@ -207,6 +207,11 @@ class AppStateProvider extends ChangeNotifier {
     _autoPlayOnPageOpen = prefs.getBool('auto_play_on_page_open') ?? false;
     _defaultRepeatMode = AudioRepeatMode.values[prefs.getInt('default_repeat_mode') ?? 0];
 
+    // Sync AudioService with loaded settings
+    AudioService().setReciter(_selectedReciter);
+    AudioService().setPlaybackSpeed(_defaultPlaybackSpeed);
+    AudioService().setRepeatMode(_defaultRepeatMode);
+
     notifyListeners();
   }
 
@@ -378,6 +383,8 @@ class AppStateProvider extends ChangeNotifier {
   // ============== AUDIO METHODS ==============
   Future<void> setSelectedReciter(Reciter reciter) async {
     _selectedReciter = reciter;
+    // Also update the AudioService so playback uses the new reciter
+    AudioService().setReciter(reciter);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('selected_reciter', reciter.index);
     notifyListeners();

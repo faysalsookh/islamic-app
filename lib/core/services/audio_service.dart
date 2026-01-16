@@ -21,7 +21,7 @@ enum Reciter {
   misharyRashidAlafasy,
   abdulBasitAbdulSamad,
   mahmoudKhalilAlHusary,
-  saadAlGhamdi,
+  saudAlShuraym,
   abdulRahmanAlSudais,
 }
 
@@ -34,8 +34,8 @@ extension ReciterExtension on Reciter {
         return 'Abdul Basit Abdul Samad';
       case Reciter.mahmoudKhalilAlHusary:
         return 'Mahmoud Khalil Al-Husary';
-      case Reciter.saadAlGhamdi:
-        return 'Saad Al-Ghamdi';
+      case Reciter.saudAlShuraym:
+        return 'Saud Al-Shuraym';
       case Reciter.abdulRahmanAlSudais:
         return 'Abdul Rahman Al-Sudais';
     }
@@ -49,8 +49,8 @@ extension ReciterExtension on Reciter {
         return 'عبد الباسط عبد الصمد';
       case Reciter.mahmoudKhalilAlHusary:
         return 'محمود خليل الحصري';
-      case Reciter.saadAlGhamdi:
-        return 'سعد الغامدي';
+      case Reciter.saudAlShuraym:
+        return 'سعود الشريم';
       case Reciter.abdulRahmanAlSudais:
         return 'عبد الرحمن السديس';
     }
@@ -65,10 +65,10 @@ extension ReciterExtension on Reciter {
         return 'https://cdn.islamic.network/quran/audio/64/ar.abdulbasitmurattal';
       case Reciter.mahmoudKhalilAlHusary:
         return 'https://cdn.islamic.network/quran/audio/128/ar.husary';
-      case Reciter.saadAlGhamdi:
-        return 'https://cdn.islamic.network/quran/audio/128/ar.saoodshuraym';
+      case Reciter.saudAlShuraym:
+        return 'https://cdn.islamic.network/quran/audio/64/ar.saoodshuraym';
       case Reciter.abdulRahmanAlSudais:
-        return 'https://cdn.islamic.network/quran/audio/128/ar.abdurrahmaansudais';
+        return 'https://cdn.islamic.network/quran/audio/192/ar.abdurrahmaansudais';
     }
   }
 }
@@ -153,6 +153,8 @@ class AudioService extends ChangeNotifier {
       final globalAyahNumber = _getGlobalAyahNumber(surahNumber, ayahNumber);
       final url = '${_currentReciter.baseUrl}/$globalAyahNumber.mp3';
 
+      debugPrint('Playing audio - Reciter: ${_currentReciter.displayName}, URL: $url');
+
       await _player.setUrl(url);
       await _player.setSpeed(_playbackSpeed);
       await _player.play();
@@ -233,7 +235,21 @@ class AudioService extends ChangeNotifier {
 
   /// Set reciter
   void setReciter(Reciter reciter) {
+    if (_currentReciter == reciter) return;
+
     _currentReciter = reciter;
+    debugPrint('Reciter changed to: ${reciter.displayName}');
+
+    // If currently playing, reload with new reciter
+    if (_currentSurah != null && _currentAyah != null) {
+      final wasPlaying = _isPlaying;
+      playAyah(_currentSurah!, _currentAyah!).then((_) {
+        if (!wasPlaying) {
+          pause();
+        }
+      });
+    }
+
     notifyListeners();
   }
 

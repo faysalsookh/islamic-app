@@ -28,6 +28,15 @@ class QuickAccessSection extends StatelessWidget {
         },
       ),
       _QuickAccessCard(
+        icon: Icons.school_rounded,
+        label: 'তাজবীদ শিক্ষা',
+        subtitle: 'Tajweed Rules',
+        color: AppColors.softRose,
+        onTap: () {
+          Navigator.pushNamed(context, '/tajweed-rules');
+        },
+      ),
+      _QuickAccessCard(
         icon: Icons.bookmark_rounded,
         label: 'Bookmarks',
         subtitle: 'Saved',

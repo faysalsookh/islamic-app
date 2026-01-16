@@ -95,7 +95,7 @@ class TajweedText extends StatelessWidget {
 
     // Build text spans for each segment
     final spans = <InlineSpan>[];
-    final colors = customColors ?? TajweedColors.shohozQuran;
+    final colors = customColors ?? TajweedColors.bengaliQuran;
 
     for (final segment in segments) {
       final color = segment.rule == TajweedRule.normal

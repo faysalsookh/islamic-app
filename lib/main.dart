@@ -8,6 +8,7 @@ import 'package:islamic_app/features/home/presentation/pages/home_page.dart';
 import 'package:islamic_app/features/quran/pages/quran_reader_page.dart';
 import 'package:islamic_app/features/quran/pages/surah_list_page.dart';
 import 'package:islamic_app/features/quran/pages/juz_list_page.dart';
+import 'package:islamic_app/features/quran/pages/tajweed_rules_page.dart';
 import 'package:islamic_app/features/bookmarks/presentation/pages/bookmarks_page.dart';
 import 'package:islamic_app/features/settings/presentation/pages/settings_page.dart';
 
@@ -58,6 +59,7 @@ class IslamicApp extends StatelessWidget {
             '/home': (context) => const HomePage(),
             '/surah-list': (context) => const SurahListPage(),
             '/juz-list': (context) => const JuzListPage(),
+            '/tajweed-rules': (context) => const TajweedRulesPage(),
             '/bookmarks': (context) => const BookmarksPage(),
             '/settings': (context) => const SettingsPage(),
           },

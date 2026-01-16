@@ -159,6 +159,14 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
                 },
               ),
               _OptionTile(
+                icon: Icons.school_rounded,
+                label: 'Tajweed Guide',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/tajweed-rules');
+                },
+              ),
+              _OptionTile(
                 icon: Icons.auto_stories_rounded,
                 label: 'View Tafsir',
                 onTap: () {

@@ -113,6 +113,15 @@ class Ayah {
 }
 
 /// Sample Ayah data for Al-Fatihah (Surah 1) with Tajweed markup
+/// Tajweed colors follow the Bengali Quran standard:
+/// - Red (ghunnah): غُنَّة - Nasalization
+/// - Blue (ikhfa): إخفاء - Concealment
+/// - Brown (qalqalah): قلقلة - Echoing
+/// - Green (idgham): إدغام - Assimilation
+/// - Purple (iqlab): إقلاب - Conversion
+/// - Dark Blue (izhar): إظهار - Clear pronunciation
+/// - Orange (safir): صفير - Whistling sound (ص ز س)
+/// - Pink (madd): مد - Elongation
 class AyahData {
   static const List<Ayah> alFatihah = [
     Ayah(
@@ -120,7 +129,7 @@ class AyahData {
       numberInSurah: 1,
       surahNumber: 1,
       textArabic: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
-      textWithTajweed: '<madd>بِسْمِ</madd> اللَّهِ <ghunnah>الرَّحْمَٰنِ</ghunnah> الرَّحِيمِ',
+      textWithTajweed: 'بِ<safir>سْ</safir>مِ اللَّهِ <ghunnah>ال</ghunnah>رَّحْ<madd>مَٰ</madd>نِ الرَّحِيمِ',
       translationEnglish: 'In the name of Allah, the Most Gracious, the Most Merciful.',
       translationBengali: 'পরম করুণাময় অতি দয়ালু আল্লাহর নামে।',
       transliterationEnglish: 'Bismillahir Rahmanir Raheem',
@@ -137,7 +146,7 @@ class AyahData {
       numberInSurah: 2,
       surahNumber: 1,
       textArabic: 'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
-      textWithTajweed: 'الْحَمْدُ لِلَّهِ <madd>رَبِّ</madd> الْعَالَمِينَ',
+      textWithTajweed: 'الْحَمْ<qalqalah>دُ</qalqalah> لِلَّهِ رَ<qalqalah>بِّ</qalqalah> الْعَ<madd>ا</madd>لَمِينَ',
       translationEnglish: 'All praise is due to Allah, Lord of all the worlds.',
       translationBengali: 'যাবতীয় প্রশংসা আল্লাহ তাআলার যিনি সকল সৃষ্টি জগতের পালনকর্তা।',
       transliterationEnglish: 'Alhamdu lillahi Rabbil Aalameen',
@@ -154,7 +163,7 @@ class AyahData {
       numberInSurah: 3,
       surahNumber: 1,
       textArabic: 'الرَّحْمَٰنِ الرَّحِيمِ',
-      textWithTajweed: '<ghunnah>الرَّحْمَٰنِ</ghunnah> الرَّحِيمِ',
+      textWithTajweed: '<ghunnah>ال</ghunnah>رَّحْ<madd>مَٰ</madd>نِ الرَّحِيمِ',
       translationEnglish: 'The Most Gracious, the Most Merciful.',
       translationBengali: 'দয়াময়, পরম দয়ালু।',
       transliterationEnglish: 'Ar-Rahmanir Raheem',
@@ -171,7 +180,7 @@ class AyahData {
       numberInSurah: 4,
       surahNumber: 1,
       textArabic: 'مَالِكِ يَوْمِ الدِّينِ',
-      textWithTajweed: '<madd>مَالِكِ</madd> يَوْمِ <idgham>الدِّينِ</idgham>',
+      textWithTajweed: '<madd>مَا</madd>لِكِ يَوْمِ ال<qalqalah>دِّ</qalqalah>ينِ',
       translationEnglish: 'Master of the Day of Judgment.',
       translationBengali: 'বিচার দিনের মালিক।',
       transliterationEnglish: 'Maliki Yawmid-Deen',
@@ -188,7 +197,7 @@ class AyahData {
       numberInSurah: 5,
       surahNumber: 1,
       textArabic: 'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
-      textWithTajweed: 'إِيَّاكَ <ikhfa>نَعْبُدُ</ikhfa> وَإِيَّاكَ <ikhfa>نَسْتَعِينُ</ikhfa>',
+      textWithTajweed: 'إِيَّاكَ <ikhfa>نَ</ikhfa>عْ<qalqalah>بُ</qalqalah>دُ وَإِيَّاكَ <ikhfa>نَ</ikhfa><safir>سْ</safir>تَعِينُ',
       translationEnglish: 'You alone we worship, and You alone we ask for help.',
       translationBengali: 'আমরা একমাত্র তোমারই ইবাদত করি এবং শুধুমাত্র তোমারই সাহায্য প্রার্থনা করি।',
       transliterationEnglish: 'Iyyaka na\'budu wa iyyaka nasta\'een',
@@ -205,7 +214,7 @@ class AyahData {
       numberInSurah: 6,
       surahNumber: 1,
       textArabic: 'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ',
-      textWithTajweed: 'اهْدِنَا <madd>الصِّرَاطَ</madd> الْمُسْتَقِيمَ',
+      textWithTajweed: 'اهْ<qalqalah>دِ</qalqalah><izhar>نَا</izhar> ال<safir>صِّ</safir>رَ<madd>ا</madd><qalqalah>طَ</qalqalah> الْمُ<safir>سْ</safir>تَ<ikhfa>قِ</ikhfa>يمَ',
       translationEnglish: 'Guide us to the straight path.',
       translationBengali: 'আমাদের সরল পথ দেখাও।',
       transliterationEnglish: 'Ihdinas-Siratal Mustaqeem',
@@ -222,7 +231,7 @@ class AyahData {
       numberInSurah: 7,
       surahNumber: 1,
       textArabic: 'صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ',
-      textWithTajweed: 'صِرَاطَ الَّذِينَ <ikhfa>أَنْعَمْتَ</ikhfa> عَلَيْهِمْ <ghunnah>غَيْرِ</ghunnah> <madd>الْمَغْضُوبِ</madd> عَلَيْهِمْ وَلَا <madd>الضَّالِّينَ</madd>',
+      textWithTajweed: '<safir>صِ</safir>رَ<madd>ا</madd><qalqalah>طَ</qalqalah> الَّذِينَ <izhar>أَ</izhar><ikhfa>نْ</ikhfa>عَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْ<ikhfa>ضُ</ikhfa>وبِ عَلَيْهِمْ وَلَا ال<ikhfa>ضَّ</ikhfa><madd>ا</madd>لِّينَ',
       translationEnglish: 'The path of those upon whom You have bestowed favor, not of those who have earned [Your] anger or of those who are astray.',
       translationBengali: 'সে সমস্ত লোকের পথ, যাদেরকে তুমি নেয়ামত দান করেছ। তাদের পথ নয়, যাদের প্রতি তোমার গজব নাযিল হয়েছে এবং যারা পথভ্রষ্ট হয়েছে।',
       transliterationEnglish: 'Siratal lazeena an\'amta alaihim, ghairil maghdoobi alaihim wa lad-daalleen',
@@ -243,7 +252,7 @@ class AyahData {
       numberInSurah: 1,
       surahNumber: 112,
       textArabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ',
-      textWithTajweed: '<qalqalah>قُلْ</qalqalah> هُوَ اللَّهُ <ikhfa>أَحَدٌ</ikhfa>',
+      textWithTajweed: '<qalqalah>قُلْ</qalqalah> هُوَ اللَّهُ <izhar>أَ</izhar>حَ<qalqalah>دٌ</qalqalah>',
       translationEnglish: 'Say, "He is Allah, [who is] One.',
       translationBengali: 'বলুন, তিনি আল্লাহ, এক।',
       transliterationEnglish: 'Qul Huwal-lahu Ahad',
@@ -260,7 +269,7 @@ class AyahData {
       numberInSurah: 2,
       surahNumber: 112,
       textArabic: 'اللَّهُ الصَّمَدُ',
-      textWithTajweed: 'اللَّهُ <madd>الصَّمَدُ</madd>',
+      textWithTajweed: 'اللَّهُ ال<safir>صَّ</safir>مَ<qalqalah>دُ</qalqalah>',
       translationEnglish: 'Allah, the Eternal Refuge.',
       translationBengali: 'আল্লাহ অমুখাপেক্ষী।',
       transliterationEnglish: 'Allahus-Samad',
@@ -277,7 +286,7 @@ class AyahData {
       numberInSurah: 3,
       surahNumber: 112,
       textArabic: 'لَمْ يَلِدْ وَلَمْ يُولَدْ',
-      textWithTajweed: 'لَمْ <qalqalah>يَلِدْ</qalqalah> وَلَمْ <qalqalah>يُولَدْ</qalqalah>',
+      textWithTajweed: 'لَمْ يَلِ<qalqalah>دْ</qalqalah> وَلَمْ <madd>يُو</madd>لَ<qalqalah>دْ</qalqalah>',
       translationEnglish: 'He neither begets nor is born.',
       translationBengali: 'তিনি কাউকে জন্ম দেননি এবং কেউ তাঁকে জন্ম দেয়নি।',
       transliterationEnglish: 'Lam yalid wa lam yoolad',
@@ -294,7 +303,7 @@ class AyahData {
       numberInSurah: 4,
       surahNumber: 112,
       textArabic: 'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ',
-      textWithTajweed: 'وَلَمْ يَكُن لَّهُ <ghunnah>كُفُوًا</ghunnah> <ikhfa>أَحَدٌ</ikhfa>',
+      textWithTajweed: 'وَلَمْ يَ<idgham>كُن لَّ</idgham>هُ <ghunnah>كُفُوً</ghunnah>ا <izhar>أَ</izhar>حَ<qalqalah>دٌ</qalqalah>',
       translationEnglish: 'Nor is there to Him any equivalent.',
       translationBengali: 'এবং তাঁর সমতুল্য কেউ নেই।',
       transliterationEnglish: 'Wa lam yakun lahu kufuwan ahad',
