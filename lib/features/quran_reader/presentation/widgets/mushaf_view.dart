@@ -4,7 +4,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/models/ayah.dart';
-import '../../../../core/widgets/ayah_number_badge.dart';
 
 /// Mushaf view - page-style like printed Quran
 class MushafView extends StatelessWidget {

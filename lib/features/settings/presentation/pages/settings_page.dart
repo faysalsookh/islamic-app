@@ -5,7 +5,6 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/widgets/elegant_card.dart';
-import '../../../../core/widgets/tajweed_text.dart';
 import '../../../../core/models/tajweed.dart';
 import '../../../../core/services/audio_service.dart';
 import '../../../../core/utils/responsive.dart';

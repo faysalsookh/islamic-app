@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_typography.dart';
 
 /// Bottom control bar for Quran reader
 class ReadingBottomBar extends StatelessWidget {

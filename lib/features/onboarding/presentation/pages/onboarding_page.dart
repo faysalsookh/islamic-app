@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/widgets/islamic_pattern_painter.dart';
 import '../../../../core/utils/responsive.dart';
