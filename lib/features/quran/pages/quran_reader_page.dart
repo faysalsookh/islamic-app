@@ -6,6 +6,7 @@ import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/models/surah.dart';
 import '../../../../core/models/ayah.dart';
 import '../../../../core/models/bookmark.dart';
+import '../../../../core/services/quran_data_service.dart';
 import '../widgets/quran_app_bar.dart';
 import '../widgets/ayah_list_view.dart';
 import '../widgets/mushaf_view.dart';
@@ -26,33 +27,60 @@ class QuranReaderPage extends StatefulWidget {
 
 class _QuranReaderPageState extends State<QuranReaderPage> {
   late Surah _currentSurah;
-  late List<Ayah> _ayahs;
+  List<Ayah> _ayahs = [];
   int _currentAyahIndex = 0;
   bool _showTranslation = true;
   bool _legendExpanded = false;
+  bool _isLoading = true;
+
+  final QuranDataService _quranDataService = QuranDataService();
 
   @override
   void initState() {
     super.initState();
-    _loadSurahData();
+    _initializeSurahData();
   }
 
-  void _loadSurahData() {
-    // Find surah from data
+  void _initializeSurahData() {
+    // Find surah from complete data
     _currentSurah = SurahData.surahs.firstWhere(
       (s) => s.number == widget.surahNumber,
       orElse: () => SurahData.surahs.first,
     );
 
-    // Load ayahs based on surah number
-    if (widget.surahNumber == 1) {
-      _ayahs = AyahData.alFatihah;
-    } else if (widget.surahNumber == 112) {
-      _ayahs = AyahData.alIkhlas;
-    } else {
-      // For demo, use Al-Fatihah as default
-      _ayahs = AyahData.alFatihah;
+    // Load ayahs asynchronously
+    _loadAyahsAsync();
+  }
+
+  Future<void> _loadAyahsAsync() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final ayahs = await _quranDataService.getAyahsForSurah(widget.surahNumber);
+      if (mounted) {
+        setState(() {
+          _ayahs = ayahs;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading surah: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Use fallback data
+          _ayahs = _getFallbackAyahs();
+        });
+      }
     }
+  }
+
+  List<Ayah> _getFallbackAyahs() {
+    if (widget.surahNumber == 1) return AyahData.alFatihah;
+    if (widget.surahNumber == 112) return AyahData.alIkhlas;
+    return AyahData.alFatihah;
   }
 
   void _toggleTranslation() {
@@ -191,6 +219,9 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Consumer<AppStateProvider>(
       builder: (context, appState, child) {
         return Scaffold(
@@ -210,45 +241,50 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
 
                 // Main Content
                 Expanded(
-                  child: Stack(
-                    children: [
-                      // Quran content
-                      appState.isMushafView
-                          ? MushafView(
-                              surah: _currentSurah,
-                              ayahs: _ayahs,
-                              quranFontSize: appState.quranFontSize,
-                            )
-                          : AyahListView(
-                              surah: _currentSurah,
-                              ayahs: _ayahs,
-                              currentAyahIndex: _currentAyahIndex,
-                              showTranslation: _showTranslation && appState.showTranslation,
-                              quranFontSize: appState.quranFontSize,
-                              onAyahSelected: (index) {
-                                setState(() {
-                                  _currentAyahIndex = index;
-                                });
-                              },
-                            ),
+                  child: _isLoading
+                      ? _buildLoadingState(isDark)
+                      : _ayahs.isEmpty
+                          ? _buildErrorState(isDark)
+                          : Stack(
+                              children: [
+                                // Quran content
+                                appState.isMushafView
+                                    ? MushafView(
+                                        surah: _currentSurah,
+                                        ayahs: _ayahs,
+                                        quranFontSize: appState.quranFontSize,
+                                      )
+                                    : AyahListView(
+                                        surah: _currentSurah,
+                                        ayahs: _ayahs,
+                                        currentAyahIndex: _currentAyahIndex,
+                                        showTranslation:
+                                            _showTranslation && appState.showTranslation,
+                                        quranFontSize: appState.quranFontSize,
+                                        onAyahSelected: (index) {
+                                          setState(() {
+                                            _currentAyahIndex = index;
+                                          });
+                                        },
+                                      ),
 
-                      // Tajweed Color Legend (floating at bottom)
-                      if (appState.showTajweedColors)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 8,
-                          child: TajweedColorLegend(
-                            isExpanded: _legendExpanded,
-                            onToggle: () {
-                              setState(() {
-                                _legendExpanded = !_legendExpanded;
-                              });
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
+                                // Tajweed Color Legend (floating at bottom)
+                                if (appState.showTajweedColors)
+                                  Positioned(
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 8,
+                                    child: TajweedColorLegend(
+                                      isExpanded: _legendExpanded,
+                                      onToggle: () {
+                                        setState(() {
+                                          _legendExpanded = !_legendExpanded;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
                 ),
 
                 // Bottom Control Bar
@@ -271,6 +307,89 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLoadingState(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: isDark ? AppColors.mutedTealLight : AppColors.mutedTeal,
+            strokeWidth: 3,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'সূরা লোড হচ্ছে...',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'NotoSansBengali',
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Loading ${_currentSurah.nameTransliteration}',
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.cloud_off_rounded,
+              size: 64,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'সূরা লোড করতে সমস্যা হয়েছে',
+              style: TextStyle(
+                fontSize: 18,
+                fontFamily: 'NotoSansBengali',
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please check your internet connection',
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadAyahsAsync,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('পুনরায় চেষ্টা করুন'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? AppColors.mutedTealLight : AppColors.mutedTeal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

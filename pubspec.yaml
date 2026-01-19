@@ -58,6 +58,9 @@ dependencies:
   # For Arabic text rendering
   google_fonts: ^6.2.1
 
+  # HTTP client for API requests
+  http: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
