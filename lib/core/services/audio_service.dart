@@ -17,12 +17,14 @@ enum AudioRepeatMode {
 }
 
 /// Enum for available reciters
+/// Note: Only reciters with verse-by-verse audio on free CDNs are included
 enum Reciter {
   misharyRashidAlafasy,
   abdulBasitAbdulSamad,
-  mahmoudKhalilAlHusary,
-  saudAlShuraym,
   abdulRahmanAlSudais,
+  maherAlMuaiqly,
+  abuBakrAlShatri,
+  haniArRifai,
 }
 
 extension ReciterExtension on Reciter {
@@ -32,12 +34,14 @@ extension ReciterExtension on Reciter {
         return 'Mishary Rashid Alafasy';
       case Reciter.abdulBasitAbdulSamad:
         return 'Abdul Basit Abdul Samad';
-      case Reciter.mahmoudKhalilAlHusary:
-        return 'Mahmoud Khalil Al-Husary';
-      case Reciter.saudAlShuraym:
-        return 'Saud Al-Shuraym';
       case Reciter.abdulRahmanAlSudais:
         return 'Abdul Rahman Al-Sudais';
+      case Reciter.maherAlMuaiqly:
+        return 'Maher Al-Muaiqly';
+      case Reciter.abuBakrAlShatri:
+        return 'Abu Bakr Al-Shatri';
+      case Reciter.haniArRifai:
+        return 'Hani Ar-Rifai';
     }
   }
 
@@ -47,30 +51,38 @@ extension ReciterExtension on Reciter {
         return 'مشاري راشد العفاسي';
       case Reciter.abdulBasitAbdulSamad:
         return 'عبد الباسط عبد الصمد';
-      case Reciter.mahmoudKhalilAlHusary:
-        return 'محمود خليل الحصري';
-      case Reciter.saudAlShuraym:
-        return 'سعود الشريم';
       case Reciter.abdulRahmanAlSudais:
         return 'عبد الرحمن السديس';
+      case Reciter.maherAlMuaiqly:
+        return 'ماهر المعيقلي';
+      case Reciter.abuBakrAlShatri:
+        return 'أبو بكر الشاطري';
+      case Reciter.haniArRifai:
+        return 'هاني الرفاعي';
     }
   }
 
-  /// Base URL for this reciter's audio files
+  /// Base URL for this reciter's audio files (ayah by ayah)
+  /// Uses EveryAyah.com for verse-by-verse audio
   String get baseUrl {
     switch (this) {
       case Reciter.misharyRashidAlafasy:
-        return 'https://cdn.islamic.network/quran/audio/128/ar.alafasy';
+        return 'https://everyayah.com/data/Alafasy_128kbps';
       case Reciter.abdulBasitAbdulSamad:
-        return 'https://cdn.islamic.network/quran/audio/64/ar.abdulbasitmurattal';
-      case Reciter.mahmoudKhalilAlHusary:
-        return 'https://cdn.islamic.network/quran/audio/128/ar.husary';
-      case Reciter.saudAlShuraym:
-        return 'https://cdn.islamic.network/quran/audio/64/ar.saoodshuraym';
+        return 'https://everyayah.com/data/Abdul_Basit_Murattal_192kbps';
       case Reciter.abdulRahmanAlSudais:
-        return 'https://cdn.islamic.network/quran/audio/192/ar.abdurrahmaansudais';
+        return 'https://everyayah.com/data/Abdurrahmaan_As-Sudais_192kbps';
+      case Reciter.maherAlMuaiqly:
+        return 'https://everyayah.com/data/MaherAlMuaiqly128kbps';
+      case Reciter.abuBakrAlShatri:
+        return 'https://everyayah.com/data/Abu_Bakr_Ash-Shaatree_128kbps';
+      case Reciter.haniArRifai:
+        return 'https://everyayah.com/data/Hani_Rifai_192kbps';
     }
   }
+
+  /// All reciters use EveryAyah URL format (SSSAAA.mp3)
+  bool get usesEveryAyahFormat => true;
 }
 
 /// Service for managing Quran audio playback
@@ -148,10 +160,10 @@ class AudioService extends ChangeNotifier {
       _currentAyah = ayahNumber;
       notifyListeners();
 
-      // Build audio URL
-      // Format: baseUrl/ayahNumber.mp3 (global ayah number)
-      final globalAyahNumber = _getGlobalAyahNumber(surahNumber, ayahNumber);
-      final url = '${_currentReciter.baseUrl}/$globalAyahNumber.mp3';
+      // Build audio URL - EveryAyah format: SSSAAA.mp3 (3 digits surah, 3 digits ayah)
+      final surahStr = surahNumber.toString().padLeft(3, '0');
+      final ayahStr = ayahNumber.toString().padLeft(3, '0');
+      final url = '${_currentReciter.baseUrl}/$surahStr$ayahStr.mp3';
 
       debugPrint('Playing audio - Reciter: ${_currentReciter.displayName}, URL: $url');
 
@@ -325,17 +337,6 @@ class AudioService extends ChangeNotifier {
     } else if (_currentSurah! < 114) {
       playAyah(_currentSurah! + 1, 1);
     }
-  }
-
-  /// Get global ayah number for API calls
-  int _getGlobalAyahNumber(int surahNumber, int ayahNumber) {
-    // This is a simplified calculation
-    // In production, you'd use a lookup table
-    int globalNumber = 0;
-    for (int i = 1; i < surahNumber; i++) {
-      globalNumber += _getAyahCount(i);
-    }
-    return globalNumber + ayahNumber;
   }
 
   /// Get the number of ayahs in a surah

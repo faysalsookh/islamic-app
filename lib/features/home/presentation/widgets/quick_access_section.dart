@@ -96,7 +96,6 @@ class _QuickAccessCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           backgroundColor: isDark ? AppColors.darkCard : Colors.white,
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               // Icon container
               Container(
@@ -113,32 +112,38 @@ class _QuickAccessCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Text
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.textPrimary,
+              // Text - wrapped in Expanded to prevent overflow
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.textSecondary,
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),

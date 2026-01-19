@@ -841,20 +841,26 @@ class _SelectionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
+      // Constrain max height to prevent overflow
+      constraints: BoxConstraints(
+        maxHeight: screenHeight * 0.7,
+      ),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Fixed header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Text(
                 title,
                 style: AppTypography.heading2(
                   color: isDark
@@ -862,10 +868,18 @@ class _SelectionSheet extends StatelessWidget {
                       : AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 16),
-              ...options,
-            ],
-          ),
+            ),
+            // Scrollable options list
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: options,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

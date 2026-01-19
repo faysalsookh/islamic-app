@@ -29,6 +29,7 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
   late List<Ayah> _ayahs;
   int _currentAyahIndex = 0;
   bool _showTranslation = true;
+  bool _legendExpanded = false;
 
   @override
   void initState() {
@@ -209,24 +210,45 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
 
                 // Main Content
                 Expanded(
-                  child: appState.isMushafView
-                      ? MushafView(
-                          surah: _currentSurah,
-                          ayahs: _ayahs,
-                          quranFontSize: appState.quranFontSize,
-                        )
-                      : AyahListView(
-                          surah: _currentSurah,
-                          ayahs: _ayahs,
-                          currentAyahIndex: _currentAyahIndex,
-                          showTranslation: _showTranslation && appState.showTranslation,
-                          quranFontSize: appState.quranFontSize,
-                          onAyahSelected: (index) {
-                            setState(() {
-                              _currentAyahIndex = index;
-                            });
-                          },
+                  child: Stack(
+                    children: [
+                      // Quran content
+                      appState.isMushafView
+                          ? MushafView(
+                              surah: _currentSurah,
+                              ayahs: _ayahs,
+                              quranFontSize: appState.quranFontSize,
+                            )
+                          : AyahListView(
+                              surah: _currentSurah,
+                              ayahs: _ayahs,
+                              currentAyahIndex: _currentAyahIndex,
+                              showTranslation: _showTranslation && appState.showTranslation,
+                              quranFontSize: appState.quranFontSize,
+                              onAyahSelected: (index) {
+                                setState(() {
+                                  _currentAyahIndex = index;
+                                });
+                              },
+                            ),
+
+                      // Tajweed Color Legend (floating at bottom)
+                      if (appState.showTajweedColors)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 8,
+                          child: TajweedColorLegend(
+                            isExpanded: _legendExpanded,
+                            onToggle: () {
+                              setState(() {
+                                _legendExpanded = !_legendExpanded;
+                              });
+                            },
+                          ),
                         ),
+                    ],
+                  ),
                 ),
 
                 // Bottom Control Bar
