@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/islamic_pattern_painter.dart';
+import '../../../../core/utils/responsive.dart';
 import '../widgets/greeting_header.dart';
 import '../widgets/continue_reading_card.dart';
 import '../widgets/quick_access_section.dart';
@@ -14,90 +15,99 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isTablet = Responsive.isTabletOrLarger(context);
+    final horizontalPadding = Responsive.horizontalPadding(context);
 
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // App bar with greeting
-            SliverToBoxAdapter(
-              child: IslamicPatternBackground(
-                patternColor: theme.colorScheme.primary,
-                opacity: 0.03,
-                patternType: PatternType.geometric,
-                child: const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 20, 16, 16),
-                  child: GreetingHeader(),
-                ),
-              ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isTablet ? 800 : double.infinity,
             ),
-
-            // Continue Reading card
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: ContinueReadingCard(),
-              ),
-            ),
-
-            // Quick access buttons
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                child: Text(
-                  'Quick Access',
-                  style: AppTypography.heading3(
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+            child: CustomScrollView(
+              slivers: [
+                // App bar with greeting
+                SliverToBoxAdapter(
+                  child: IslamicPatternBackground(
+                    patternColor: theme.colorScheme.primary,
+                    opacity: 0.03,
+                    patternType: PatternType.geometric,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, isTablet ? 28 : 20, horizontalPadding, horizontalPadding),
+                      child: const GreetingHeader(),
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            const SliverToBoxAdapter(
-              child: QuickAccessSection(),
-            ),
+                // Continue Reading card
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: const ContinueReadingCard(),
+                  ),
+                ),
 
-            // Browse Quran section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Browse Quran',
+                // Quick access buttons
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(horizontalPadding, isTablet ? 32 : 24, horizontalPadding, 8),
+                    child: Text(
+                      'Quick Access',
                       style: AppTypography.heading3(
                         color: isDark
                             ? AppColors.darkTextPrimary
                             : AppColors.textPrimary,
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/surah-list');
-                      },
-                      child: Text(
-                        'See All',
-                        style: AppTypography.bodyMedium(
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
-            // Surah list preview
-            const SurahListSection(),
+                SliverToBoxAdapter(
+                  child: QuickAccessSection(isTablet: isTablet),
+                ),
 
-            // Bottom spacing
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 100),
+                // Browse Quran section
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(horizontalPadding, isTablet ? 32 : 24, horizontalPadding, 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Browse Quran',
+                          style: AppTypography.heading3(
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/surah-list');
+                          },
+                          child: Text(
+                            'See All',
+                            style: AppTypography.bodyMedium(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Surah list preview
+                SurahListSection(horizontalPadding: horizontalPadding),
+
+                // Bottom spacing
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 100),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       bottomNavigationBar: _buildBottomNav(context),

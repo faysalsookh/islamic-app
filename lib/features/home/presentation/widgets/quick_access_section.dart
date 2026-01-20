@@ -4,7 +4,9 @@ import '../../../../core/widgets/elegant_card.dart';
 
 /// Horizontal scrolling section with quick access tiles
 class QuickAccessSection extends StatelessWidget {
-  const QuickAccessSection({super.key});
+  final bool isTablet;
+
+  const QuickAccessSection({super.key, this.isTablet = false});
 
   @override
   Widget build(BuildContext context) {
@@ -56,18 +58,30 @@ class QuickAccessSection extends StatelessWidget {
       ),
     ];
 
+    final cardWidth = isTablet ? 240.0 : 200.0;
+    final sectionHeight = isTablet ? 120.0 : 100.0;
+    final horizontalPadding = isTablet ? 28.0 : 12.0;
+
     return SizedBox(
-      height: 100,
-      child: ListView(
+      height: sectionHeight,
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        children: cards,
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        itemCount: cards.length,
+        itemBuilder: (context, index) {
+          final card = cards[index];
+          return _QuickAccessCardWidget(
+            card: card,
+            cardWidth: cardWidth,
+            isTablet: isTablet,
+          );
+        },
       ),
     );
   }
 }
 
-class _QuickAccessCard extends StatelessWidget {
+class _QuickAccessCard {
   final IconData icon;
   final String label;
   final String subtitle;
@@ -81,37 +95,56 @@ class _QuickAccessCard extends StatelessWidget {
     required this.color,
     required this.onTap,
   });
+}
+
+class _QuickAccessCardWidget extends StatelessWidget {
+  final _QuickAccessCard card;
+  final double cardWidth;
+  final bool isTablet;
+
+  const _QuickAccessCardWidget({
+    required this.card,
+    required this.cardWidth,
+    required this.isTablet,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final iconSize = isTablet ? 56.0 : 48.0;
+    final iconFontSize = isTablet ? 28.0 : 24.0;
+    final labelFontSize = isTablet ? 18.0 : 16.0;
+    final subtitleFontSize = isTablet ? 14.0 : 12.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.symmetric(horizontal: isTablet ? 6 : 4),
       child: SizedBox(
-        width: 200,
+        width: cardWidth,
         child: ElegantCard(
-          onTap: onTap,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          onTap: card.onTap,
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 20 : 16,
+            vertical: isTablet ? 16 : 12,
+          ),
           backgroundColor: isDark ? AppColors.darkCard : Colors.white,
           child: Row(
             children: [
               // Icon container
               Container(
-                width: 48,
-                height: 48,
+                width: iconSize,
+                height: iconSize,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  color: card.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
                 ),
                 child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
+                  card.icon,
+                  color: card.color,
+                  size: iconFontSize,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isTablet ? 16 : 12),
               // Text - wrapped in Expanded to prevent overflow
               Expanded(
                 child: Column(
@@ -120,9 +153,9 @@ class _QuickAccessCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      label,
+                      card.label,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: labelFontSize,
                         fontWeight: FontWeight.w600,
                         color: isDark
                             ? AppColors.darkTextPrimary
@@ -132,9 +165,9 @@ class _QuickAccessCard extends StatelessWidget {
                       maxLines: 1,
                     ),
                     Text(
-                      subtitle,
+                      card.subtitle,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: subtitleFontSize,
                         color: isDark
                             ? AppColors.darkTextSecondary
                             : AppColors.textSecondary,

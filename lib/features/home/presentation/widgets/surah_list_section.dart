@@ -6,7 +6,9 @@ import '../../../../core/widgets/elegant_card.dart';
 
 /// Surah list preview section on home page
 class SurahListSection extends StatelessWidget {
-  const SurahListSection({super.key});
+  final double horizontalPadding;
+
+  const SurahListSection({super.key, this.horizontalPadding = 16});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +19,7 @@ class SurahListSection extends StatelessWidget {
         (context, index) {
           final surah = previewSurahs[index];
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 4),
             child: SurahListTile(surah: surah),
           );
         },

@@ -48,12 +48,14 @@ class SettingsPage extends StatelessWidget {
               // Profile section
               _SettingsSection(
                 title: 'Profile',
+                isTablet: isTablet,
                 children: [
                   _ProfileCard(
                     name: appState.userName.isNotEmpty
                         ? appState.userName
                         : 'Set your name',
                     onTap: () => _showNameEditDialog(context, appState),
+                    isTablet: isTablet,
                   ),
                 ],
               ),
@@ -61,10 +63,12 @@ class SettingsPage extends StatelessWidget {
               // Appearance section
               _SettingsSection(
                 title: 'Appearance',
+                isTablet: isTablet,
                 children: [
                   _ThemeSelector(
                     currentTheme: appState.themeMode,
                     onThemeChanged: appState.setThemeMode,
+                    isTablet: isTablet,
                   ),
                 ],
               ),
@@ -72,18 +76,21 @@ class SettingsPage extends StatelessWidget {
               // Reading settings section
               _SettingsSection(
                 title: 'Reading',
+                isTablet: isTablet,
                 children: [
                   _SettingsTile(
                     icon: Icons.text_fields_rounded,
                     title: 'Arabic Font Style',
                     subtitle: appState.arabicFontStyle.displayName,
                     onTap: () => _showFontStyleDialog(context, appState),
+                    isTablet: isTablet,
                   ),
                   _SettingsTile(
                     icon: Icons.format_size_rounded,
                     title: 'Font Size',
                     subtitle: _getFontSizeName(appState.quranFontSize),
                     onTap: () => _showFontSizeDialog(context, appState),
+                    isTablet: isTablet,
                   ),
                   _SettingsTile(
                     icon: Icons.translate_rounded,
@@ -91,6 +98,7 @@ class SettingsPage extends StatelessWidget {
                     subtitle: appState.translationLanguage.displayName,
                     onTap: () =>
                         _showTranslationLanguageDialog(context, appState),
+                    isTablet: isTablet,
                   ),
                   _SettingsTile(
                     icon: Icons.abc_rounded,
@@ -98,18 +106,21 @@ class SettingsPage extends StatelessWidget {
                     subtitle: appState.transliterationLanguage.displayName,
                     onTap: () =>
                         _showTransliterationLanguageDialog(context, appState),
+                    isTablet: isTablet,
                   ),
                   _ToggleTile(
                     icon: Icons.visibility_rounded,
                     title: 'Show Translation',
                     value: appState.showTranslation,
                     onChanged: (_) => appState.toggleShowTranslation(),
+                    isTablet: isTablet,
                   ),
                   _ToggleTile(
                     icon: Icons.text_snippet_rounded,
                     title: 'Show Transliteration',
                     value: appState.showTransliteration,
                     onChanged: (_) => appState.toggleShowTransliteration(),
+                    isTablet: isTablet,
                   ),
                   _ToggleTile(
                     icon: Icons.auto_stories_rounded,
@@ -117,6 +128,7 @@ class SettingsPage extends StatelessWidget {
                     subtitle: 'Page-style like printed Quran',
                     value: appState.isMushafView,
                     onChanged: appState.setMushafView,
+                    isTablet: isTablet,
                   ),
                 ],
               ),
@@ -124,6 +136,7 @@ class SettingsPage extends StatelessWidget {
               // Tajweed settings section
               _SettingsSection(
                 title: 'Tajweed',
+                isTablet: isTablet,
                 children: [
                   _ToggleTile(
                     icon: Icons.palette_rounded,
@@ -131,6 +144,7 @@ class SettingsPage extends StatelessWidget {
                     subtitle: 'Color-coded recitation rules',
                     value: appState.showTajweedColors,
                     onChanged: (_) => appState.toggleShowTajweedColors(),
+                    isTablet: isTablet,
                   ),
                   _ToggleTile(
                     icon: Icons.school_rounded,
@@ -138,26 +152,30 @@ class SettingsPage extends StatelessWidget {
                     subtitle: 'Tap colored text to see rule explanation',
                     value: appState.tajweedLearningMode,
                     onChanged: (_) => appState.toggleTajweedLearningMode(),
+                    isTablet: isTablet,
                   ),
-                  _TajweedLegendTile(),
+                  _TajweedLegendTile(isTablet: isTablet),
                 ],
               ),
 
               // Audio section
               _SettingsSection(
                 title: 'Audio',
+                isTablet: isTablet,
                 children: [
                   _SettingsTile(
                     icon: Icons.record_voice_over_rounded,
                     title: 'Reciter',
                     subtitle: appState.selectedReciter.displayName,
                     onTap: () => _showReciterDialog(context, appState),
+                    isTablet: isTablet,
                   ),
                   _SettingsTile(
                     icon: Icons.speed_rounded,
                     title: 'Default Playback Speed',
                     subtitle: '${appState.defaultPlaybackSpeed}x',
                     onTap: () => _showPlaybackSpeedDialog(context, appState),
+                    isTablet: isTablet,
                   ),
                   _ToggleTile(
                     icon: Icons.play_circle_rounded,
@@ -165,6 +183,7 @@ class SettingsPage extends StatelessWidget {
                     subtitle: 'Start playing when opening a surah',
                     value: appState.autoPlayOnPageOpen,
                     onChanged: appState.setAutoPlayOnPageOpen,
+                    isTablet: isTablet,
                   ),
                 ],
               ),
@@ -172,6 +191,7 @@ class SettingsPage extends StatelessWidget {
               // Accessibility section
               _SettingsSection(
                 title: 'Accessibility',
+                isTablet: isTablet,
                 children: [
                   _ToggleTile(
                     icon: Icons.pan_tool_rounded,
@@ -179,6 +199,7 @@ class SettingsPage extends StatelessWidget {
                     subtitle: 'Move controls to the left side',
                     value: appState.isLeftHanded,
                     onChanged: appState.setLeftHanded,
+                    isTablet: isTablet,
                   ),
                 ],
               ),
@@ -186,12 +207,14 @@ class SettingsPage extends StatelessWidget {
               // About section
               _SettingsSection(
                 title: 'About',
+                isTablet: isTablet,
                 children: [
                   _SettingsTile(
                     icon: Icons.info_outline_rounded,
                     title: 'App Version',
                     subtitle: '1.0.0',
                     onTap: () {},
+                    isTablet: isTablet,
                   ),
                   _SettingsTile(
                     icon: Icons.favorite_rounded,
@@ -199,6 +222,7 @@ class SettingsPage extends StatelessWidget {
                     onTap: () {
                       // TODO: Open app store
                     },
+                    isTablet: isTablet,
                   ),
                   _SettingsTile(
                     icon: Icons.share_rounded,
@@ -206,11 +230,12 @@ class SettingsPage extends StatelessWidget {
                     onTap: () {
                       // TODO: Share app
                     },
+                    isTablet: isTablet,
                   ),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: isTablet ? 32 : 24),
 
               // Reset progress warning
               Center(
@@ -221,12 +246,13 @@ class SettingsPage extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.error,
                       fontWeight: FontWeight.w500,
+                      fontSize: isTablet ? 16 : 14,
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 40),
+              SizedBox(height: isTablet ? 48 : 40),
             ],
               ),
             ),
@@ -475,10 +501,12 @@ class SettingsPage extends StatelessWidget {
 class _SettingsSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
+  final bool isTablet;
 
   const _SettingsSection({
     required this.title,
     required this.children,
+    this.isTablet = false,
   });
 
   @override
@@ -490,14 +518,14 @@ class _SettingsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
+          padding: EdgeInsets.only(left: 4, top: isTablet ? 24 : 16, bottom: isTablet ? 12 : 8),
           child: Text(
             title.toUpperCase(),
             style: AppTypography.label(
               color: isDark
                   ? AppColors.darkTextSecondary
                   : AppColors.textSecondary,
-            ),
+            ).copyWith(fontSize: isTablet ? 14 : 12),
           ),
         ),
         ...children,
@@ -509,25 +537,29 @@ class _SettingsSection extends StatelessWidget {
 class _ProfileCard extends StatelessWidget {
   final String name;
   final VoidCallback onTap;
+  final bool isTablet;
 
   const _ProfileCard({
     required this.name,
     required this.onTap,
+    this.isTablet = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final avatarSize = isTablet ? 64.0 : 56.0;
+    final iconSize = isTablet ? 32.0 : 28.0;
 
     return ElegantCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
       child: Row(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: avatarSize,
+            height: avatarSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: theme.colorScheme.primary.withValues(alpha: 0.1),
@@ -535,10 +567,10 @@ class _ProfileCard extends StatelessWidget {
             child: Icon(
               Icons.person_rounded,
               color: theme.colorScheme.primary,
-              size: 28,
+              size: iconSize,
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,7 +581,7 @@ class _ProfileCard extends StatelessWidget {
                     color: isDark
                         ? AppColors.darkTextPrimary
                         : AppColors.textPrimary,
-                  ),
+                  ).copyWith(fontSize: isTablet ? 20 : 18),
                 ),
                 Text(
                   'Tap to edit',
@@ -557,7 +589,7 @@ class _ProfileCard extends StatelessWidget {
                     color: isDark
                         ? AppColors.darkTextSecondary
                         : AppColors.textSecondary,
-                  ),
+                  ).copyWith(fontSize: isTablet ? 14 : 12),
                 ),
               ],
             ),
@@ -567,6 +599,7 @@ class _ProfileCard extends StatelessWidget {
             color: isDark
                 ? AppColors.darkTextSecondary
                 : AppColors.textTertiary,
+            size: isTablet ? 26 : 24,
           ),
         ],
       ),
@@ -577,10 +610,12 @@ class _ProfileCard extends StatelessWidget {
 class _ThemeSelector extends StatelessWidget {
   final AppThemeMode currentTheme;
   final Function(AppThemeMode) onThemeChanged;
+  final bool isTablet;
 
   const _ThemeSelector({
     required this.currentTheme,
     required this.onThemeChanged,
+    this.isTablet = false,
   });
 
   @override
@@ -589,7 +624,7 @@ class _ThemeSelector extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return ElegantCard(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -599,9 +634,9 @@ class _ThemeSelector extends StatelessWidget {
               color: isDark
                   ? AppColors.darkTextPrimary
                   : AppColors.textPrimary,
-            ),
+            ).copyWith(fontSize: isTablet ? 20 : 18),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isTablet ? 20 : 16),
           Row(
             children: [
               _ThemeOption(
@@ -609,27 +644,31 @@ class _ThemeSelector extends StatelessWidget {
                 colors: [AppColors.cream, AppColors.forestGreen],
                 isSelected: currentTheme == AppThemeMode.light,
                 onTap: () => onThemeChanged(AppThemeMode.light),
+                isTablet: isTablet,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isTablet ? 16 : 12),
               _ThemeOption(
                 name: 'Dark',
                 colors: [AppColors.darkBackground, AppColors.softRose],
                 isSelected: currentTheme == AppThemeMode.dark,
                 onTap: () => onThemeChanged(AppThemeMode.dark),
+                isTablet: isTablet,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isTablet ? 16 : 12),
               _ThemeOption(
                 name: 'Rose Gold',
                 colors: [AppColors.roseGoldBackground, AppColors.roseGoldPrimary],
                 isSelected: currentTheme == AppThemeMode.roseGold,
                 onTap: () => onThemeChanged(AppThemeMode.roseGold),
+                isTablet: isTablet,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isTablet ? 16 : 12),
               _ThemeOption(
                 name: 'Olive',
                 colors: [AppColors.oliveCream, AppColors.oliveGreen],
                 isSelected: currentTheme == AppThemeMode.oliveCream,
                 onTap: () => onThemeChanged(AppThemeMode.oliveCream),
+                isTablet: isTablet,
               ),
             ],
           ),
@@ -644,12 +683,14 @@ class _ThemeOption extends StatelessWidget {
   final List<Color> colors;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isTablet;
 
   const _ThemeOption({
     required this.name,
     required this.colors,
     required this.isSelected,
     required this.onTap,
+    this.isTablet = false,
   });
 
   @override
@@ -662,14 +703,14 @@ class _ThemeOption extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              height: 50,
+              height: isTablet ? 60 : 50,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: colors,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
                 border: Border.all(
                   color: isSelected
                       ? theme.colorScheme.primary
@@ -678,11 +719,11 @@ class _ThemeOption extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: isTablet ? 10 : 8),
             Text(
               name,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: isTablet ? 13 : 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 color: isSelected
                     ? theme.colorScheme.primary
@@ -701,12 +742,14 @@ class _SettingsTile extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
+  final bool isTablet;
 
   const _SettingsTile({
     required this.icon,
     required this.title,
     this.subtitle,
     required this.onTap,
+    this.isTablet = false,
   });
 
   @override
@@ -716,16 +759,19 @@ class _SettingsTile extends StatelessWidget {
 
     return ElegantCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 20 : 16,
+        vertical: isTablet ? 18 : 14,
+      ),
+      margin: EdgeInsets.only(bottom: isTablet ? 10 : 8),
       child: Row(
         children: [
           Icon(
             icon,
             color: theme.colorScheme.primary,
-            size: 24,
+            size: isTablet ? 28 : 24,
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -736,7 +782,7 @@ class _SettingsTile extends StatelessWidget {
                     color: isDark
                         ? AppColors.darkTextPrimary
                         : AppColors.textPrimary,
-                  ),
+                  ).copyWith(fontSize: isTablet ? 18 : 16),
                 ),
                 if (subtitle != null)
                   Text(
@@ -745,7 +791,7 @@ class _SettingsTile extends StatelessWidget {
                       color: isDark
                           ? AppColors.darkTextSecondary
                           : AppColors.textSecondary,
-                    ),
+                    ).copyWith(fontSize: isTablet ? 14 : 12),
                   ),
               ],
             ),
@@ -755,6 +801,7 @@ class _SettingsTile extends StatelessWidget {
             color: isDark
                 ? AppColors.darkTextSecondary
                 : AppColors.textTertiary,
+            size: isTablet ? 28 : 24,
           ),
         ],
       ),
@@ -768,6 +815,7 @@ class _ToggleTile extends StatelessWidget {
   final String? subtitle;
   final bool value;
   final Function(bool) onChanged;
+  final bool isTablet;
 
   const _ToggleTile({
     required this.icon,
@@ -775,6 +823,7 @@ class _ToggleTile extends StatelessWidget {
     this.subtitle,
     required this.value,
     required this.onChanged,
+    this.isTablet = false,
   });
 
   @override
@@ -783,16 +832,19 @@ class _ToggleTile extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return ElegantCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 20 : 16,
+        vertical: isTablet ? 14 : 10,
+      ),
+      margin: EdgeInsets.only(bottom: isTablet ? 10 : 8),
       child: Row(
         children: [
           Icon(
             icon,
             color: theme.colorScheme.primary,
-            size: 24,
+            size: isTablet ? 28 : 24,
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -803,7 +855,7 @@ class _ToggleTile extends StatelessWidget {
                     color: isDark
                         ? AppColors.darkTextPrimary
                         : AppColors.textPrimary,
-                  ),
+                  ).copyWith(fontSize: isTablet ? 18 : 16),
                 ),
                 if (subtitle != null)
                   Text(
@@ -812,14 +864,17 @@ class _ToggleTile extends StatelessWidget {
                       color: isDark
                           ? AppColors.darkTextSecondary
                           : AppColors.textSecondary,
-                    ),
+                    ).copyWith(fontSize: isTablet ? 14 : 12),
                   ),
               ],
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
+          Transform.scale(
+            scale: isTablet ? 1.15 : 1.0,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+            ),
           ),
         ],
       ),
@@ -934,14 +989,18 @@ class _SelectionOption extends StatelessWidget {
 
 /// Tajweed legend tile showing all color codes
 class _TajweedLegendTile extends StatelessWidget {
+  final bool isTablet;
+
+  const _TajweedLegendTile({this.isTablet = false});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return ElegantCard(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      margin: EdgeInsets.only(bottom: isTablet ? 10 : 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -950,26 +1009,26 @@ class _TajweedLegendTile extends StatelessWidget {
               Icon(
                 Icons.color_lens_rounded,
                 color: theme.colorScheme.primary,
-                size: 24,
+                size: isTablet ? 28 : 24,
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: isTablet ? 20 : 16),
               Text(
                 'Tajweed Color Legend',
                 style: AppTypography.bodyLarge(
                   color: isDark
                       ? AppColors.darkTextPrimary
                       : AppColors.textPrimary,
-                ),
+                ).copyWith(fontSize: isTablet ? 18 : 16),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isTablet ? 20 : 16),
           Wrap(
-            spacing: 16,
-            runSpacing: 12,
+            spacing: isTablet ? 20 : 16,
+            runSpacing: isTablet ? 16 : 12,
             children: TajweedRule.values
                 .where((rule) => rule != TajweedRule.normal)
-                .map((rule) => _TajweedColorItem(rule: rule))
+                .map((rule) => _TajweedColorItem(rule: rule, isTablet: isTablet))
                 .toList(),
           ),
         ],
@@ -980,8 +1039,9 @@ class _TajweedLegendTile extends StatelessWidget {
 
 class _TajweedColorItem extends StatelessWidget {
   final TajweedRule rule;
+  final bool isTablet;
 
-  const _TajweedColorItem({required this.rule});
+  const _TajweedColorItem({required this.rule, this.isTablet = false});
 
   @override
   Widget build(BuildContext context) {
@@ -992,14 +1052,14 @@ class _TajweedColorItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 16,
-          height: 16,
+          width: isTablet ? 20 : 16,
+          height: isTablet ? 20 : 16,
           decoration: BoxDecoration(
             color: rule.color,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(isTablet ? 5 : 4),
           ),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: isTablet ? 8 : 6),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -1007,7 +1067,7 @@ class _TajweedColorItem extends StatelessWidget {
             Text(
               rule.englishName.split(' ').first,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: isTablet ? 14 : 12,
                 fontWeight: FontWeight.w500,
                 color: isDark
                     ? AppColors.darkTextPrimary
@@ -1017,7 +1077,7 @@ class _TajweedColorItem extends StatelessWidget {
             Text(
               rule.arabicName,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: isTablet ? 12 : 10,
                 fontFamily: 'Amiri',
                 color: isDark
                     ? AppColors.darkTextSecondary

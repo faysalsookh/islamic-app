@@ -4,6 +4,7 @@ import '../../../core/models/surah.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/elegant_card.dart';
+import '../../../core/utils/responsive.dart';
 
 /// Page displaying all 30 Juz of the Quran
 class JuzListPage extends StatelessWidget {
@@ -13,6 +14,8 @@ class JuzListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isTablet = Responsive.isTabletOrLarger(context);
+    final horizontalPadding = Responsive.horizontalPadding(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -32,16 +35,23 @@ class JuzListPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: JuzData.allJuz.length,
-        itemBuilder: (context, index) {
-          final juz = JuzData.allJuz[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _JuzListTile(juz: juz),
-          );
-        },
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isTablet ? 800 : double.infinity,
+          ),
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: isTablet ? 16 : 8),
+            itemCount: JuzData.allJuz.length,
+            itemBuilder: (context, index) {
+              final juz = JuzData.allJuz[index];
+              return Padding(
+                padding: EdgeInsets.only(bottom: isTablet ? 16 : 12),
+                child: _JuzListTile(juz: juz, isTablet: isTablet),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -49,8 +59,9 @@ class JuzListPage extends StatelessWidget {
 
 class _JuzListTile extends StatelessWidget {
   final Juz juz;
+  final bool isTablet;
 
-  const _JuzListTile({required this.juz});
+  const _JuzListTile({required this.juz, this.isTablet = false});
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +78,12 @@ class _JuzListTile extends StatelessWidget {
       orElse: () => SurahData.surahs.first,
     );
 
+    // Responsive sizes
+    final badgeSize = isTablet ? 64.0 : 56.0;
+    final juzLabelFontSize = isTablet ? 12.0 : 10.0;
+    final juzNumberFontSize = isTablet ? 24.0 : 20.0;
+    final arabicNameFontSize = isTablet ? 18.0 : 16.0;
+
     return ElegantCard(
       onTap: () {
         // Navigate to Quran reader at the start of this Juz
@@ -76,17 +93,17 @@ class _JuzListTile extends StatelessWidget {
           arguments: juz.startSurah,
         );
       },
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
       backgroundColor: isDark ? AppColors.darkCard : Colors.white,
       child: Row(
         children: [
           // Juz number badge
           Container(
-            width: 56,
-            height: 56,
+            width: badgeSize,
+            height: badgeSize,
             decoration: BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -94,7 +111,7 @@ class _JuzListTile extends StatelessWidget {
                 Text(
                   'جزء',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: juzLabelFontSize,
                     fontFamily: 'Amiri',
                     color: theme.colorScheme.primary,
                   ),
@@ -102,7 +119,7 @@ class _JuzListTile extends StatelessWidget {
                 Text(
                   _toArabicNumber(juz.number),
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: juzNumberFontSize,
                     fontFamily: 'Amiri',
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -111,7 +128,7 @@ class _JuzListTile extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isTablet ? 20 : 16),
 
           // Juz info
           Expanded(
@@ -128,18 +145,18 @@ class _JuzListTile extends StatelessWidget {
                             : AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: isTablet ? 12 : 8),
                     Text(
                       juz.nameArabic,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: arabicNameFontSize,
                         fontFamily: 'Amiri',
                         color: theme.colorScheme.primary,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: isTablet ? 6 : 4),
                 Text(
                   juz.nameTransliteration,
                   style: AppTypography.bodyMedium(
@@ -148,7 +165,7 @@ class _JuzListTile extends StatelessWidget {
                         : AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: isTablet ? 12 : 8),
                 // Range info
                 Row(
                   children: [
@@ -157,21 +174,23 @@ class _JuzListTile extends StatelessWidget {
                       isDark,
                       'Start',
                       '${startSurah.nameTransliteration} ${juz.startAyah}',
+                      isTablet,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: isTablet ? 12 : 8),
                     Icon(
                       Icons.arrow_forward_rounded,
-                      size: 14,
+                      size: isTablet ? 16 : 14,
                       color: isDark
                           ? AppColors.darkTextSecondary
                           : AppColors.textTertiary,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: isTablet ? 12 : 8),
                     _buildRangeChip(
                       context,
                       isDark,
                       'End',
                       '${endSurah.nameTransliteration} ${juz.endAyah}',
+                      isTablet,
                     ),
                   ],
                 ),
@@ -185,6 +204,7 @@ class _JuzListTile extends StatelessWidget {
             color: isDark
                 ? AppColors.darkTextSecondary
                 : AppColors.textTertiary,
+            size: isTablet ? 28 : 24,
           ),
         ],
       ),
@@ -196,14 +216,18 @@ class _JuzListTile extends StatelessWidget {
     bool isDark,
     String label,
     String value,
+    bool isTablet,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 10 : 8,
+        vertical: isTablet ? 6 : 4,
+      ),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.05)
             : Colors.black.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,7 +235,7 @@ class _JuzListTile extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 9,
+              fontSize: isTablet ? 10 : 9,
               fontWeight: FontWeight.w600,
               color: isDark
                   ? AppColors.darkTextSecondary
@@ -222,7 +246,7 @@ class _JuzListTile extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: isTablet ? 13 : 11,
               color: isDark
                   ? AppColors.darkTextPrimary
                   : AppColors.textSecondary,

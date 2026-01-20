@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/tajweed_rules_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/responsive.dart';
 import '../widgets/tajweed_rule_card.dart';
 
 // ArabicLetter and ArabicAlphabetData are imported from tajweed_rules_data.dart
@@ -14,62 +15,69 @@ class TajweedRulesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isTablet = Responsive.isTabletOrLarger(context);
+    final horizontalPadding = Responsive.horizontalPadding(context);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.cream,
-      body: CustomScrollView(
-        slivers: [
-          // App Bar
-          SliverAppBar(
-            expandedHeight: 200,
-            floating: false,
-            pinned: true,
-            backgroundColor: isDark ? AppColors.darkCard : AppColors.forestGreen,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
-                'তাজবীদের নিয়মাবলী',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            AppColors.darkCard,
-                            AppColors.darkCard.withOpacity(0.8),
-                          ]
-                        : [
-                            AppColors.forestGreen,
-                            AppColors.forestGreen.withOpacity(0.8),
-                          ],
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.auto_stories_rounded,
-                    size: 80,
-                    color: Colors.white.withOpacity(0.2),
-                  ),
-                ),
-              ),
-            ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isTablet ? 900 : double.infinity,
           ),
+          child: CustomScrollView(
+            slivers: [
+              // App Bar
+              SliverAppBar(
+                expandedHeight: isTablet ? 240 : 200,
+                floating: false,
+                pinned: true,
+                backgroundColor: isDark ? AppColors.darkCard : AppColors.forestGreen,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  title: Text(
+                    'তাজবীদের নিয়মাবলী',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isTablet ? 22 : 18,
+                    ),
+                  ),
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [
+                                AppColors.darkCard,
+                                AppColors.darkCard.withOpacity(0.8),
+                              ]
+                            : [
+                                AppColors.forestGreen,
+                                AppColors.forestGreen.withOpacity(0.8),
+                              ],
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.auto_stories_rounded,
+                        size: isTablet ? 100 : 80,
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
-          // Introduction
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(20),
+              // Introduction
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: EdgeInsets.all(horizontalPadding),
+                  padding: EdgeInsets.all(isTablet ? 24 : 20),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkCard : Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -139,7 +147,7 @@ class TajweedRulesPage extends StatelessWidget {
           // Section header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              padding: EdgeInsets.fromLTRB(horizontalPadding, isTablet ? 32 : 24, horizontalPadding, 8),
               child: Row(
                 children: [
                   Container(
@@ -181,7 +189,7 @@ class TajweedRulesPage extends StatelessWidget {
           // Arabic Alphabet Section header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
+              padding: EdgeInsets.fromLTRB(horizontalPadding, isTablet ? 40 : 32, horizontalPadding, 8),
               child: Row(
                 children: [
                   Container(
@@ -225,8 +233,8 @@ class TajweedRulesPage extends StatelessWidget {
           // Arabic Alphabet description
           SliverToBoxAdapter(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
+              margin: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
+              padding: EdgeInsets.all(isTablet ? 20 : 16),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkCard : Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -251,18 +259,18 @@ class TajweedRulesPage extends StatelessWidget {
 
           // Arabic Alphabet Grid
           SliverPadding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(horizontalPadding),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.1,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: isTablet ? 3 : 2,
+                childAspectRatio: isTablet ? 1.0 : 1.1,
+                crossAxisSpacing: isTablet ? 16 : 12,
+                mainAxisSpacing: isTablet ? 16 : 12,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final letter = ArabicAlphabetData.allLetters[index];
-                  return _ArabicLetterCard(letter: letter, isDark: isDark);
+                  return _ArabicLetterCard(letter: letter, isDark: isDark, isTablet: isTablet);
                 },
                 childCount: ArabicAlphabetData.allLetters.length,
               ),
@@ -272,7 +280,7 @@ class TajweedRulesPage extends StatelessWidget {
           // Waqf Signs Section header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
+              padding: EdgeInsets.fromLTRB(horizontalPadding, isTablet ? 40 : 32, horizontalPadding, 8),
               child: Row(
                 children: [
                   Container(
@@ -316,8 +324,8 @@ class TajweedRulesPage extends StatelessWidget {
           // Waqf description
           SliverToBoxAdapter(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
+              margin: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
+              padding: EdgeInsets.all(isTablet ? 20 : 16),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkCard : Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -345,7 +353,7 @@ class TajweedRulesPage extends StatelessWidget {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final sign = WaqfSignsData.allSigns[index];
-                return _WaqfSignCard(sign: sign, isDark: isDark, index: index + 1);
+                return _WaqfSignCard(sign: sign, isDark: isDark, index: index + 1, isTablet: isTablet, horizontalPadding: horizontalPadding);
               },
               childCount: WaqfSignsData.allSigns.length,
             ),
@@ -354,7 +362,7 @@ class TajweedRulesPage extends StatelessWidget {
           // Translation Color Info Section header
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
+              padding: EdgeInsets.fromLTRB(horizontalPadding, isTablet ? 40 : 32, horizontalPadding, 8),
               child: Row(
                 children: [
                   Container(
@@ -400,17 +408,19 @@ class TajweedRulesPage extends StatelessWidget {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final colorInfo = TranslationColorsData.allColors[index];
-                return _TranslationColorCard(colorInfo: colorInfo, isDark: isDark);
+                return _TranslationColorCard(colorInfo: colorInfo, isDark: isDark, isTablet: isTablet, horizontalPadding: horizontalPadding);
               },
               childCount: TranslationColorsData.allColors.length,
             ),
           ),
 
           // Bottom spacing
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 32),
+          SliverToBoxAdapter(
+            child: SizedBox(height: isTablet ? 48 : 32),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
 
       // Floating action button to view original guide image
@@ -478,18 +488,24 @@ class TajweedRulesPage extends StatelessWidget {
 class _ArabicLetterCard extends StatelessWidget {
   final ArabicLetter letter;
   final bool isDark;
+  final bool isTablet;
 
   const _ArabicLetterCard({
     required this.letter,
     required this.isDark,
+    this.isTablet = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final letterFontSize = isTablet ? 50.0 : 42.0;
+    final nameFontSize = isTablet ? 16.0 : 14.0;
+    final pronunciationFontSize = isTablet ? 14.0 : 12.0;
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
         boxShadow: [
           BoxShadow(
             color: isDark ? Colors.black26 : AppColors.cardShadow,
@@ -501,10 +517,10 @@ class _ArabicLetterCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
           onTap: () => _showLetterDetail(context),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(isTablet ? 16 : 12),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -512,38 +528,38 @@ class _ArabicLetterCard extends StatelessWidget {
                 Text(
                   letter.letter,
                   style: TextStyle(
-                    fontSize: 42,
+                    fontSize: letterFontSize,
                     fontFamily: 'Amiri',
                     color: isDark ? AppColors.softRose : AppColors.forestGreen,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: isTablet ? 6 : 4),
                 // Bengali Name
                 Text(
                   letter.nameBengali,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: nameFontSize,
                     fontWeight: FontWeight.w600,
                     color: isDark
                         ? AppColors.darkTextPrimary
                         : AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: isTablet ? 4 : 2),
                 // Pronunciation
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 10 : 8, vertical: isTablet ? 4 : 2),
                   decoration: BoxDecoration(
                     color: isDark
                         ? AppColors.softRose.withValues(alpha: 0.2)
                         : AppColors.forestGreen.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
                   ),
                   child: Text(
                     letter.pronunciationBengali,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: pronunciationFontSize,
                       color: isDark ? AppColors.softRose : AppColors.forestGreen,
                       fontWeight: FontWeight.w500,
                     ),
@@ -686,11 +702,15 @@ class _WaqfSignCard extends StatelessWidget {
   final WaqfSign sign;
   final bool isDark;
   final int index;
+  final bool isTablet;
+  final double horizontalPadding;
 
   const _WaqfSignCard({
     required this.sign,
     required this.isDark,
     required this.index,
+    this.isTablet = false,
+    this.horizontalPadding = 16,
   });
 
   @override
@@ -718,11 +738,17 @@ class _WaqfSignCard extends StatelessWidget {
       statusIcon = Icons.info_rounded;
     }
 
+    final indexBadgeSize = isTablet ? 36.0 : 32.0;
+    final symbolBoxSize = isTablet ? 56.0 : 48.0;
+    final symbolFontSize = isTablet ? 28.0 : 24.0;
+    final nameFontSize = isTablet ? 18.0 : 16.0;
+    final subtitleFontSize = isTablet ? 14.0 : 12.0;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: isTablet ? 8 : 6),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
         boxShadow: [
           BoxShadow(
             color: isDark ? Colors.black26 : AppColors.cardShadow,
@@ -734,41 +760,41 @@ class _WaqfSignCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
           onTap: () => _showSignDetail(context, statusColor, statusText, statusIcon),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isTablet ? 20 : 16),
             child: Row(
               children: [
                 // Index number
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: indexBadgeSize,
+                  height: indexBadgeSize,
                   decoration: BoxDecoration(
                     color: isDark
                         ? AppColors.softRose.withValues(alpha: 0.2)
                         : AppColors.forestGreen.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
                   ),
                   child: Center(
                     child: Text(
                       index.toString().padLeft(2, '0'),
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: isTablet ? 14 : 12,
                         fontWeight: FontWeight.bold,
                         color: isDark ? AppColors.softRose : AppColors.forestGreen,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: isTablet ? 16 : 12),
                 // Symbol
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: symbolBoxSize,
+                  height: symbolBoxSize,
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
                     border: Border.all(
                       color: statusColor.withValues(alpha: 0.3),
                       width: 1,
@@ -778,7 +804,7 @@ class _WaqfSignCard extends StatelessWidget {
                     child: Text(
                       sign.symbol,
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: symbolFontSize,
                         fontFamily: 'Amiri',
                         color: statusColor,
                         fontWeight: FontWeight.bold,
@@ -786,7 +812,7 @@ class _WaqfSignCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: isTablet ? 20 : 16),
                 // Names
                 Expanded(
                   child: Column(
@@ -795,18 +821,18 @@ class _WaqfSignCard extends StatelessWidget {
                       Text(
                         sign.nameBengali,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: nameFontSize,
                           fontWeight: FontWeight.bold,
                           color: isDark
                               ? AppColors.darkTextPrimary
                               : AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: isTablet ? 4 : 2),
                       Text(
                         sign.nameEnglish,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: subtitleFontSize,
                           color: isDark
                               ? AppColors.darkTextSecondary
                               : AppColors.textSecondary,
@@ -819,7 +845,7 @@ class _WaqfSignCard extends StatelessWidget {
                 Icon(
                   statusIcon,
                   color: statusColor,
-                  size: 24,
+                  size: isTablet ? 28 : 24,
                 ),
               ],
             ),
@@ -957,19 +983,27 @@ class _WaqfSignCard extends StatelessWidget {
 class _TranslationColorCard extends StatelessWidget {
   final TranslationColorInfo colorInfo;
   final bool isDark;
+  final bool isTablet;
+  final double horizontalPadding;
 
   const _TranslationColorCard({
     required this.colorInfo,
     required this.isDark,
+    this.isTablet = false,
+    this.horizontalPadding = 16,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorBoxSize = isTablet ? 56.0 : 48.0;
+    final nameFontSize = isTablet ? 18.0 : 16.0;
+    final descriptionFontSize = isTablet ? 16.0 : 14.0;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: isTablet ? 8 : 6),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
         boxShadow: [
           BoxShadow(
             color: isDark ? Colors.black26 : AppColors.cardShadow,
@@ -979,19 +1013,19 @@ class _TranslationColorCard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(isTablet ? 20 : 16),
         child: Row(
           children: [
             // Color indicator
             Container(
-              width: 48,
-              height: 48,
+              width: colorBoxSize,
+              height: colorBoxSize,
               decoration: BoxDecoration(
                 color: colorInfo.color,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: isTablet ? 20 : 16),
             // Info
             Expanded(
               child: Column(
@@ -1000,16 +1034,16 @@ class _TranslationColorCard extends StatelessWidget {
                   Text(
                     colorInfo.nameBengali,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: nameFontSize,
                       fontWeight: FontWeight.bold,
                       color: colorInfo.color,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: isTablet ? 6 : 4),
                   Text(
                     colorInfo.descriptionBengali,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: descriptionFontSize,
                       color: isDark
                           ? AppColors.darkTextSecondary
                           : AppColors.textSecondary,
