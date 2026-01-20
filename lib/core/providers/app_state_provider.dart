@@ -110,16 +110,16 @@ class AppStateProvider extends ChangeNotifier {
   ArabicFontStyle get arabicFontStyle => _arabicFontStyle;
 
   // ============== READING SETTINGS ==============
-  TranslationLanguage _translationLanguage = TranslationLanguage.english;
+  TranslationLanguage _translationLanguage = TranslationLanguage.bengali;
   TranslationLanguage get translationLanguage => _translationLanguage;
 
-  TransliterationLanguage _transliterationLanguage = TransliterationLanguage.none;
+  TransliterationLanguage _transliterationLanguage = TransliterationLanguage.bengali;
   TransliterationLanguage get transliterationLanguage => _transliterationLanguage;
 
   bool _showTranslation = true;
   bool get showTranslation => _showTranslation;
 
-  bool _showTransliteration = false;
+  bool _showTransliteration = true;
   bool get showTransliteration => _showTransliteration;
 
   bool _isMushafView = false; // false = Ayah list view, true = Mushaf view
