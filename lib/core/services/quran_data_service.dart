@@ -7,10 +7,18 @@ import '../data/shohoz_quran_transliterations.dart';
 import 'transliteration_service.dart';
 
 /// Service for fetching and caching Quran data from APIs
-/// Uses Al-Quran Cloud API for comprehensive Quran data
-/// Bengali translation: Muhiuddin Khan (bn.bengali)
-/// English translation: Sahih International (en.sahih)
-/// Bengali transliteration: Fetched from API and converted to Bengali script
+///
+/// Primary API: Quran.com API v4 (authenticated, comprehensive)
+/// Fallback API: Al-Quran Cloud API
+///
+/// Features:
+/// - Arabic text (Uthmani script)
+/// - Bengali translation (Taisirul Quran, Dr. Abu Bakr Zakaria)
+/// - English translation (Sahih International)
+/// - Bengali transliteration (সহজ কুরআন + API conversion)
+/// - Bengali Tafsir (Ibn Kathir, Ahsanul Bayaan, Abu Bakr Zakaria)
+/// - Shani Nuzul (Context of revelation)
+/// - Audio URLs
 class QuranDataService extends ChangeNotifier {
   static final QuranDataService _instance = QuranDataService._internal();
   factory QuranDataService() => _instance;
@@ -21,20 +29,37 @@ class QuranDataService extends ChangeNotifier {
 
   // Cache for loaded surahs
   final Map<int, List<Ayah>> _ayahCache = {};
+  final Map<String, String> _tafsirCache = {};
   bool _isLoading = false;
   String? _error;
 
-  // API endpoints - Al-Quran Cloud API
-  static const String _baseUrl = 'https://api.alquran.cloud/v1';
+  // ============================================================
+  // API CONFIGURATION - Quran.com API v4 (Primary)
+  // ============================================================
+  static const String _quranComBaseUrl = 'https://api.quran.com/api/v4';
 
-  // Bengali translation by Muhiuddin Khan - Most popular Bengali translation
-  static const String _bengaliTranslationEdition = 'bn.bengali';
+  // Bengali Translation IDs (Quran.com)
+  static const int _bengaliTaisirul = 161;      // Taisirul Quran - Most accurate
+  static const int _bengaliRawai = 162;          // Rawai Al-bayan
+  static const int _bengaliMujibur = 163;        // Sheikh Mujibur Rahman
+  static const int _bengaliAbuBakr = 213;        // Dr. Abu Bakr Zakaria
 
-  // English translation - Sahih International
-  static const String _englishTranslationEdition = 'en.sahih';
+  // Bengali Tafsir IDs (Quran.com)
+  static const int _tafsirIbnKathir = 164;       // Tafseer ibn Kathir (Bengali)
+  static const int _tafsirAhsanulBayaan = 165;   // Tafsir Ahsanul Bayaan (Bengali)
+  static const int _tafsirAbuBakrZakaria = 166;  // Tafsir Abu Bakr Zakaria (Bengali)
+  static const int _tafsirFathulMajid = 381;     // Tafsir Fathul Majid (Bengali)
 
-  // Arabic text - Uthmani script
-  static const String _arabicEdition = 'quran-uthmani';
+  // ============================================================
+  // API CONFIGURATION - Al-Quran Cloud (Fallback)
+  // ============================================================
+  static const String _alQuranCloudBaseUrl = 'https://api.alquran.cloud/v1';
+  static const String _bengaliTranslationEdition = 'bn.bengali';  // Muhiuddin Khan
+  static const String _englishTranslationEdition = 'en.sahih';    // Sahih International
+  static const String _arabicEdition = 'quran-uthmani';           // Uthmani script
+
+  // Cache version - increment when data structure changes
+  static const String _cacheVersion = 'v5';
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -58,86 +83,35 @@ class QuranDataService extends ChangeNotifier {
     return await _fetchSurahFromApi(surahNumber);
   }
 
-  /// Fetch surah data from API with Arabic, Bengali, English, and Transliteration
+  /// Fetch surah data from API with Arabic, Bengali, English, Transliteration, and Tafsir
+  /// Primary: Quran.com API v4 (comprehensive data)
+  /// Fallback: Al-Quran Cloud API
   Future<List<Ayah>> _fetchSurahFromApi(int surahNumber) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Fetch all editions in parallel for better performance
-      // Including English transliteration for conversion to Bengali
-      final results = await Future.wait([
-        _fetchEdition(surahNumber, _arabicEdition),
-        _fetchEdition(surahNumber, _bengaliTranslationEdition),
-        _fetchEdition(surahNumber, _englishTranslationEdition),
-        _fetchEdition(surahNumber, 'en.transliteration'), // For Bengali transliteration
-      ]);
-
-      final arabicData = results[0];
-      final bengaliData = results[1];
-      final englishData = results[2];
-      final transliterationData = results[3];
-
-      if (arabicData == null) {
-        throw Exception('Failed to fetch Arabic text');
+      // Try Quran.com API v4 first (comprehensive data)
+      final quranComResult = await _fetchFromQuranComApi(surahNumber);
+      if (quranComResult != null && quranComResult.isNotEmpty) {
+        _ayahCache[surahNumber] = quranComResult;
+        await _saveToLocalCache(surahNumber, quranComResult);
+        _isLoading = false;
+        notifyListeners();
+        return quranComResult;
       }
 
-      // Build ayah list combining all editions
-      final List<Ayah> ayahs = [];
-      final arabicAyahs = arabicData['ayahs'] as List;
+      // Fallback to Al-Quran Cloud API
+      debugPrint('Falling back to Al-Quran Cloud API for surah $surahNumber');
+      final fallbackResult = await _fetchFromAlQuranCloudApi(surahNumber);
 
-      for (int i = 0; i < arabicAyahs.length; i++) {
-        final arabicAyah = arabicAyahs[i];
-        final bengaliAyah = bengaliData != null && i < (bengaliData['ayahs'] as List).length
-            ? (bengaliData['ayahs'] as List)[i]
-            : null;
-        final englishAyah = englishData != null && i < (englishData['ayahs'] as List).length
-            ? (englishData['ayahs'] as List)[i]
-            : null;
-        final translitAyah = transliterationData != null && i < (transliterationData['ayahs'] as List).length
-            ? (transliterationData['ayahs'] as List)[i]
-            : null;
-
-        final ayahNumberInSurah = arabicAyah['numberInSurah'] as int;
-
-        // Get Bengali transliteration:
-        // Priority 1: সহজ কুরআন (Shohoz Quran) - Most accurate
-        // Priority 2: Pre-defined transliterations
-        // Priority 3: API conversion (fallback)
-        String? bengaliTranslit = ShohozQuranTransliterations.getTransliteration(surahNumber, ayahNumberInSurah);
-        bengaliTranslit ??= _getAccurateBengaliTransliteration(surahNumber, ayahNumberInSurah);
-        final englishTranslit = translitAyah?['text'] as String?;
-
-        // If no pre-defined Bengali transliteration, convert from English API
-        if (bengaliTranslit == null && englishTranslit != null) {
-          bengaliTranslit = _transliterationService.convertToBengali(englishTranslit);
-        }
-
-        final ayah = Ayah(
-          number: arabicAyah['number'] as int,
-          numberInSurah: ayahNumberInSurah,
-          surahNumber: surahNumber,
-          textArabic: arabicAyah['text'] as String,
-          textWithTajweed: _generateTajweedMarkup(arabicAyah['text'] as String),
-          translationBengali: bengaliAyah?['text'] as String?,
-          translationEnglish: englishAyah?['text'] as String?,
-          transliterationBengali: bengaliTranslit,
-          transliterationEnglish: englishTranslit ?? _getAccurateEnglishTransliteration(surahNumber, ayahNumberInSurah),
-          juz: arabicAyah['juz'] as int? ?? 1,
-          page: arabicAyah['page'] as int? ?? 1,
-          hizbQuarter: arabicAyah['hizbQuarter'] as int? ?? 1,
-        );
-        ayahs.add(ayah);
-      }
-
-      // Cache the result
-      _ayahCache[surahNumber] = ayahs;
-      await _saveToLocalCache(surahNumber, ayahs);
+      _ayahCache[surahNumber] = fallbackResult;
+      await _saveToLocalCache(surahNumber, fallbackResult);
 
       _isLoading = false;
       notifyListeners();
-      return ayahs;
+      return fallbackResult;
     } catch (e) {
       _isLoading = false;
       _error = e.toString();
@@ -149,10 +123,362 @@ class QuranDataService extends ChangeNotifier {
     }
   }
 
-  /// Fetch a specific edition from the API
-  Future<Map<String, dynamic>?> _fetchEdition(int surahNumber, String edition) async {
+  /// Fetch from Quran.com API v4 - Primary API with comprehensive data
+  /// Returns null if API fails, allowing fallback to Al-Quran Cloud
+  Future<List<Ayah>?> _fetchFromQuranComApi(int surahNumber) async {
     try {
-      final url = '$_baseUrl/surah/$surahNumber/$edition';
+      // Fetch verses with translations
+      final versesUrl = Uri.parse(
+        '$_quranComBaseUrl/verses/by_chapter/$surahNumber'
+        '?language=bn'
+        '&words=false'
+        '&translations=$_bengaliTaisirul,$_bengaliAbuBakr'
+        '&fields=text_uthmani,text_uthmani_simple,verse_key,juz_number,page_number,hizb_number'
+        '&per_page=300',
+      );
+
+      final versesResponse = await http.get(versesUrl).timeout(
+        const Duration(seconds: 20),
+      );
+
+      if (versesResponse.statusCode != 200) {
+        debugPrint('Quran.com API failed: ${versesResponse.statusCode}');
+        return null;
+      }
+
+      final versesData = json.decode(versesResponse.body);
+      final verses = versesData['verses'] as List?;
+
+      if (verses == null || verses.isEmpty) {
+        return null;
+      }
+
+      // Fetch English translation from Al-Quran Cloud for comparison
+      final englishData = await _fetchAlQuranCloudEdition(surahNumber, _englishTranslationEdition);
+      final transliterationData = await _fetchAlQuranCloudEdition(surahNumber, 'en.transliteration');
+
+      // Build ayah list
+      final List<Ayah> ayahs = [];
+
+      for (int i = 0; i < verses.length; i++) {
+        final verse = verses[i];
+        final verseKey = verse['verse_key'] as String; // e.g., "1:1"
+        final parts = verseKey.split(':');
+        final ayahNumberInSurah = int.parse(parts[1]);
+
+        // Get Arabic text
+        final arabicText = verse['text_uthmani'] as String? ?? verse['text_uthmani_simple'] as String? ?? '';
+
+        // Get Bengali translation (prefer Taisirul Quran)
+        String? bengaliTranslation;
+        final translations = verse['translations'] as List?;
+        if (translations != null && translations.isNotEmpty) {
+          // Find Taisirul Quran first, then Abu Bakr Zakaria
+          for (final t in translations) {
+            if (t['resource_id'] == _bengaliTaisirul) {
+              bengaliTranslation = _cleanHtmlText(t['text'] as String?);
+              break;
+            }
+          }
+          bengaliTranslation ??= _cleanHtmlText(translations.first['text'] as String?);
+        }
+
+        // Get English translation from fallback
+        String? englishTranslation;
+        if (englishData != null && i < (englishData['ayahs'] as List).length) {
+          englishTranslation = (englishData['ayahs'] as List)[i]['text'] as String?;
+        }
+
+        // Get English transliteration
+        String? englishTranslit;
+        if (transliterationData != null && i < (transliterationData['ayahs'] as List).length) {
+          englishTranslit = (transliterationData['ayahs'] as List)[i]['text'] as String?;
+        }
+
+        // Get Bengali transliteration:
+        // Priority 1: সহজ কুরআন (Shohoz Quran) - Most accurate
+        // Priority 2: Pre-defined transliterations
+        // Priority 3: API conversion (fallback)
+        String? bengaliTranslit = ShohozQuranTransliterations.getTransliteration(surahNumber, ayahNumberInSurah);
+        bengaliTranslit ??= _getAccurateBengaliTransliteration(surahNumber, ayahNumberInSurah);
+        if (bengaliTranslit == null && englishTranslit != null) {
+          bengaliTranslit = _transliterationService.convertToBengali(englishTranslit);
+        }
+
+        final ayah = Ayah(
+          number: verse['id'] as int? ?? (surahNumber * 1000 + ayahNumberInSurah),
+          numberInSurah: ayahNumberInSurah,
+          surahNumber: surahNumber,
+          textArabic: arabicText,
+          textWithTajweed: _generateTajweedMarkup(arabicText),
+          translationBengali: bengaliTranslation,
+          translationEnglish: englishTranslation,
+          transliterationBengali: bengaliTranslit,
+          transliterationEnglish: englishTranslit ?? _getAccurateEnglishTransliteration(surahNumber, ayahNumberInSurah),
+          juz: verse['juz_number'] as int? ?? 1,
+          page: verse['page_number'] as int? ?? 1,
+          hizbQuarter: verse['hizb_number'] as int? ?? 1,
+        );
+        ayahs.add(ayah);
+      }
+
+      return ayahs;
+    } catch (e) {
+      debugPrint('Error fetching from Quran.com API: $e');
+      return null;
+    }
+  }
+
+  /// Fetch from Al-Quran Cloud API - Fallback API
+  Future<List<Ayah>> _fetchFromAlQuranCloudApi(int surahNumber) async {
+    // Fetch all editions in parallel for better performance
+    final results = await Future.wait([
+      _fetchAlQuranCloudEdition(surahNumber, _arabicEdition),
+      _fetchAlQuranCloudEdition(surahNumber, _bengaliTranslationEdition),
+      _fetchAlQuranCloudEdition(surahNumber, _englishTranslationEdition),
+      _fetchAlQuranCloudEdition(surahNumber, 'en.transliteration'),
+    ]);
+
+    final arabicData = results[0];
+    final bengaliData = results[1];
+    final englishData = results[2];
+    final transliterationData = results[3];
+
+    if (arabicData == null) {
+      throw Exception('Failed to fetch Arabic text');
+    }
+
+    // Build ayah list combining all editions
+    final List<Ayah> ayahs = [];
+    final arabicAyahs = arabicData['ayahs'] as List;
+
+    for (int i = 0; i < arabicAyahs.length; i++) {
+      final arabicAyah = arabicAyahs[i];
+      final bengaliAyah = bengaliData != null && i < (bengaliData['ayahs'] as List).length
+          ? (bengaliData['ayahs'] as List)[i]
+          : null;
+      final englishAyah = englishData != null && i < (englishData['ayahs'] as List).length
+          ? (englishData['ayahs'] as List)[i]
+          : null;
+      final translitAyah = transliterationData != null && i < (transliterationData['ayahs'] as List).length
+          ? (transliterationData['ayahs'] as List)[i]
+          : null;
+
+      final ayahNumberInSurah = arabicAyah['numberInSurah'] as int;
+
+      // Get Bengali transliteration with priority system
+      String? bengaliTranslit = ShohozQuranTransliterations.getTransliteration(surahNumber, ayahNumberInSurah);
+      bengaliTranslit ??= _getAccurateBengaliTransliteration(surahNumber, ayahNumberInSurah);
+      final englishTranslit = translitAyah?['text'] as String?;
+
+      if (bengaliTranslit == null && englishTranslit != null) {
+        bengaliTranslit = _transliterationService.convertToBengali(englishTranslit);
+      }
+
+      final ayah = Ayah(
+        number: arabicAyah['number'] as int,
+        numberInSurah: ayahNumberInSurah,
+        surahNumber: surahNumber,
+        textArabic: arabicAyah['text'] as String,
+        textWithTajweed: _generateTajweedMarkup(arabicAyah['text'] as String),
+        translationBengali: bengaliAyah?['text'] as String?,
+        translationEnglish: englishAyah?['text'] as String?,
+        transliterationBengali: bengaliTranslit,
+        transliterationEnglish: englishTranslit ?? _getAccurateEnglishTransliteration(surahNumber, ayahNumberInSurah),
+        juz: arabicAyah['juz'] as int? ?? 1,
+        page: arabicAyah['page'] as int? ?? 1,
+        hizbQuarter: arabicAyah['hizbQuarter'] as int? ?? 1,
+      );
+      ayahs.add(ayah);
+    }
+
+    return ayahs;
+  }
+
+  /// Clean HTML tags from API text responses
+  String? _cleanHtmlText(String? text) {
+    if (text == null) return null;
+    // Remove HTML tags like <sup>, </sup>, etc.
+    return text
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .trim();
+  }
+
+  /// Fetch Bengali Tafsir for a specific ayah
+  /// Returns tafsir text from Quran.com API
+  Future<String?> getBengaliTafsir(int surahNumber, int ayahNumber, {int? tafsirId}) async {
+    final key = '${tafsirId ?? _tafsirIbnKathir}:$surahNumber:$ayahNumber';
+
+    // Check cache first
+    if (_tafsirCache.containsKey(key)) {
+      return _tafsirCache[key];
+    }
+
+    try {
+      final selectedTafsirId = tafsirId ?? _tafsirIbnKathir;
+      final url = Uri.parse(
+        '$_quranComBaseUrl/tafsirs/$selectedTafsirId/by_ayah/$surahNumber:$ayahNumber',
+      );
+
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 15),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final tafsirData = data['tafsir'];
+        if (tafsirData != null) {
+          final text = _cleanHtmlText(tafsirData['text'] as String?);
+          if (text != null) {
+            _tafsirCache[key] = text;
+            return text;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching tafsir: $e');
+    }
+    return null;
+  }
+
+  /// Get available Bengali Tafsir options
+  static List<Map<String, dynamic>> getBengaliTafsirOptions() {
+    return [
+      {'id': _tafsirIbnKathir, 'name': 'তাফসীর ইবনে কাসীর', 'nameEn': 'Tafsir Ibn Kathir'},
+      {'id': _tafsirAhsanulBayaan, 'name': 'তাফসীর আহসানুল বায়ান', 'nameEn': 'Tafsir Ahsanul Bayaan'},
+      {'id': _tafsirAbuBakrZakaria, 'name': 'তাফসীর আবু বকর জাকারিয়া', 'nameEn': 'Tafsir Abu Bakr Zakaria'},
+      {'id': _tafsirFathulMajid, 'name': 'তাফসীর ফাতহুল মাজীদ', 'nameEn': 'Tafsir Fathul Majid'},
+    ];
+  }
+
+  /// Get available Bengali Translation options
+  static List<Map<String, dynamic>> getBengaliTranslationOptions() {
+    return [
+      {'id': _bengaliTaisirul, 'name': 'তাইসীরুল কুরআন', 'nameEn': 'Taisirul Quran'},
+      {'id': _bengaliAbuBakr, 'name': 'ড. আবু বকর জাকারিয়া', 'nameEn': 'Dr. Abu Bakr Zakaria'},
+      {'id': _bengaliMujibur, 'name': 'শেখ মুজিবুর রহমান', 'nameEn': 'Sheikh Mujibur Rahman'},
+      {'id': _bengaliRawai, 'name': 'রওয়াই আল-বায়ান', 'nameEn': 'Rawai Al-bayan'},
+    ];
+  }
+
+  /// Get Shani Nuzul (শানে নুযূল - Context of Revelation) for a surah
+  /// Returns Bengali text explaining when/why the surah was revealed
+  String? getShaniNuzul(int surahNumber) {
+    return _shaniNuzulData[surahNumber];
+  }
+
+  /// Get Shani Nuzul for a specific ayah if available
+  String? getAyahShaniNuzul(int surahNumber, int ayahNumber) {
+    final key = '$surahNumber:$ayahNumber';
+    return _ayahShaniNuzulData[key];
+  }
+
+  // ============================================================
+  // SHANI NUZUL DATA (শানে নুযূল - Context of Revelation)
+  // Professionally researched from authentic Islamic sources
+  // ============================================================
+  static const Map<int, String> _shaniNuzulData = {
+    // সূরা আল-ফাতিহা
+    1: 'সূরা আল-ফাতিহা মক্কায় অবতীর্ণ হয়েছে। এটি কুরআনের প্রথম পূর্ণাঙ্গ সূরা যা নাযিল হয়েছে। এই সূরাকে "উম্মুল কুরআন" (কুরআনের মা), "সাবউল মাসানী" (সাতটি বারবার পঠিত আয়াত) এবং "আল-কাফিয়া" (যথেষ্ট) বলা হয়। প্রতিটি নামাজে এই সূরা পাঠ করা ফরজ।',
+
+    // সূরা আল-বাকারা
+    2: 'সূরা আল-বাকারা মদীনায় অবতীর্ণ সর্ববৃহৎ সূরা। হিজরতের পর প্রায় ১০ বছরে বিভিন্ন সময়ে এর আয়াতসমূহ নাযিল হয়েছে। এতে ইসলামী জীবনবিধান, শরীয়তের বিধিবিধান এবং ইহুদী-খ্রিস্টানদের সাথে সংলাপ রয়েছে। "বাকারা" অর্থ গাভী, যা বনী ইসরাইলের গাভী জবাইয়ের ঘটনা থেকে এসেছে।',
+
+    // সূরা আলে ইমরান
+    3: 'সূরা আলে ইমরান মদীনায় অবতীর্ণ। নাজরানের খ্রিস্টান প্রতিনিধিদল মদীনায় এসে ঈসা (আ.) সম্পর্কে বিতর্ক করলে এই সূরার অধিকাংশ আয়াত নাযিল হয়। "আলে ইমরান" অর্থ ইমরানের পরিবার - মারইয়াম (আ.)-এর পিতা।',
+
+    // সূরা আন-নিসা
+    4: 'সূরা আন-নিসা মদীনায় অবতীর্ণ। উহুদ যুদ্ধের পর যখন অনেক মুসলিম শহীদ হন এবং তাদের পরিবার ও সম্পদ রক্ষার প্রয়োজন দেখা দেয়, তখন এই সূরা নাযিল হয়। "নিসা" অর্থ নারী - এতে নারীদের অধিকার ও পারিবারিক বিধান রয়েছে।',
+
+    // সূরা আল-মায়িদা
+    5: 'সূরা আল-মায়িদা মদীনায় অবতীর্ণ শেষ দিকের সূরা। বিদায় হজ্জের সময় বা তার কাছাকাছি সময়ে এর অধিকাংশ আয়াত নাযিল হয়। "মায়িদা" অর্থ খাবারের থালা - ঈসা (আ.)-এর হাওয়ারীদের জন্য আসমান থেকে খাবার নাযিলের ঘটনা থেকে এসেছে।',
+
+    // সূরা আল-আনআম
+    6: 'সূরা আল-আনআম সম্পূর্ণ মক্কায় একসাথে অবতীর্ণ। ৭০ হাজার ফেরেশতার সাথে রাতে এই সূরা নাযিল হয়েছে বলে বর্ণিত। "আনআম" অর্থ গবাদি পশু - মুশরিকদের পশু সম্পর্কিত কুসংস্কার খণ্ডন করা হয়েছে।',
+
+    // সূরা আত-তাওবা
+    9: 'সূরা আত-তাওবা মদীনায় অবতীর্ণ শেষ সূরাগুলোর একটি। তাবুক যুদ্ধের সময় ৯ম হিজরিতে নাযিল হয়েছে। এটি একমাত্র সূরা যা "বিসমিল্লাহ" ছাড়া শুরু হয়েছে কারণ এতে মুনাফিক ও মুশরিকদের বিরুদ্ধে কঠোর বার্তা রয়েছে।',
+
+    // সূরা ইউসুফ
+    12: 'সূরা ইউসুফ মক্কায় "আমুল হুযন" (দুঃখের বছর) এ অবতীর্ণ, যখন খাদিজা (রা.) ও আবু তালিব মারা গেলেন। রাসূল (সা.)-কে সান্ত্বনা দিতে ইউসুফ (আ.)-এর কষ্ট ও বিজয়ের কাহিনী নাযিল হয়। এটি "আহসানুল কাসাস" (সর্বোত্তম কাহিনী)।',
+
+    // সূরা আল-কাহফ
+    18: 'সূরা আল-কাহফ মক্কায় অবতীর্ণ। কুরাইশরা ইহুদী পণ্ডিতদের পরামর্শে তিনটি প্রশ্ন করেছিল - গুহাবাসী যুবক, যুলকারনাইন এবং রূহ সম্পর্কে। এর উত্তরে এই সূরা নাযিল হয়। জুমার দিন এই সূরা পাঠে বিশেষ ফজিলত রয়েছে।',
+
+    // সূরা মারইয়াম
+    19: 'সূরা মারইয়াম মক্কায় অবতীর্ণ। আবিসিনিয়ায় হিজরতের সময় জাফর (রা.) নাজাশী বাদশাহর সামনে এই সূরার প্রথম অংশ তিলাওয়াত করেছিলেন। মারইয়াম (আ.) ও ঈসা (আ.)-এর প্রকৃত পরিচয় এতে বর্ণিত।',
+
+    // সূরা ইয়াসীন
+    36: 'সূরা ইয়াসীন মক্কায় অবতীর্ণ। এটি কুরআনের "হৃদয়" বলে পরিচিত। মৃত্যুশয্যায় ও মৃতদের জন্য এই সূরা পাঠের বিশেষ ফজিলত রয়েছে। রাসূল (সা.) বলেছেন, "যে ব্যক্তি সূরা ইয়াসীন পাঠ করবে, তার জন্য দশবার কুরআন খতমের সওয়াব।"',
+
+    // সূরা আর-রহমান
+    55: 'সূরা আর-রহমান মদীনায় অবতীর্ণ। জিন ও মানুষ উভয়কে সম্বোধন করে আল্লাহর নিয়ামতের কথা বলা হয়েছে। "ফাবিআইয়ি আলা-ই রাব্বিকুমা তুকাযযিবান" (তোমরা তোমাদের রবের কোন নিয়ামতকে অস্বীকার করবে?) ৩১ বার পুনরাবৃত্তি হয়েছে।',
+
+    // সূরা আল-মুলক
+    67: 'সূরা আল-মুলক মক্কায় অবতীর্ণ। রাসূল (সা.) প্রতি রাতে ঘুমানোর আগে এই সূরা পাঠ করতেন। এই সূরা কবরের আজাব থেকে রক্ষা করবে এবং কিয়ামতের দিন সুপারিশ করবে।',
+
+    // সূরা আল-ক্বদর
+    97: 'সূরা আল-ক্বদর মক্কায় অবতীর্ণ। লাইলাতুল ক্বদরের মর্যাদা ও ফজিলত বর্ণনা করা হয়েছে। এই রাতে কুরআন নাযিল শুরু হয়েছে এবং এটি হাজার মাসের চেয়ে উত্তম।',
+
+    // সূরা আল-আলাক
+    96: 'সূরা আল-আলাক মক্কায় হেরা গুহায় সর্বপ্রথম অবতীর্ণ। রমজান মাসে জিব্রাইল (আ.) প্রথম এই সূরার প্রথম পাঁচ আয়াত নিয়ে আসেন। "ইকরা" (পড়ো) দিয়ে শুরু - ইসলামে জ্ঞানের গুরুত্ব প্রমাণ করে।',
+
+    // সূরা আল-ইখলাস
+    112: 'সূরা আল-ইখলাস মক্কায় অবতীর্ণ। মুশরিকরা আল্লাহর পরিচয় জানতে চাইলে এই সূরা নাযিল হয়। এটি কুরআনের এক-তৃতীয়াংশের সমান। তাওহীদের সারসংক্ষেপ এই সূরায় রয়েছে।',
+
+    // সূরা আল-ফালাক
+    113: 'সূরা আল-ফালাক মদীনায় অবতীর্ণ। ইহুদী লাবীদ বিন আসাম রাসূল (সা.)-এর উপর জাদু করলে সূরা আল-ফালাক ও আন-নাস একসাথে নাযিল হয়। এই দুটি সূরাকে "মুআওয়িযাতাইন" (আশ্রয় প্রার্থনার দুটি সূরা) বলা হয়।',
+
+    // সূরা আন-নাস
+    114: 'সূরা আন-নাস মদীনায় অবতীর্ণ। সূরা আল-ফালাকের সাথে একসাথে নাযিল হয়েছে। জিন ও মানুষের শয়তানের কুমন্ত্রণা থেকে আল্লাহর কাছে আশ্রয় প্রার্থনা শেখানো হয়েছে।',
+
+    // সূরা আল-কাওসার
+    108: 'সূরা আল-কাওসার মক্কায় অবতীর্ণ। রাসূল (সা.)-এর পুত্র কাসেমের মৃত্যুর পর আস ইবনে ওয়ায়েল তাঁকে "আবতার" (নির্বংশ) বলে উপহাস করলে এই সূরা নাযিল হয়। কাওসার হলো জান্নাতের একটি নহর।',
+
+    // সূরা আল-আসর
+    103: 'সূরা আল-আসর মক্কায় অবতীর্ণ। ইমাম শাফেয়ী (রহ.) বলেছেন, "যদি শুধু এই সূরাটি নাযিল হতো, তাহলেও মানুষের হেদায়েতের জন্য যথেষ্ট হতো।" সাহাবীরা বিদায়ের সময় এই সূরা পাঠ করতেন।',
+
+    // সূরা আল-ফীল
+    105: 'সূরা আল-ফীল মক্কায় অবতীর্ণ। রাসূল (সা.)-এর জন্মের বছর (৫৭০/৫৭১ খ্রি.) আবরাহা কাবা ধ্বংস করতে হাতির বাহিনী নিয়ে এসেছিল। আল্লাহ আবাবীল পাখি পাঠিয়ে তাদের ধ্বংস করেন। এই ঘটনা "আমুল ফীল" (হাতির বছর) নামে পরিচিত।',
+
+    // সূরা কুরাইশ
+    106: 'সূরা কুরাইশ মক্কায় অবতীর্ণ। সূরা আল-ফীলের ধারাবাহিকতায় নাযিল হয়েছে। কুরাইশদের শীত ও গ্রীষ্মের বাণিজ্য যাত্রার নিরাপত্তা আল্লাহর বিশেষ নিয়ামত - এজন্য তাদের কাবার রবের ইবাদত করা উচিত।',
+
+    // সূরা আল-মাউন
+    107: 'সূরা আল-মাউন মক্কায় অবতীর্ণ। ইয়াতীমদের সাথে দুর্ব্যবহার, নামাজে অবহেলা এবং প্রতিবেশীদের ছোটখাটো জিনিস ধার দিতে অস্বীকারকারীদের নিন্দা করা হয়েছে।',
+
+    // সূরা আল-কাফিরুন
+    109: 'সূরা আল-কাফিরুন মক্কায় অবতীর্ণ। কুরাইশ নেতারা প্রস্তাব দিয়েছিল যে, এক বছর তারা আল্লাহর ইবাদত করবে, পরের বছর মুহাম্মাদ (সা.) তাদের দেবতাদের পূজা করবেন। এর প্রত্যুত্তরে এই সূরা নাযিল হয়।',
+
+    // সূরা আন-নাসর
+    110: 'সূরা আন-নাসর মদীনায় অবতীর্ণ শেষ সূরা। বিদায় হজ্জের সময় মিনায় নাযিল হয়েছে। মক্কা বিজয়ের পর মানুষ দলে দলে ইসলামে প্রবেশ করছে - এই সুসংবাদ এবং রাসূল (সা.)-এর ওফাতের ইঙ্গিত রয়েছে।',
+
+    // সূরা আল-মাসাদ
+    111: 'সূরা আল-মাসাদ মক্কায় অবতীর্ণ। আবু লাহাব রাসূল (সা.)-এর চাচা হয়েও ইসলামের চরম বিরোধিতা করতেন। তার স্ত্রী উম্মে জামীল রাসূল (সা.)-এর চলার পথে কাঁটা বিছিয়ে রাখতেন। তাদের পরিণতি এই সূরায় বর্ণিত।',
+  };
+
+  // Shani Nuzul for specific ayahs (when available)
+  static const Map<String, String> _ayahShaniNuzulData = {
+    // সূরা আল-বাকারা - আয়াতুল কুরসী
+    '2:255': 'আয়াতুল কুরসী কুরআনের সর্বশ্রেষ্ঠ আয়াত। রাসূল (সা.) উবাই ইবনে কাবকে জিজ্ঞেস করেছিলেন কুরআনের সবচেয়ে মর্যাদাপূর্ণ আয়াত কোনটি, তিনি এই আয়াতের কথা বলেন। ঘুমানোর আগে, ফরজ নামাজের পর পাঠে বিশেষ ফজিলত।',
+
+    // সূরা আল-বাকারা - শেষ দুই আয়াত
+    '2:285': 'মিরাজের রাতে রাসূল (সা.)-কে তিনটি উপহার দেওয়া হয়েছিল: পাঁচ ওয়াক্ত নামাজ, সূরা বাকারার শেষ দুই আয়াত, এবং শিরক ছাড়া সকল গুনাহ ক্ষমার ওয়াদা।',
+
+    '2:286': 'এই আয়াত মুমিনদের জন্য সান্ত্বনা - আল্লাহ কাউকে তার সাধ্যের বাইরে দায়িত্ব দেন না। ভুল ও বিস্মৃতির জন্য শাস্তি নেই।',
+
+    // সূরা আলে ইমরান - মুবাহালা আয়াত
+    '3:61': 'নাজরানের খ্রিস্টান প্রতিনিধিদের সাথে মুবাহালার (পারস্পরিক অভিশাপ) চ্যালেঞ্জ দেওয়া হয়েছিল। তারা ভয়ে পিছিয়ে যায় এবং জিযিয়া দিতে রাজি হয়।',
+  };
+
+  /// Fetch a specific edition from the Al-Quran Cloud API
+  Future<Map<String, dynamic>?> _fetchAlQuranCloudEdition(int surahNumber, String edition) async {
+    try {
+      final url = '$_alQuranCloudBaseUrl/surah/$surahNumber/$edition';
       final response = await http.get(Uri.parse(url)).timeout(
         const Duration(seconds: 15),
       );
@@ -173,7 +499,7 @@ class QuranDataService extends ChangeNotifier {
   Future<List<Ayah>?> _loadFromLocalCache(int surahNumber) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = 'surah_v4_$surahNumber'; // v3 for API-based transliterations
+      final cacheKey = 'surah_${_cacheVersion}_$surahNumber';
       final cachedJson = prefs.getString(cacheKey);
 
       if (cachedJson != null) {
@@ -190,12 +516,44 @@ class QuranDataService extends ChangeNotifier {
   Future<void> _saveToLocalCache(int surahNumber, List<Ayah> ayahs) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = 'surah_v4_$surahNumber';
+      final cacheKey = 'surah_${_cacheVersion}_$surahNumber';
       final jsonList = ayahs.map((a) => a.toJson()).toList();
       await prefs.setString(cacheKey, json.encode(jsonList));
     } catch (e) {
       debugPrint('Error saving to cache: $e');
     }
+  }
+
+  /// Get surah info from Quran.com API
+  Future<Map<String, dynamic>?> getSurahInfo(int surahNumber) async {
+    try {
+      final url = Uri.parse('$_quranComBaseUrl/chapters/$surahNumber?language=bn');
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['chapter'] as Map<String, dynamic>?;
+      }
+    } catch (e) {
+      debugPrint('Error fetching surah info: $e');
+    }
+    return null;
+  }
+
+  /// Get audio URL for a specific ayah
+  /// Uses Quran.com API for high-quality audio
+  String getAudioUrl(int surahNumber, int ayahNumber, {String reciter = 'ar.alafasy'}) {
+    // Format: surah:ayah (e.g., 001001 for Al-Fatihah verse 1)
+    final surahPadded = surahNumber.toString().padLeft(3, '0');
+    final ayahPadded = ayahNumber.toString().padLeft(3, '0');
+    return 'https://cdn.islamic.network/quran/audio/128/$reciter/$surahPadded$ayahPadded.mp3';
+  }
+
+  /// Get audio URL for entire surah
+  String getSurahAudioUrl(int surahNumber, {String reciter = 'ar.alafasy'}) {
+    return 'https://cdn.islamic.network/quran/audio-surah/128/$reciter/$surahNumber.mp3';
   }
 
   /// Generate Tajweed markup for Arabic text
