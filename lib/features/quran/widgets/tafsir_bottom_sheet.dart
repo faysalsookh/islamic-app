@@ -4,6 +4,7 @@ import '../../../core/models/ayah.dart';
 import '../../../core/models/surah.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/services/tafsir_service.dart';
 
 /// Bottom sheet showing Tafsir (interpretation) and Shani Nuzul (context of revelation)
 class TafsirBottomSheet extends StatefulWidget {
@@ -45,11 +46,37 @@ class TafsirBottomSheet extends StatefulWidget {
 class _TafsirBottomSheetState extends State<TafsirBottomSheet>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TafsirService _tafsirService = TafsirService();
+  bool _isLoading = false;
+  String? _apiTafsir;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    // Fetch tafsir if Bengali tafsir is missing locally
+    if (widget.ayah.tafsirBengali == null || widget.ayah.tafsirBengali!.isEmpty) {
+      _fetchTafsir();
+    }
+  }
+
+  Future<void> _fetchTafsir() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final tafsir = await _tafsirService.fetchTafsir(
+      widget.surah.number, 
+      widget.ayah.numberInSurah
+    );
+
+    if (mounted) {
+      setState(() {
+        _apiTafsir = tafsir;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -226,7 +253,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
   Widget _buildTafsirTab(bool isDark) {
     // Check for content availability
     final hasEnglishTafsir = widget.ayah.tafsir != null && widget.ayah.tafsir!.isNotEmpty;
-    final hasBengaliTafsir = widget.ayah.tafsirBengali != null && widget.ayah.tafsirBengali!.isNotEmpty;
+    final hasBengaliTafsir = (widget.ayah.tafsirBengali != null && widget.ayah.tafsirBengali!.isNotEmpty) || (_apiTafsir != null && _apiTafsir!.isNotEmpty);
     final hasTafsir = hasEnglishTafsir || hasBengaliTafsir;
 
     return SingleChildScrollView(
@@ -280,8 +307,15 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
           const SizedBox(height: 12),
 
           // Tafsir content
-          if (hasTafsir) ...[
-            if (hasBengaliTafsir)
+           if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (hasTafsir) ...[
+            if (widget.ayah.tafsirBengali != null && widget.ayah.tafsirBengali!.isNotEmpty)
               Text(
                 widget.ayah.tafsirBengali!,
                 style: TextStyle(
@@ -291,11 +325,23 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
                       ? AppColors.darkTextPrimary
                       : AppColors.textPrimary,
                 ),
+              )
+            else if (_apiTafsir != null)
+               Text(
+                _apiTafsir!,
+                style: TextStyle(
+                  fontSize: 16,
+                  height: 1.7,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
               ),
+            
             if (hasBengaliTafsir && hasEnglishTafsir)
               const SizedBox(height: 16),
-             if (hasEnglishTafsir && (!hasBengaliTafsir)) // Show English if Bengali is missing, or maybe both? Let's just show Bengali if available for now to keep it clean, or allow both if requested. The user said "all tafsir", implies comprehensive. Let's show English as secondary if Bengali exists? No, usually one language is preferred. Let's show English only if Bengali is missing for now, or maybe add a divider if both shown?
-             // Actually, let's show English formatted slightly differently if Bengali is present, or just show text.
+              
+             if (hasEnglishTafsir && (!hasBengaliTafsir)) // Show English if Bengali is missing
               Text(
                 widget.ayah.tafsir!,
                 style: TextStyle(
@@ -354,7 +400,8 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
   Widget _buildShaniNuzulTab(bool isDark) {
     final hasEnglishShaniNuzul = widget.ayah.shaniNuzul != null && widget.ayah.shaniNuzul!.isNotEmpty;
     final hasBengaliShaniNuzul = widget.ayah.shaniNuzulBengali != null && widget.ayah.shaniNuzulBengali!.isNotEmpty;
-    final hasShaniNuzul = hasEnglishShaniNuzul || hasBengaliShaniNuzul;
+    // Use API Tafsir as fallback since it usually contains the context
+    final hasShaniNuzul = hasEnglishShaniNuzul || hasBengaliShaniNuzul || (_apiTafsir != null && _apiTafsir!.isNotEmpty);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -396,7 +443,14 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
           const SizedBox(height: 16),
 
           // Content
-          if (hasShaniNuzul)
+          if (_isLoading)
+             const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (hasShaniNuzul)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -419,9 +473,37 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
                             ? AppColors.darkTextPrimary
                             : AppColors.textPrimary,
                       ),
+                    )
+                  else if (!hasEnglishShaniNuzul && _apiTafsir != null)
+                    // Fallback to API Tafsir content which contains context
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Note: Specific context not separated. Displaying full Tafsir which includes context:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _apiTafsir!,
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.7,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
+
                   if (hasBengaliShaniNuzul && hasEnglishShaniNuzul)
                     Divider(height: 24, color: isDark ? Colors.white24 : Colors.black12),
+                    
                   if (hasEnglishShaniNuzul)
                     Text(
                       widget.ayah.shaniNuzul!,
