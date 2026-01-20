@@ -8,6 +8,7 @@ import '../../../../core/models/ayah.dart';
 import '../../../../core/models/bookmark.dart';
 import '../../../../core/services/quran_data_service.dart';
 import '../../../../core/services/audio_service.dart';
+import '../../../../core/services/word_timing_service.dart';
 import '../widgets/quran_app_bar.dart';
 import '../widgets/ayah_list_view.dart';
 import '../widgets/mushaf_view.dart';
@@ -92,6 +93,8 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
           _ayahs = ayahs;
           _isLoading = false;
         });
+        // Preload word timing data for word-by-word highlighting
+        _preloadWordTimingData();
         // Auto-play if enabled
         _checkAutoPlay();
       }
@@ -103,6 +106,8 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
           // Use fallback data
           _ayahs = _getFallbackAyahs();
         });
+        // Preload word timing data for word-by-word highlighting
+        _preloadWordTimingData();
         // Auto-play if enabled (even with fallback data)
         _checkAutoPlay();
       }
@@ -118,6 +123,22 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
       // Start playing from the first ayah
       final firstAyah = _ayahs[_currentAyahIndex].numberInSurah;
       audioService.playAyah(_currentSurah.number, firstAyah);
+    }
+  }
+
+  /// Preload word timing data for word-by-word highlighting during audio playback
+  void _preloadWordTimingData() {
+    final audioService = AudioService();
+    final wordTimingService = WordTimingService();
+
+    // Check if timing data is available for the current reciter
+    if (wordTimingService.hasTimingData(audioService.currentReciter)) {
+      // Load timing data in background (don't await)
+      wordTimingService.loadTimingData(
+        audioService.currentReciter,
+        _currentSurah.number,
+      );
+      debugPrint('Preloading word timing data for surah ${_currentSurah.number}');
     }
   }
 

@@ -38,6 +38,14 @@ class Ayah {
     required this.hizbQuarter,
   });
 
+  /// Split Arabic text into individual words
+  List<String> get arabicWords {
+    return textArabic
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList();
+  }
+
   factory Ayah.fromJson(Map<String, dynamic> json) {
     return Ayah(
       number: json['number'] as int,
