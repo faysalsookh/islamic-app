@@ -7,6 +7,7 @@ import '../../../../core/models/surah.dart';
 import '../../../../core/models/ayah.dart';
 import '../../../../core/models/bookmark.dart';
 import '../../../../core/services/quran_data_service.dart';
+import '../../../../core/services/audio_service.dart';
 import '../widgets/quran_app_bar.dart';
 import '../widgets/ayah_list_view.dart';
 import '../widgets/mushaf_view.dart';
@@ -39,6 +40,33 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
   void initState() {
     super.initState();
     _initializeSurahData();
+    // Listen to audio service to sync current ayah with audio playback
+    AudioService().addListener(_onAudioStateChanged);
+  }
+
+  @override
+  void dispose() {
+    // Remove listener and stop audio when leaving the page
+    AudioService().removeListener(_onAudioStateChanged);
+    AudioService().stop();
+    super.dispose();
+  }
+
+  void _onAudioStateChanged() {
+    final audioService = AudioService();
+    // Sync UI with currently playing ayah
+    if (audioService.currentSurah == _currentSurah.number &&
+        audioService.currentAyah != null &&
+        _ayahs.isNotEmpty) {
+      final playingAyahNumber = audioService.currentAyah!;
+      // Find the index of the currently playing ayah
+      final index = _ayahs.indexWhere((a) => a.numberInSurah == playingAyahNumber);
+      if (index != -1 && index != _currentAyahIndex) {
+        setState(() {
+          _currentAyahIndex = index;
+        });
+      }
+    }
   }
 
   void _initializeSurahData() {
@@ -64,6 +92,8 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
           _ayahs = ayahs;
           _isLoading = false;
         });
+        // Auto-play if enabled
+        _checkAutoPlay();
       }
     } catch (e) {
       debugPrint('Error loading surah: $e');
@@ -73,7 +103,21 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
           // Use fallback data
           _ayahs = _getFallbackAyahs();
         });
+        // Auto-play if enabled (even with fallback data)
+        _checkAutoPlay();
       }
+    }
+  }
+
+  void _checkAutoPlay() {
+    final appState = context.read<AppStateProvider>();
+    if (appState.autoPlayOnPageOpen && _ayahs.isNotEmpty) {
+      // Set repeat mode to surah so it plays through all ayahs
+      final audioService = AudioService();
+      audioService.setRepeatMode(AudioRepeatMode.surah);
+      // Start playing from the first ayah
+      final firstAyah = _ayahs[_currentAyahIndex].numberInSurah;
+      audioService.playAyah(_currentSurah.number, firstAyah);
     }
   }
 
@@ -134,6 +178,12 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
       setState(() {
         _currentAyahIndex--;
       });
+      // If audio is playing, play the previous ayah
+      final audioService = AudioService();
+      if (audioService.isPlaying) {
+        final prevAyah = _ayahs[_currentAyahIndex].numberInSurah;
+        audioService.playAyah(_currentSurah.number, prevAyah);
+      }
     }
   }
 
@@ -142,6 +192,12 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
       setState(() {
         _currentAyahIndex++;
       });
+      // If audio is playing, play the next ayah
+      final audioService = AudioService();
+      if (audioService.isPlaying) {
+        final nextAyah = _ayahs[_currentAyahIndex].numberInSurah;
+        audioService.playAyah(_currentSurah.number, nextAyah);
+      }
     }
   }
 
@@ -288,18 +344,34 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
                 ),
 
                 // Bottom Control Bar
-                ReadingBottomBar(
-                  isPlaying: appState.isPlaying,
-                  onPlayPause: () {
-                    appState.setIsPlaying(!appState.isPlaying);
-                  },
-                  onNextAyah: _goToNextAyah,
-                  onPreviousAyah: _goToPreviousAyah,
-                  onBookmark: _addBookmark,
-                  onSettings: _openFontSettings,
-                  isMushafView: appState.isMushafView,
-                  onToggleView: () {
-                    appState.setMushafView(!appState.isMushafView);
+                ListenableBuilder(
+                  listenable: AudioService(),
+                  builder: (context, child) {
+                    final audioService = AudioService();
+                    return ReadingBottomBar(
+                      isPlaying: audioService.isPlaying,
+                      onPlayPause: () {
+                        if (audioService.isPlaying) {
+                          audioService.pause();
+                        } else {
+                          // Set repeat mode to surah so it plays through all ayahs
+                          audioService.setRepeatMode(AudioRepeatMode.surah);
+                          // Get current ayah (1-indexed for audio)
+                          final currentAyah = _ayahs.isNotEmpty
+                              ? _ayahs[_currentAyahIndex].numberInSurah
+                              : 1;
+                          audioService.playAyah(_currentSurah.number, currentAyah);
+                        }
+                      },
+                      onNextAyah: _goToNextAyah,
+                      onPreviousAyah: _goToPreviousAyah,
+                      onBookmark: _addBookmark,
+                      onSettings: _openFontSettings,
+                      isMushafView: appState.isMushafView,
+                      onToggleView: () {
+                        appState.setMushafView(!appState.isMushafView);
+                      },
+                    );
                   },
                 ),
               ],

@@ -132,7 +132,7 @@ class AppStateProvider extends ChangeNotifier {
   bool _showTajweedColors = true;
   bool get showTajweedColors => _showTajweedColors;
 
-  bool _tajweedLearningMode = false;
+  bool _tajweedLearningMode = true;
   bool get tajweedLearningMode => _tajweedLearningMode;
 
   // ============== USER STATE ==============
@@ -189,17 +189,17 @@ class AppStateProvider extends ChangeNotifier {
     _arabicFontStyle =
         ArabicFontStyle.values[prefs.getInt('arabic_font_style') ?? 0];
     _translationLanguage =
-        TranslationLanguage.values[prefs.getInt('translation_language') ?? 0];
+        TranslationLanguage.values[prefs.getInt('translation_language') ?? 1]; // Default: Bengali
     _transliterationLanguage =
-        TransliterationLanguage.values[prefs.getInt('transliteration_language') ?? 0];
+        TransliterationLanguage.values[prefs.getInt('transliteration_language') ?? 1]; // Default: Bengali
     _showTranslation = prefs.getBool('show_translation') ?? true;
-    _showTransliteration = prefs.getBool('show_transliteration') ?? false;
+    _showTransliteration = prefs.getBool('show_transliteration') ?? true;
     _isMushafView = prefs.getBool('is_mushaf_view') ?? false;
     _isLeftHanded = prefs.getBool('is_left_handed') ?? false;
 
     // Tajweed settings
     _showTajweedColors = prefs.getBool('show_tajweed_colors') ?? true;
-    _tajweedLearningMode = prefs.getBool('tajweed_learning_mode') ?? false;
+    _tajweedLearningMode = prefs.getBool('tajweed_learning_mode') ?? true;
 
     // Audio settings
     _selectedReciter = Reciter.values[prefs.getInt('selected_reciter') ?? 0];
