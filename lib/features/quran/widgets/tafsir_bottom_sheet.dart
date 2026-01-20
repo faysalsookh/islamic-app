@@ -224,7 +224,10 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
   }
 
   Widget _buildTafsirTab(bool isDark) {
-    final hasTafsir = widget.ayah.tafsir != null && widget.ayah.tafsir!.isNotEmpty;
+    // Check for content availability
+    final hasEnglishTafsir = widget.ayah.tafsir != null && widget.ayah.tafsir!.isNotEmpty;
+    final hasBengaliTafsir = widget.ayah.tafsirBengali != null && widget.ayah.tafsirBengali!.isNotEmpty;
+    final hasTafsir = hasEnglishTafsir || hasBengaliTafsir;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -264,7 +267,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Tafsir (Interpretation)',
+                'তাফসীর / Tafsir',
                 style: AppTypography.heading4(
                   color: isDark
                       ? AppColors.darkTextPrimary
@@ -277,18 +280,33 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
           const SizedBox(height: 12),
 
           // Tafsir content
-          if (hasTafsir)
-            Text(
-              widget.ayah.tafsir!,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.7,
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.textPrimary,
+          if (hasTafsir) ...[
+            if (hasBengaliTafsir)
+              Text(
+                widget.ayah.tafsirBengali!,
+                style: TextStyle(
+                  fontSize: 16,
+                  height: 1.7,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
               ),
-            )
-          else
+            if (hasBengaliTafsir && hasEnglishTafsir)
+              const SizedBox(height: 16),
+             if (hasEnglishTafsir && (!hasBengaliTafsir)) // Show English if Bengali is missing, or maybe both? Let's just show Bengali if available for now to keep it clean, or allow both if requested. The user said "all tafsir", implies comprehensive. Let's show English as secondary if Bengali exists? No, usually one language is preferred. Let's show English only if Bengali is missing for now, or maybe add a divider if both shown?
+             // Actually, let's show English formatted slightly differently if Bengali is present, or just show text.
+              Text(
+                widget.ayah.tafsir!,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.7,
+                  color: hasBengaliTafsir 
+                      ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
+                      : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                ),
+              ),
+          ] else
             _buildNoContentMessage(
               isDark,
               'Tafsir not available',
@@ -299,7 +317,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
 
           // Translation
           Text(
-            'Translation',
+            'অনুবাদ / Translation',
             style: AppTypography.heading4(
               color: isDark
                   ? AppColors.darkTextPrimary
@@ -309,22 +327,22 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
 
           const SizedBox(height: 12),
 
-          // English translation
-          if (widget.ayah.translationEnglish != null) ...[
-            _buildTranslationSection(
-              isDark,
-              'English',
-              widget.ayah.translationEnglish!,
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Bengali translation
-          if (widget.ayah.translationBengali != null)
+          // Bengali translation (Prioritize Bengali)
+          if (widget.ayah.translationBengali != null) ...[
             _buildTranslationSection(
               isDark,
               'বাংলা',
               widget.ayah.translationBengali!,
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // English translation
+          if (widget.ayah.translationEnglish != null)
+            _buildTranslationSection(
+              isDark,
+              'English',
+              widget.ayah.translationEnglish!,
             ),
 
           SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
@@ -334,8 +352,9 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
   }
 
   Widget _buildShaniNuzulTab(bool isDark) {
-    final hasShaniNuzul =
-        widget.ayah.shaniNuzul != null && widget.ayah.shaniNuzul!.isNotEmpty;
+    final hasEnglishShaniNuzul = widget.ayah.shaniNuzul != null && widget.ayah.shaniNuzul!.isNotEmpty;
+    final hasBengaliShaniNuzul = widget.ayah.shaniNuzulBengali != null && widget.ayah.shaniNuzulBengali!.isNotEmpty;
+    final hasShaniNuzul = hasEnglishShaniNuzul || hasBengaliShaniNuzul;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -352,7 +371,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Context of Revelation',
+                'শানে নুযূল / Context',
                 style: AppTypography.heading4(
                   color: isDark
                       ? AppColors.darkTextPrimary
@@ -365,7 +384,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
           const SizedBox(height: 8),
 
           Text(
-            'শানে নুযূল',
+            'Context of Revelation',
             style: TextStyle(
               fontSize: 14,
               color: isDark
@@ -387,15 +406,34 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
                     : Colors.black.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                widget.ayah.shaniNuzul!,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.7,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   if (hasBengaliShaniNuzul)
+                    Text(
+                      widget.ayah.shaniNuzulBengali!,
+                      style: TextStyle(
+                        fontSize: 16, // Slightly larger for Bengali
+                        height: 1.7,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  if (hasBengaliShaniNuzul && hasEnglishShaniNuzul)
+                    Divider(height: 24, color: isDark ? Colors.white24 : Colors.black12),
+                  if (hasEnglishShaniNuzul)
+                    Text(
+                      widget.ayah.shaniNuzul!,
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.7,
+                        color: hasBengaliShaniNuzul
+                            ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
+                            : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                      ),
+                    ),
+                ],
               ),
             )
           else

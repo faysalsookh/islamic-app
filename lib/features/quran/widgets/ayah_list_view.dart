@@ -302,6 +302,9 @@ class _AyahListViewState extends State<AyahListView> {
               padding: const EdgeInsets.only(bottom: 100),
               itemBuilder: (context, index) {
                 if (index == 0) {
+                   if (widget.surah.number == 9) {
+                     return const SizedBox.shrink();
+                   }
                   return BismillahHeader(fontSize: widget.quranFontSize);
                 }
 

@@ -31,7 +31,7 @@ class MushafView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Column(
         children: [
-          BismillahHeader(fontSize: quranFontSize),
+          if (surah.number != 9) BismillahHeader(fontSize: quranFontSize),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
