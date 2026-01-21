@@ -46,9 +46,6 @@ dependencies:
   # Audio playback for Quran recitation
   just_audio: ^0.9.40
 
-  # Text-to-Speech for Bengali translation
-  flutter_tts: ^4.2.0
-
   # SVG support for icons and patterns
   flutter_svg: ^2.0.10+1
 

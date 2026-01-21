@@ -148,15 +148,11 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
     return ListenableBuilder(
       listenable: _audioService,
       builder: (context, child) {
-        final isTTSAvailable = _audioService.isBengaliTTSAvailable;
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ...AudioPlaybackContent.values.map((content) {
               final isSelected = _audioService.playbackContent == content;
-              final isBengaliOption = content != AudioPlaybackContent.arabicOnly;
-              final isDisabled = isBengaliOption && !isTTSAvailable;
 
               return _buildOptionTile(
                 icon: content.icon,
@@ -165,27 +161,16 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
                 isSelected: isSelected,
                 isDark: isDark,
                 theme: theme,
-                isDisabled: isDisabled,
-                disabledNote: isDisabled ? 'TTS unavailable' : (isBengaliOption ? 'TTS' : null),
+                isDisabled: false,
+                disabledNote: null,
                 onTap: () {
-                  if (isDisabled) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('বাংলা TTS আপনার ডিভাইসে উপলব্ধ নয়। Bengali TTS is not available on your device.'),
-                        backgroundColor: Colors.orange,
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                    return;
-                  }
                   HapticService().selectionClick();
                   _audioService.setPlaybackContent(content);
                 },
               );
             }),
             const SizedBox(height: 8),
-            // Note about Bengali TTS
+            // Note about Bengali audio
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -202,16 +187,14 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
               child: Row(
                 children: [
                   Icon(
-                    isTTSAvailable ? Icons.record_voice_over_rounded : Icons.info_outline_rounded,
+                    Icons.cloud_done_rounded,
                     size: 18,
                     color: AppColors.forestGreen,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      isTTSAvailable
-                          ? 'বাংলা অনুবাদ Text-to-Speech (TTS) দিয়ে পড়া হবে।\nBengali translation uses device TTS.'
-                          : 'বাংলা TTS সক্রিয় করতে আপনার ডিভাইসে Bengali ভাষা ইনস্টল করুন।\nInstall Bengali language on your device for TTS.',
+                      'বাংলা অনুবাদ ক্লাউড থেকে অডিও হিসেবে বাজবে।\nBengali plays as audio from cloud.',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
