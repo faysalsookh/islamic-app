@@ -170,6 +170,15 @@ class AppStateProvider extends ChangeNotifier {
   int _currentPlayingAyah = -1;
   int get currentPlayingAyah => _currentPlayingAyah;
 
+  // ============== NAVIGATION STATE ==============
+  int _currentNavIndex = 0;
+  int get currentNavIndex => _currentNavIndex;
+
+  void setNavIndex(int index) {
+    _currentNavIndex = index;
+    notifyListeners();
+  }
+
   // ============== INITIALIZATION ==============
   Future<void> initialize() async {
     await _loadPreferences();

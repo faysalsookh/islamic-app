@@ -8,6 +8,8 @@ import '../../../../core/models/ayah.dart';
 import '../../../../core/models/bookmark.dart';
 import '../../../../core/services/quran_data_service.dart';
 import '../../../../core/services/audio_service.dart';
+import '../../../../core/services/haptic_service.dart';
+import '../../../../core/widgets/skeleton_loader.dart';
 import '../widgets/quran_app_bar.dart';
 import '../widgets/ayah_list_view.dart';
 import '../widgets/mushaf_view.dart';
@@ -16,10 +18,12 @@ import '../widgets/font_settings_sheet.dart';
 
 class QuranReaderPage extends StatefulWidget {
   final int surahNumber;
+  final int? initialAyahNumber;
 
   const QuranReaderPage({
     super.key,
     required this.surahNumber,
+    this.initialAyahNumber,
   });
 
   @override
@@ -91,6 +95,13 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
         setState(() {
           _ayahs = ayahs;
           _isLoading = false;
+          // Set initial ayah index if provided
+          if (widget.initialAyahNumber != null) {
+            final index = ayahs.indexWhere((a) => a.numberInSurah == widget.initialAyahNumber);
+            if (index != -1) {
+              _currentAyahIndex = index;
+            }
+          }
         });
         // Auto-play if enabled
         _checkAutoPlay();
@@ -143,6 +154,7 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
   }
 
   void _addBookmark() {
+    HapticService().mediumImpact();
     final appState = context.read<AppStateProvider>();
     final currentAyah = _ayahs[_currentAyahIndex];
 
@@ -175,6 +187,7 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
 
   void _goToPreviousAyah() {
     if (_currentAyahIndex > 0) {
+      HapticService().selectionClick();
       setState(() {
         _currentAyahIndex--;
       });
@@ -189,6 +202,7 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
 
   void _goToNextAyah() {
     if (_currentAyahIndex < _ayahs.length - 1) {
+      HapticService().selectionClick();
       setState(() {
         _currentAyahIndex++;
       });
@@ -383,31 +397,38 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
   }
 
   Widget _buildLoadingState(bool isDark) {
-    return Center(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: isDark ? AppColors.mutedTealLight : AppColors.mutedTeal,
-            strokeWidth: 3,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'সূরা লোড হচ্ছে...',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'NotoSansBengali',
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          // Loading header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: isDark ? AppColors.mutedTealLight : AppColors.mutedTeal,
+                    strokeWidth: 2,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Loading ${_currentSurah.nameTransliteration}...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Loading ${_currentSurah.nameTransliteration}',
-            style: TextStyle(
-              fontSize: 14,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
-            ),
-          ),
+          // Skeleton ayahs
+          const AyahListSkeleton(itemCount: 4),
         ],
       ),
     );

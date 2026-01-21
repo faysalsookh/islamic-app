@@ -11,6 +11,7 @@ import 'package:islamic_app/features/quran/pages/juz_list_page.dart';
 import 'package:islamic_app/features/quran/pages/tajweed_rules_page.dart';
 import 'package:islamic_app/features/bookmarks/presentation/pages/bookmarks_page.dart';
 import 'package:islamic_app/features/settings/presentation/pages/settings_page.dart';
+import 'package:islamic_app/features/search/presentation/pages/search_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,12 +63,27 @@ class IslamicApp extends StatelessWidget {
             '/tajweed-rules': (context) => const TajweedRulesPage(),
             '/bookmarks': (context) => const BookmarksPage(),
             '/settings': (context) => const SettingsPage(),
+            '/search': (context) => const SearchPage(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/quran-reader') {
-              final surahNumber = settings.arguments as int? ?? 1;
+              // Support both int (surah only) and Map (surah + ayah) arguments
+              int surahNumber = 1;
+              int? initialAyahNumber;
+
+              if (settings.arguments is int) {
+                surahNumber = settings.arguments as int;
+              } else if (settings.arguments is Map) {
+                final args = settings.arguments as Map;
+                surahNumber = args['surahNumber'] as int? ?? 1;
+                initialAyahNumber = args['ayahNumber'] as int?;
+              }
+
               return MaterialPageRoute(
-                builder: (context) => QuranReaderPage(surahNumber: surahNumber),
+                builder: (context) => QuranReaderPage(
+                  surahNumber: surahNumber,
+                  initialAyahNumber: initialAyahNumber,
+                ),
               );
             }
             return null;
