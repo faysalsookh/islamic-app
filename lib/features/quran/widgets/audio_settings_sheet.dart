@@ -148,12 +148,16 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
     return ListenableBuilder(
       listenable: _audioService,
       builder: (context, child) {
+        final isTTSAvailable = _audioService.isBengaliTTSAvailable;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ...AudioPlaybackContent.values.map((content) {
               final isSelected = _audioService.playbackContent == content;
               final isBengaliOption = content != AudioPlaybackContent.arabicOnly;
+              final isDisabled = isBengaliOption && !isTTSAvailable;
+
               return _buildOptionTile(
                 icon: content.icon,
                 title: content.displayName,
@@ -161,17 +165,16 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
                 isSelected: isSelected,
                 isDark: isDark,
                 theme: theme,
-                isDisabled: isBengaliOption, // Bengali options are disabled
-                disabledNote: isBengaliOption ? 'Coming soon' : null,
+                isDisabled: isDisabled,
+                disabledNote: isDisabled ? 'TTS unavailable' : (isBengaliOption ? 'TTS' : null),
                 onTap: () {
-                  if (isBengaliOption) {
-                    // Show message that Bengali audio is coming soon
+                  if (isDisabled) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('বাংলা অডিও শীঘ্রই আসছে! Bengali audio coming soon!'),
-                        backgroundColor: theme.colorScheme.primary,
+                        content: const Text('বাংলা TTS আপনার ডিভাইসে উপলব্ধ নয়। Bengali TTS is not available on your device.'),
+                        backgroundColor: Colors.orange,
                         behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
+                        duration: const Duration(seconds: 3),
                       ),
                     );
                     return;
@@ -182,7 +185,7 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
               );
             }),
             const SizedBox(height: 8),
-            // Note about Bengali audio
+            // Note about Bengali TTS
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -199,14 +202,16 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.info_outline_rounded,
+                    isTTSAvailable ? Icons.record_voice_over_rounded : Icons.info_outline_rounded,
                     size: 18,
                     color: AppColors.forestGreen,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'বাংলা অডিও শীঘ্রই যুক্ত হবে ইনশাআল্লাহ।\nBengali audio coming soon, In Sha Allah.',
+                      isTTSAvailable
+                          ? 'বাংলা অনুবাদ Text-to-Speech (TTS) দিয়ে পড়া হবে।\nBengali translation uses device TTS.'
+                          : 'বাংলা TTS সক্রিয় করতে আপনার ডিভাইসে Bengali ভাষা ইনস্টল করুন।\nInstall Bengali language on your device for TTS.',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -474,15 +479,17 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withValues(alpha: 0.2),
+                              color: effectiveDisabled
+                                  ? Colors.orange.withValues(alpha: 0.2)
+                                  : AppColors.forestGreen.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               disabledNote,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.orange,
+                                color: effectiveDisabled ? Colors.orange : AppColors.forestGreen,
                               ),
                             ),
                           ),

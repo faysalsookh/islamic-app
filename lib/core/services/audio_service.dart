@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'tts_service.dart';
+import 'quran_data_service.dart';
 
 /// Enum for different repeat modes
 enum AudioRepeatMode {
@@ -184,9 +186,12 @@ class AudioService extends ChangeNotifier {
   factory AudioService() => _instance;
   AudioService._internal() {
     _initializePlayer();
+    _initializeTTS();
   }
 
   final AudioPlayer _player = AudioPlayer();
+  final TTSService _ttsService = TTSService();
+  final QuranDataService _quranDataService = QuranDataService();
 
   // Current playback state
   bool _isPlaying = false;
@@ -265,6 +270,44 @@ class AudioService extends ChangeNotifier {
     });
   }
 
+  /// Initialize TTS service for Bengali translation
+  void _initializeTTS() {
+    _ttsService.onComplete = _handleTTSComplete;
+    _ttsService.onStart = () {
+      _isPlaying = true;
+      _isLoading = false;
+      notifyListeners();
+    };
+    _ttsService.onError = (error) {
+      debugPrint('TTS Error: $error');
+      _errorMessage = 'বাংলা অডিও চালাতে সমস্যা হয়েছে। TTS error occurred.';
+      _isLoading = false;
+      _handleBengaliAudioFailed();
+    };
+  }
+
+  /// Handle TTS completion
+  void _handleTTSComplete() {
+    _isPlaying = false;
+    notifyListeners();
+
+    // Handle combined modes
+    if (_playbackContent == AudioPlaybackContent.bengaliThenArabic && _isPlayingBengaliPart) {
+      // Bengali finished, now play Arabic
+      _isPlayingBengaliPart = false;
+      if (_currentSurah != null && _currentAyah != null) {
+        _playArabicAyah(_currentSurah!, _currentAyah!);
+      }
+    } else if (_playbackContent == AudioPlaybackContent.arabicThenBengali && _isPlayingBengaliPart) {
+      // Both Arabic and Bengali finished, move to next ayah
+      _isPlayingBengaliPart = false;
+      _handlePlaybackComplete();
+    } else if (_playbackContent == AudioPlaybackContent.bengaliOnly) {
+      // Bengali only mode, move to next based on repeat mode
+      _handlePlaybackComplete();
+    }
+  }
+
   /// Play a specific ayah based on current playback content setting
   Future<void> playAyah(int surahNumber, int ayahNumber) async {
     _currentSurah = surahNumber;
@@ -318,64 +361,61 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  /// Play Bengali translation audio for a specific ayah
-  /// Note: Bengali verse-by-verse audio is not currently available
-  /// This method will show an error message and fall back appropriately
+  /// Play Bengali translation using Text-to-Speech
+  /// Uses the device's TTS engine to read the Bengali translation text
   Future<void> _playBengaliAyah(int surahNumber, int ayahNumber) async {
-    // Check if Bengali audio URL is available
-    final url = _currentBengaliTranslator.getAudioUrl(surahNumber, ayahNumber);
-
-    if (url == null) {
-      // Bengali audio is not available
-      _errorMessage = 'বাংলা অডিও এখনো উপলব্ধ নয়। Bengali audio is not available yet.';
-      debugPrint('Bengali audio not available for $surahNumber:$ayahNumber');
-
-      _isLoading = false;
-
-      // Handle based on current playback mode
-      if (_playbackContent == AudioPlaybackContent.bengaliOnly) {
-        // Bengali only mode - show error and stop
-        _isPlaying = false;
-        notifyListeners();
-      } else if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
-        // Was playing Arabic, then Bengali failed - move to next ayah
-        _isPlayingBengaliPart = false;
-        _handlePlaybackComplete();
-      } else if (_playbackContent == AudioPlaybackContent.bengaliThenArabic) {
-        // Bengali failed at start - play Arabic instead
-        _isPlayingBengaliPart = false;
-        _playArabicAyah(surahNumber, ayahNumber);
-      }
-      return;
-    }
-
     try {
       _isLoading = true;
-      _currentContentLabel = 'Bengali';
+      _currentContentLabel = 'Bengali (TTS)';
       _errorMessage = null;
       notifyListeners();
 
-      debugPrint('Playing Bengali - Translator: ${_currentBengaliTranslator.displayName}, URL: $url');
+      // Stop any currently playing Arabic audio
+      await _player.stop();
 
-      await _player.setUrl(url);
-      await _player.setSpeed(_playbackSpeed);
-      await _player.play();
+      // Get the ayah data with Bengali translation
+      final ayahs = await _quranDataService.getAyahsForSurah(surahNumber);
+      final ayah = ayahs.firstWhere(
+        (a) => a.numberInSurah == ayahNumber,
+        orElse: () => throw Exception('Ayah not found'),
+      );
+
+      final bengaliText = ayah.translationBengali;
+
+      if (bengaliText == null || bengaliText.isEmpty) {
+        _errorMessage = 'বাংলা অনুবাদ পাওয়া যায়নি। Bengali translation not found.';
+        debugPrint('Bengali translation not found for $surahNumber:$ayahNumber');
+        _isLoading = false;
+        _handleBengaliAudioFailed();
+        return;
+      }
+
+      // Set TTS speech rate based on playback speed
+      // TTS rate: 0.0-1.0, our speed: 0.5-2.0
+      // Convert: 1.0 speed -> 0.5 TTS rate
+      final ttsRate = (_playbackSpeed * 0.5).clamp(0.25, 1.0);
+      await _ttsService.setSpeechRate(ttsRate);
+
+      debugPrint('Playing Bengali TTS for $surahNumber:$ayahNumber - Text length: ${bengaliText.length}');
+
+      // Speak the Bengali translation
+      await _ttsService.speak(bengaliText);
 
       _isLoading = false;
+      _isPlaying = true;
       notifyListeners();
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'বাংলা অডিও লোড করতে সমস্যা হয়েছে। Error loading Bengali audio.';
+      _errorMessage = 'বাংলা অডিও চালাতে সমস্যা হয়েছে। Error playing Bengali audio: $e';
+      debugPrint('Error playing Bengali TTS: $e');
 
       // If Bengali audio fails, try to continue with Arabic in combined mode
       if (_playbackContent == AudioPlaybackContent.arabicThenBengali ||
           _playbackContent == AudioPlaybackContent.bengaliThenArabic) {
-        debugPrint('Bengali audio failed, skipping to next: $e');
         _handleBengaliAudioFailed();
       } else {
         _isPlaying = false;
         notifyListeners();
-        debugPrint('Error playing Bengali audio: $e');
       }
     }
   }
@@ -424,15 +464,23 @@ class AudioService extends ChangeNotifier {
     await playAyah(surahNumber, ayahNumber);
   }
 
-  /// Pause playback
+  /// Pause playback (handles both audio player and TTS)
   Future<void> pause() async {
+    if (_ttsService.isSpeaking) {
+      await _ttsService.pause();
+    }
     await _player.pause();
     notifyListeners();
   }
 
   /// Resume playback
   Future<void> resume() async {
-    await _player.play();
+    // For TTS, we need to restart from current ayah since TTS doesn't support resume well
+    if (_currentContentLabel.contains('Bengali') && _currentSurah != null && _currentAyah != null) {
+      await _playBengaliAyah(_currentSurah!, _currentAyah!);
+    } else {
+      await _player.play();
+    }
     notifyListeners();
   }
 
@@ -445,14 +493,19 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  /// Stop playback
+  /// Stop playback (handles both audio player and TTS)
   Future<void> stop() async {
+    await _ttsService.stop();
     await _player.stop();
     _currentSurah = null;
     _currentAyah = null;
     _isPlaying = false;
+    _isPlayingBengaliPart = false;
     notifyListeners();
   }
+
+  /// Check if Bengali TTS is available
+  bool get isBengaliTTSAvailable => _ttsService.isBengaliAvailable;
 
   /// Seek to a position
   Future<void> seekTo(Duration position) async {
