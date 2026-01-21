@@ -43,6 +43,7 @@ class QuranDataService extends ChangeNotifier {
   static const int _bengaliRawai = 162;          // Rawai Al-bayan
   static const int _bengaliMujibur = 163;        // Sheikh Mujibur Rahman
   static const int _bengaliAbuBakr = 213;        // Dr. Abu Bakr Zakaria
+  static const int _bengaliMuhiuddin = 9999;     // Muhiuddin Khan (Islamic Foundation) - served via Al-Quran Cloud
 
   // Bengali Tafsir IDs (Quran.com)
   static const int _tafsirIbnKathir = 164;       // Tafseer ibn Kathir (Bengali)
@@ -57,6 +58,14 @@ class QuranDataService extends ChangeNotifier {
   static const String _bengaliTranslationEdition = 'bn.bengali';  // Muhiuddin Khan
   static const String _englishTranslationEdition = 'en.sahih';    // Sahih International
   static const String _arabicEdition = 'quran-uthmani';           // Uthmani script
+
+  // Current settings
+  int _currentBengaliTranslationId = 161; // Default to Taisirul Quran
+
+  void setBengaliTranslationId(int id) {
+    _currentBengaliTranslationId = id;
+  }
+
 
   // Cache version - increment when data structure changes
   static const String _cacheVersion = 'v5';
@@ -93,7 +102,13 @@ class QuranDataService extends ChangeNotifier {
 
     try {
       // Try Quran.com API v4 first (comprehensive data)
-      final quranComResult = await _fetchFromQuranComApi(surahNumber);
+      // Exception: If Muhiuddin Khan is selected, skip Quran.com and go directly to Al-Quran Cloud
+      // because Quran.com v4 doesn't support this specific translation ID.
+      List<Ayah>? quranComResult;
+      if (_currentBengaliTranslationId != _bengaliMuhiuddin) {
+        quranComResult = await _fetchFromQuranComApi(surahNumber);
+      }
+      
       if (quranComResult != null && quranComResult.isNotEmpty) {
         _ayahCache[surahNumber] = quranComResult;
         await _saveToLocalCache(surahNumber, quranComResult);
@@ -102,8 +117,8 @@ class QuranDataService extends ChangeNotifier {
         return quranComResult;
       }
 
-      // Fallback to Al-Quran Cloud API
-      debugPrint('Falling back to Al-Quran Cloud API for surah $surahNumber');
+      // Fallback to Al-Quran Cloud API (or primary if Muhiuddin Khan selected)
+      debugPrint('Fetching from Al-Quran Cloud API for surah $surahNumber (Muhiuddin/Fallback)');
       final fallbackResult = await _fetchFromAlQuranCloudApi(surahNumber);
 
       _ayahCache[surahNumber] = fallbackResult;
@@ -132,7 +147,7 @@ class QuranDataService extends ChangeNotifier {
         '$_quranComBaseUrl/verses/by_chapter/$surahNumber'
         '?language=bn'
         '&words=false'
-        '&translations=$_bengaliTaisirul,$_bengaliAbuBakr'
+        '&translations=$_currentBengaliTranslationId'
         '&fields=text_uthmani,text_uthmani_simple,verse_key,juz_number,page_number,hizb_number'
         '&per_page=300',
       );
@@ -173,13 +188,14 @@ class QuranDataService extends ChangeNotifier {
         String? bengaliTranslation;
         final translations = verse['translations'] as List?;
         if (translations != null && translations.isNotEmpty) {
-          // Find Taisirul Quran first, then Abu Bakr Zakaria
+          // Find selected translation
           for (final t in translations) {
-            if (t['resource_id'] == _bengaliTaisirul) {
+            if (t['resource_id'] == _currentBengaliTranslationId) {
               bengaliTranslation = _cleanHtmlText(t['text'] as String?);
               break;
             }
           }
+          // Fallback to first available if specific ID not found (though api should return it)
           bengaliTranslation ??= _cleanHtmlText(translations.first['text'] as String?);
         }
 
@@ -359,6 +375,7 @@ class QuranDataService extends ChangeNotifier {
   static List<Map<String, dynamic>> getBengaliTranslationOptions() {
     return [
       {'id': _bengaliTaisirul, 'name': 'তাইসীরুল কুরআন', 'nameEn': 'Taisirul Quran'},
+      {'id': _bengaliMuhiuddin, 'name': 'মুহিউদ্দীন খান (ইসলামিক ফাউন্ডেশন)', 'nameEn': 'Muhiuddin Khan (Islamic Foundation)'},
       {'id': _bengaliAbuBakr, 'name': 'ড. আবু বকর জাকারিয়া', 'nameEn': 'Dr. Abu Bakr Zakaria'},
       {'id': _bengaliMujibur, 'name': 'শেখ মুজিবুর রহমান', 'nameEn': 'Sheikh Mujibur Rahman'},
       {'id': _bengaliRawai, 'name': 'রওয়াই আল-বায়ান', 'nameEn': 'Rawai Al-bayan'},

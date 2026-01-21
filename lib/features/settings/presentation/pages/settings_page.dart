@@ -7,6 +7,7 @@ import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/widgets/elegant_card.dart';
 import '../../../../core/models/tajweed.dart';
 import '../../../../core/services/audio_service.dart';
+import '../../../../core/services/quran_data_service.dart';
 import '../../../../core/utils/responsive.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -100,6 +101,15 @@ class SettingsPage extends StatelessWidget {
                         _showTranslationLanguageDialog(context, appState),
                     isTablet: isTablet,
                   ),
+                  if (appState.translationLanguage == TranslationLanguage.bengali ||
+                      appState.translationLanguage == TranslationLanguage.both)
+                    _SettingsTile(
+                      icon: Icons.menu_book_rounded,
+                      title: 'Bengali Translation Source',
+                      subtitle: _getBengaliTranslationName(appState.selectedBengaliTranslationId),
+                      onTap: () => _showBengaliTranslationDialog(context, appState),
+                      isTablet: isTablet,
+                    ),
                   _SettingsTile(
                     icon: Icons.abc_rounded,
                     title: 'Transliteration',
@@ -493,6 +503,37 @@ class SettingsPage extends StatelessWidget {
             child: const Text('Reset'),
           ),
         ],
+      ),
+    );
+  }
+  String _getBengaliTranslationName(int id) {
+    final options = QuranDataService.getBengaliTranslationOptions();
+    final option = options.firstWhere(
+      (o) => o['id'] == id,
+      orElse: () => {'name': 'Unknown'},
+    );
+    return option['name'] as String;
+  }
+
+  void _showBengaliTranslationDialog(
+      BuildContext context, AppStateProvider appState) {
+    final options = QuranDataService.getBengaliTranslationOptions();
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => _SelectionSheet(
+        title: 'Bengali Translation',
+        options: options.map((option) {
+          final id = option['id'] as int;
+          return _SelectionOption(
+            title: option['name'] as String,
+            subtitle: option['nameEn'] as String,
+            isSelected: appState.selectedBengaliTranslationId == id,
+            onTap: () {
+              appState.setSelectedBengaliTranslationId(id);
+              Navigator.pop(context);
+            },
+          );
+        }).toList(),
       ),
     );
   }

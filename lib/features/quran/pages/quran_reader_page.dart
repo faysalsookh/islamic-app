@@ -37,6 +37,7 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
   bool _showTranslation = true;
   bool _legendExpanded = false;
   bool _isLoading = true;
+  int? _lastLoadedTranslationId;
 
   final QuranDataService _quranDataService = QuranDataService();
 
@@ -46,6 +47,23 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
     _initializeSurahData();
     // Listen to audio service to sync current ayah with audio playback
     AudioService().addListener(_onAudioStateChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final appState = Provider.of<AppStateProvider>(context);
+    
+    // Check if translation setting changed
+    if (_lastLoadedTranslationId != null && 
+        _lastLoadedTranslationId != appState.selectedBengaliTranslationId) {
+      _lastLoadedTranslationId = appState.selectedBengaliTranslationId;
+      // Reload data with new translation
+      _loadAyahsAsync();
+    } else if (_lastLoadedTranslationId == null) {
+      // Initialize validation tracker
+      _lastLoadedTranslationId = appState.selectedBengaliTranslationId;
+    }
   }
 
   @override

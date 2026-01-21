@@ -5,6 +5,7 @@ import '../theme/app_typography.dart';
 import '../models/bookmark.dart';
 import '../models/reading_progress.dart';
 import '../services/audio_service.dart';
+import '../services/quran_data_service.dart';
 
 /// Available Arabic font styles
 enum ArabicFontStyle {
@@ -116,6 +117,9 @@ class AppStateProvider extends ChangeNotifier {
   TransliterationLanguage _transliterationLanguage = TransliterationLanguage.bengali;
   TransliterationLanguage get transliterationLanguage => _transliterationLanguage;
 
+  int _selectedBengaliTranslationId = 161; // Default to Taisirul Quran
+  int get selectedBengaliTranslationId => _selectedBengaliTranslationId;
+
   bool _showTranslation = true;
   bool get showTranslation => _showTranslation;
 
@@ -216,10 +220,16 @@ class AppStateProvider extends ChangeNotifier {
     _autoPlayOnPageOpen = prefs.getBool('auto_play_on_page_open') ?? false;
     _defaultRepeatMode = AudioRepeatMode.values[prefs.getInt('default_repeat_mode') ?? 0];
 
-    // Sync AudioService with loaded settings
+    // Bengali Translation settings
+    _selectedBengaliTranslationId = prefs.getInt('selected_bengali_translation_id') ?? 161; // Default to Taisirul
+
+    // Sync external services
     AudioService().setReciter(_selectedReciter);
     AudioService().setPlaybackSpeed(_defaultPlaybackSpeed);
     AudioService().setRepeatMode(_defaultRepeatMode);
+    
+    // Sync QuranDataService
+    QuranDataService().setBengaliTranslationId(_selectedBengaliTranslationId);
 
     notifyListeners();
   }
@@ -266,6 +276,18 @@ class AppStateProvider extends ChangeNotifier {
     _transliterationLanguage = language;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('transliteration_language', language.index);
+    notifyListeners();
+  }
+
+  Future<void> setSelectedBengaliTranslationId(int id) async {
+    _selectedBengaliTranslationId = id;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('selected_bengali_translation_id', id);
+    
+    // Update service and clear cache to force re-fetch
+    QuranDataService().setBengaliTranslationId(id);
+    await QuranDataService().clearCache();
+    
     notifyListeners();
   }
 
