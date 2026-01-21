@@ -158,6 +158,9 @@ class AppStateProvider extends ChangeNotifier {
   Reciter _selectedReciter = Reciter.misharyRashidAlafasy;
   Reciter get selectedReciter => _selectedReciter;
 
+  BengaliAudioSource _bengaliAudioSource = BengaliAudioSource.humanVoice;
+  BengaliAudioSource get bengaliAudioSource => _bengaliAudioSource;
+
   double _defaultPlaybackSpeed = 1.0;
   double get defaultPlaybackSpeed => _defaultPlaybackSpeed;
 
@@ -216,6 +219,7 @@ class AppStateProvider extends ChangeNotifier {
 
     // Audio settings
     _selectedReciter = Reciter.values[prefs.getInt('selected_reciter') ?? 0];
+    _bengaliAudioSource = BengaliAudioSource.values[prefs.getInt('bengali_audio_source') ?? 1]; // Default to humanVoice
     _defaultPlaybackSpeed = prefs.getDouble('default_playback_speed') ?? 1.0;
     _autoPlayOnPageOpen = prefs.getBool('auto_play_on_page_open') ?? false;
     _defaultRepeatMode = AudioRepeatMode.values[prefs.getInt('default_repeat_mode') ?? 0];
@@ -225,6 +229,7 @@ class AppStateProvider extends ChangeNotifier {
 
     // Sync external services
     AudioService().setReciter(_selectedReciter);
+    AudioService().setBengaliAudioSource(_bengaliAudioSource);
     AudioService().setPlaybackSpeed(_defaultPlaybackSpeed);
     AudioService().setRepeatMode(_defaultRepeatMode);
     
@@ -418,6 +423,15 @@ class AppStateProvider extends ChangeNotifier {
     AudioService().setReciter(reciter);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('selected_reciter', reciter.index);
+    notifyListeners();
+  }
+
+  Future<void> setBengaliAudioSource(BengaliAudioSource source) async {
+    _bengaliAudioSource = source;
+    // Also update the AudioService
+    AudioService().setBengaliAudioSource(source);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('bengali_audio_source', source.index);
     notifyListeners();
   }
 

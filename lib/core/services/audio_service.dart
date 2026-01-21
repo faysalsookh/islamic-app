@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'bengali_audio_urls.dart';
 import 'cloud_tts_service.dart';
 import 'quran_data_service.dart';
 
@@ -74,7 +75,61 @@ extension AudioPlaybackContentExtension on AudioPlaybackContent {
   }
 }
 
-/// Enum for Bengali translation reciters
+/// Enum for Bengali translation audio source types
+enum BengaliAudioSource {
+  /// Cloud TTS (Text-to-Speech) - computer generated voice
+  cloudTTS,
+
+  /// Human voice reciter - Bangladesh Islamic Foundation translation
+  /// (Surah-level audio with Arabic recitation + Bengali translation)
+  humanVoice,
+}
+
+extension BengaliAudioSourceExtension on BengaliAudioSource {
+  String get displayName {
+    switch (this) {
+      case BengaliAudioSource.cloudTTS:
+        return 'TTS Voice';
+      case BengaliAudioSource.humanVoice:
+        return 'Human Voice (BIF)';
+    }
+  }
+
+  String get displayNameBengali {
+    switch (this) {
+      case BengaliAudioSource.cloudTTS:
+        return 'টিটিএস ভয়েস';
+      case BengaliAudioSource.humanVoice:
+        return 'মানুষের কণ্ঠ (বিআইএফ)';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case BengaliAudioSource.cloudTTS:
+        return 'Computer generated voice (verse-by-verse)';
+      case BengaliAudioSource.humanVoice:
+        return 'Bangladesh Islamic Foundation (full surah)';
+    }
+  }
+
+  String get descriptionBengali {
+    switch (this) {
+      case BengaliAudioSource.cloudTTS:
+        return 'কম্পিউটার জেনারেটেড ভয়েস (আয়াত ভিত্তিক)';
+      case BengaliAudioSource.humanVoice:
+        return 'বাংলাদেশ ইসলামিক ফাউন্ডেশন (সম্পূর্ণ সূরা)';
+    }
+  }
+
+  /// Whether this source provides verse-by-verse audio
+  bool get isVerseByVerse => this == BengaliAudioSource.cloudTTS;
+
+  /// Whether this source provides full surah audio
+  bool get isFullSurah => this == BengaliAudioSource.humanVoice;
+}
+
+/// Enum for Bengali translation reciters (legacy - kept for compatibility)
 /// Note: Bengali audio availability depends on the source and may not be available for all verses
 enum BengaliTranslator {
   /// Verses.quran.com Bengali recitation (most reliable)
@@ -202,6 +257,7 @@ class AudioService extends ChangeNotifier {
   int? _currentAyah;
   Reciter _currentReciter = Reciter.misharyRashidAlafasy;
   BengaliTranslator _currentBengaliTranslator = BengaliTranslator.quranComBengali;
+  BengaliAudioSource _bengaliAudioSource = BengaliAudioSource.humanVoice;
   String? _errorMessage;
   AudioRepeatMode _repeatMode = AudioRepeatMode.none;
   AudioPlaybackContent _playbackContent = AudioPlaybackContent.arabicOnly;
@@ -215,6 +271,9 @@ class AudioService extends ChangeNotifier {
   // Track current content label for UI
   String _currentContentLabel = 'Arabic';
 
+  // Track if playing full surah Bengali audio
+  bool _isPlayingFullSurahBengali = false;
+
   // Getters
   bool get isPlaying => _isPlaying;
   bool get isLoading => _isLoading;
@@ -222,6 +281,7 @@ class AudioService extends ChangeNotifier {
   int? get currentAyah => _currentAyah;
   Reciter get currentReciter => _currentReciter;
   BengaliTranslator get currentBengaliTranslator => _currentBengaliTranslator;
+  BengaliAudioSource get bengaliAudioSource => _bengaliAudioSource;
   AudioRepeatMode get repeatMode => _repeatMode;
   AudioPlaybackContent get playbackContent => _playbackContent;
   double get playbackSpeed => _playbackSpeed;
@@ -229,6 +289,7 @@ class AudioService extends ChangeNotifier {
   Duration get duration => _duration;
   AudioPlayer get player => _player;
   bool get isPlayingBengaliPart => _isPlayingBengaliPart;
+  bool get isPlayingFullSurahBengali => _isPlayingFullSurahBengali;
   String get currentContentLabel => _currentContentLabel;
   String? get errorMessage => _errorMessage;
 
@@ -340,13 +401,69 @@ class AudioService extends ChangeNotifier {
     }
   }
 
+  /// Play Bengali translation audio
+  /// Uses either Cloud TTS or Human Voice based on bengaliAudioSource setting
+  Future<void> _playBengaliAyah(int surahNumber, int ayahNumber) async {
+    if (_bengaliAudioSource == BengaliAudioSource.humanVoice) {
+      await _playBengaliHumanVoice(surahNumber);
+    } else {
+      await _playBengaliTTS(surahNumber, ayahNumber);
+    }
+  }
+
+  /// Play Bengali translation using Human Voice (full surah audio)
+  /// Source: Bangladesh Islamic Foundation translation from Archive.org
+  Future<void> _playBengaliHumanVoice(int surahNumber) async {
+    try {
+      _isLoading = true;
+      _currentContentLabel = 'বাংলা (মানুষের কণ্ঠ)';
+      _errorMessage = null;
+      _isPlayingFullSurahBengali = true;
+      notifyListeners();
+
+      final url = BengaliAudioUrls.getSurahAudioUrl(surahNumber);
+      if (url == null) {
+        _errorMessage = 'বাংলা অডিও পাওয়া যায়নি। Bengali audio not found for surah $surahNumber.';
+        debugPrint('Bengali human voice audio not found for surah $surahNumber');
+        _isLoading = false;
+        _isPlayingFullSurahBengali = false;
+        _handleBengaliAudioFailed();
+        return;
+      }
+
+      debugPrint('Playing Bengali Human Voice for Surah $surahNumber: $url');
+
+      await _player.setUrl(url);
+      await _player.setSpeed(_playbackSpeed);
+      await _player.play();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _isPlayingFullSurahBengali = false;
+      _errorMessage = 'বাংলা অডিও চালাতে সমস্যা হয়েছে। Error: $e';
+      debugPrint('Error playing Bengali Human Voice: $e');
+
+      // If Bengali audio fails, try to continue with Arabic in combined mode
+      if (_playbackContent == AudioPlaybackContent.arabicThenBengali ||
+          _playbackContent == AudioPlaybackContent.bengaliThenArabic) {
+        _handleBengaliAudioFailed();
+      } else {
+        _isPlaying = false;
+        notifyListeners();
+      }
+    }
+  }
+
   /// Play Bengali translation using Cloud TTS API
   /// No device TTS engine required - plays audio directly from API
-  Future<void> _playBengaliAyah(int surahNumber, int ayahNumber) async {
+  Future<void> _playBengaliTTS(int surahNumber, int ayahNumber) async {
     try {
       _isLoading = true;
       _currentContentLabel = 'বাংলা';
       _errorMessage = null;
+      _isPlayingFullSurahBengali = false;
       notifyListeners();
 
       // Get the ayah data with Bengali translation
@@ -465,6 +582,23 @@ class AudioService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set Bengali audio source (TTS or Human Voice)
+  void setBengaliAudioSource(BengaliAudioSource source) {
+    if (_bengaliAudioSource == source) return;
+    _bengaliAudioSource = source;
+    debugPrint('Bengali audio source changed to: ${source.displayName}');
+    notifyListeners();
+  }
+
+  /// Play full surah Bengali audio with human voice
+  Future<void> playFullSurahBengali(int surahNumber) async {
+    _currentSurah = surahNumber;
+    _currentAyah = 1;
+    _isPlayingBengaliPart = true;
+    _isPlayingFullSurahBengali = true;
+    await _playBengaliHumanVoice(surahNumber);
+  }
+
   /// Play Arabic audio directly (for manual control)
   Future<void> playArabicOnly(int surahNumber, int ayahNumber) async {
     _currentSurah = surahNumber;
@@ -508,6 +642,7 @@ class AudioService extends ChangeNotifier {
     _currentAyah = null;
     _isPlaying = false;
     _isPlayingBengaliPart = false;
+    _isPlayingFullSurahBengali = false;
     _bengaliAudioUrls = [];
     _currentBengaliChunkIndex = 0;
     notifyListeners();

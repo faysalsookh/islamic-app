@@ -175,9 +175,16 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   _SettingsTile(
                     icon: Icons.record_voice_over_rounded,
-                    title: 'Reciter',
+                    title: 'Reciter (Arabic)',
                     subtitle: appState.selectedReciter.displayName,
                     onTap: () => _showReciterDialog(context, appState),
+                    isTablet: isTablet,
+                  ),
+                  _SettingsTile(
+                    icon: Icons.translate_rounded,
+                    title: 'Bengali Audio Source',
+                    subtitle: '${appState.bengaliAudioSource.displayName} - ${appState.bengaliAudioSource.description}',
+                    onTap: () => _showBengaliAudioSourceDialog(context, appState),
                     isTablet: isTablet,
                   ),
                   _SettingsTile(
@@ -472,6 +479,24 @@ class SettingsPage extends StatelessWidget {
           isSelected: appState.selectedReciter == reciter,
           onTap: () {
             appState.setSelectedReciter(reciter);
+            Navigator.pop(context);
+          },
+        )).toList(),
+      ),
+    );
+  }
+
+  void _showBengaliAudioSourceDialog(BuildContext context, AppStateProvider appState) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => _SelectionSheet(
+        title: 'Bengali Audio Source',
+        options: BengaliAudioSource.values.map((source) => _SelectionOption(
+          title: '${source.displayName} (${source.displayNameBengali})',
+          subtitle: source.description,
+          isSelected: appState.bengaliAudioSource == source,
+          onTap: () {
+            appState.setBengaliAudioSource(source);
             Navigator.pop(context);
           },
         )).toList(),

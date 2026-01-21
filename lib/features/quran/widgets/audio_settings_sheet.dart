@@ -99,6 +99,13 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
 
                     const SizedBox(height: 24),
 
+                    // Bengali Audio Source Section
+                    _buildSectionTitle('Bengali Audio Source', 'বাংলা অডিও সোর্স', isDark),
+                    const SizedBox(height: 12),
+                    _buildBengaliAudioSourceSelector(isDark, theme),
+
+                    const SizedBox(height: 24),
+
                     // Playback Speed Section
                     _buildSectionTitle('Playback Speed', 'গতি', isDark),
                     const SizedBox(height: 12),
@@ -187,16 +194,20 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.cloud_done_rounded,
+                    _audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
+                        ? Icons.record_voice_over_rounded
+                        : Icons.cloud_done_rounded,
                     size: 18,
                     color: AppColors.forestGreen,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'বাংলা অনুবাদ ক্লাউড থেকে অডিও হিসেবে বাজবে।\nBengali plays as audio from cloud.',
+                      _audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
+                          ? 'বাংলা: মানুষের কণ্ঠে সম্পূর্ণ সূরা (বিআইএফ)।\nBengali: Human voice full surah (BIF).'
+                          : 'বাংলা: TTS ভয়েস (আয়াত ভিত্তিক)।\nBengali: TTS voice (verse-by-verse).',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         height: 1.4,
                       ),
@@ -280,6 +291,145 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
               );
             }).toList(),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBengaliAudioSourceSelector(bool isDark, ThemeData theme) {
+    return ListenableBuilder(
+      listenable: _audioService,
+      builder: (context, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.cream,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: BengaliAudioSource.values.map((source) {
+                  final isSelected = _audioService.bengaliAudioSource == source;
+                  return InkWell(
+                    onTap: () {
+                      HapticService().selectionClick();
+                      _audioService.setBengaliAudioSource(source);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : (isDark ? AppColors.darkTextSecondary : AppColors.textTertiary),
+                                width: 2,
+                              ),
+                              color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+                            ),
+                            child: isSelected
+                                ? const Icon(Icons.check, size: 12, color: Colors.white)
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(
+                            source == BengaliAudioSource.humanVoice
+                                ? Icons.record_voice_over_rounded
+                                : Icons.speaker_phone_rounded,
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      source.displayName,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '(${source.displayNameBengali})',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontFamily: 'NotoSansBengali',
+                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  source.description,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Note about human voice
+            if (_audioService.bengaliAudioSource == BengaliAudioSource.humanVoice)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.blue.withValues(alpha: 0.1)
+                      : Colors.blue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.blue.withValues(alpha: 0.3)
+                        : Colors.blue.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'মানুষের কণ্ঠে সম্পূর্ণ সূরা বাজবে (আয়াত ভিত্তিক নয়)।\nHuman voice plays full surah (not verse-by-verse).',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         );
       },
     );
