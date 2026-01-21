@@ -331,6 +331,9 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
                                         showTranslation:
                                             _showTranslation && appState.showTranslation,
                                         quranFontSize: appState.quranFontSize,
+                                        initialScrollIndex: widget.initialAyahNumber != null
+                                            ? _currentAyahIndex
+                                            : null,
                                         onAyahSelected: (index) {
                                           setState(() {
                                             _currentAyahIndex = index;

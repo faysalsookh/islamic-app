@@ -248,6 +248,7 @@ class AyahListView extends StatefulWidget {
   final bool showTranslation;
   final double quranFontSize;
   final ValueChanged<int> onAyahSelected;
+  final int? initialScrollIndex;
 
   const AyahListView({
     super.key,
@@ -257,6 +258,7 @@ class AyahListView extends StatefulWidget {
     required this.showTranslation,
     required this.quranFontSize,
     required this.onAyahSelected,
+    this.initialScrollIndex,
   });
 
   @override
@@ -268,6 +270,37 @@ class _AyahListViewState extends State<AyahListView> {
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   final AudioService _audioService = AudioService();
+  bool _hasScrolledToInitial = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Schedule initial scroll animation after first frame
+    if (widget.initialScrollIndex != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToInitialWithAnimation();
+      });
+    }
+  }
+
+  void _scrollToInitialWithAnimation() {
+    if (_hasScrolledToInitial) return;
+    _hasScrolledToInitial = true;
+
+    if (_itemScrollController.isAttached && widget.initialScrollIndex != null) {
+      // Small delay for smoother UX - let the page settle first
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_itemScrollController.isAttached) {
+          _itemScrollController.scrollTo(
+            index: widget.initialScrollIndex! + 1, // +1 for Bismillah header
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeOutQuart, // Smooth, elegant deceleration
+            alignment: 0.0, // Position at top of screen
+          );
+        }
+      });
+    }
+  }
 
   @override
   void didUpdateWidget(AyahListView oldWidget) {
@@ -280,10 +313,10 @@ class _AyahListViewState extends State<AyahListView> {
   void _scrollToIndex(int index) {
     if (_itemScrollController.isAttached) {
       _itemScrollController.scrollTo(
-        index: index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        alignment: 0.1,
+        index: index + 1, // +1 for Bismillah header
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOutCubic, // Smooth deceleration animation
+        alignment: 0.0, // Position at top of screen
       );
     }
   }
@@ -299,6 +332,8 @@ class _AyahListViewState extends State<AyahListView> {
               itemCount: widget.ayahs.length + 1, // +1 for Bismillah/Header
               itemScrollController: _itemScrollController,
               itemPositionsListener: _itemPositionsListener,
+              // Start at beginning, then animate to target for smooth effect
+              initialScrollIndex: 0,
               padding: const EdgeInsets.only(bottom: 100),
               itemBuilder: (context, index) {
                 if (index == 0) {
