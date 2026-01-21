@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
 /// Enum for different repeat modes
@@ -14,6 +15,98 @@ enum AudioRepeatMode {
 
   /// Continuous play through entire Quran
   continuous,
+}
+
+/// Enum for audio playback content options
+enum AudioPlaybackContent {
+  /// Play only Arabic recitation
+  arabicOnly,
+
+  /// Play only Bengali translation audio
+  bengaliOnly,
+
+  /// Play Arabic first, then Bengali translation
+  arabicThenBengali,
+
+  /// Play Bengali translation first, then Arabic
+  bengaliThenArabic,
+}
+
+extension AudioPlaybackContentExtension on AudioPlaybackContent {
+  String get displayName {
+    switch (this) {
+      case AudioPlaybackContent.arabicOnly:
+        return 'Arabic Only';
+      case AudioPlaybackContent.bengaliOnly:
+        return 'Bengali Only';
+      case AudioPlaybackContent.arabicThenBengali:
+        return 'Arabic + Bengali';
+      case AudioPlaybackContent.bengaliThenArabic:
+        return 'Bengali + Arabic';
+    }
+  }
+
+  String get displayNameBengali {
+    switch (this) {
+      case AudioPlaybackContent.arabicOnly:
+        return 'শুধু আরবি';
+      case AudioPlaybackContent.bengaliOnly:
+        return 'শুধু বাংলা';
+      case AudioPlaybackContent.arabicThenBengali:
+        return 'আরবি + বাংলা';
+      case AudioPlaybackContent.bengaliThenArabic:
+        return 'বাংলা + আরবি';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case AudioPlaybackContent.arabicOnly:
+        return Icons.speaker_rounded;
+      case AudioPlaybackContent.bengaliOnly:
+        return Icons.translate_rounded;
+      case AudioPlaybackContent.arabicThenBengali:
+        return Icons.playlist_play_rounded;
+      case AudioPlaybackContent.bengaliThenArabic:
+        return Icons.playlist_play_rounded;
+    }
+  }
+}
+
+/// Enum for Bengali translation reciters
+/// Note: Bengali audio availability depends on the source and may not be available for all verses
+enum BengaliTranslator {
+  /// Verses.quran.com Bengali recitation (most reliable)
+  quranComBengali,
+}
+
+extension BengaliTranslatorExtension on BengaliTranslator {
+  String get displayName {
+    switch (this) {
+      case BengaliTranslator.quranComBengali:
+        return 'Bengali Translation';
+    }
+  }
+
+  String get displayNameBengali {
+    switch (this) {
+      case BengaliTranslator.quranComBengali:
+        return 'বাংলা অনুবাদ';
+    }
+  }
+
+  /// Get audio URL for specific ayah
+  /// Returns null if audio is not available
+  String? getAudioUrl(int surahNumber, int ayahNumber) {
+    // Calculate absolute ayah number (for APIs that use it)
+    // This is a workaround - Bengali verse-by-verse audio is limited
+    switch (this) {
+      case BengaliTranslator.quranComBengali:
+        // Note: Bengali translation audio is not widely available as verse-by-verse
+        // Returning null to indicate unavailability
+        return null;
+    }
+  }
 }
 
 /// Enum for available reciters
@@ -101,10 +194,19 @@ class AudioService extends ChangeNotifier {
   int? _currentSurah;
   int? _currentAyah;
   Reciter _currentReciter = Reciter.misharyRashidAlafasy;
+  BengaliTranslator _currentBengaliTranslator = BengaliTranslator.quranComBengali;
+  String? _errorMessage;
   AudioRepeatMode _repeatMode = AudioRepeatMode.none;
+  AudioPlaybackContent _playbackContent = AudioPlaybackContent.arabicOnly;
   double _playbackSpeed = 1.0;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+
+  // Track which part of the ayah is currently playing (for combined modes)
+  bool _isPlayingBengaliPart = false;
+
+  // Track current content label for UI
+  String _currentContentLabel = 'Arabic';
 
   // Getters
   bool get isPlaying => _isPlaying;
@@ -112,11 +214,22 @@ class AudioService extends ChangeNotifier {
   int? get currentSurah => _currentSurah;
   int? get currentAyah => _currentAyah;
   Reciter get currentReciter => _currentReciter;
+  BengaliTranslator get currentBengaliTranslator => _currentBengaliTranslator;
   AudioRepeatMode get repeatMode => _repeatMode;
+  AudioPlaybackContent get playbackContent => _playbackContent;
   double get playbackSpeed => _playbackSpeed;
   Duration get position => _position;
   Duration get duration => _duration;
   AudioPlayer get player => _player;
+  bool get isPlayingBengaliPart => _isPlayingBengaliPart;
+  String get currentContentLabel => _currentContentLabel;
+  String? get errorMessage => _errorMessage;
+
+  /// Clear error message
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
 
   /// Check if a specific ayah is currently playing
   bool isAyahPlaying(int surahNumber, int ayahNumber) {
@@ -152,12 +265,35 @@ class AudioService extends ChangeNotifier {
     });
   }
 
-  /// Play a specific ayah
+  /// Play a specific ayah based on current playback content setting
   Future<void> playAyah(int surahNumber, int ayahNumber) async {
+    _currentSurah = surahNumber;
+    _currentAyah = ayahNumber;
+    _isPlayingBengaliPart = false;
+
+    switch (_playbackContent) {
+      case AudioPlaybackContent.arabicOnly:
+        await _playArabicAyah(surahNumber, ayahNumber);
+        break;
+      case AudioPlaybackContent.bengaliOnly:
+        await _playBengaliAyah(surahNumber, ayahNumber);
+        break;
+      case AudioPlaybackContent.arabicThenBengali:
+        _isPlayingBengaliPart = false;
+        await _playArabicAyah(surahNumber, ayahNumber);
+        break;
+      case AudioPlaybackContent.bengaliThenArabic:
+        _isPlayingBengaliPart = true;
+        await _playBengaliAyah(surahNumber, ayahNumber);
+        break;
+    }
+  }
+
+  /// Play Arabic recitation for a specific ayah
+  Future<void> _playArabicAyah(int surahNumber, int ayahNumber) async {
     try {
       _isLoading = true;
-      _currentSurah = surahNumber;
-      _currentAyah = ayahNumber;
+      _currentContentLabel = 'Arabic';
       notifyListeners();
 
       // Build audio URL - EveryAyah format: SSSAAA.mp3 (3 digits surah, 3 digits ayah)
@@ -165,7 +301,7 @@ class AudioService extends ChangeNotifier {
       final ayahStr = ayahNumber.toString().padLeft(3, '0');
       final url = '${_currentReciter.baseUrl}/$surahStr$ayahStr.mp3';
 
-      debugPrint('Playing audio - Reciter: ${_currentReciter.displayName}, URL: $url');
+      debugPrint('Playing Arabic - Reciter: ${_currentReciter.displayName}, URL: $url');
 
       await _player.setUrl(url);
       await _player.setSpeed(_playbackSpeed);
@@ -177,9 +313,108 @@ class AudioService extends ChangeNotifier {
       _isLoading = false;
       _isPlaying = false;
       notifyListeners();
-      debugPrint('Error playing audio: $e');
+      debugPrint('Error playing Arabic audio: $e');
       rethrow;
     }
+  }
+
+  /// Play Bengali translation audio for a specific ayah
+  /// Note: Bengali verse-by-verse audio is not currently available
+  /// This method will show an error message and fall back appropriately
+  Future<void> _playBengaliAyah(int surahNumber, int ayahNumber) async {
+    // Check if Bengali audio URL is available
+    final url = _currentBengaliTranslator.getAudioUrl(surahNumber, ayahNumber);
+
+    if (url == null) {
+      // Bengali audio is not available
+      _errorMessage = 'বাংলা অডিও এখনো উপলব্ধ নয়। Bengali audio is not available yet.';
+      debugPrint('Bengali audio not available for $surahNumber:$ayahNumber');
+
+      _isLoading = false;
+
+      // Handle based on current playback mode
+      if (_playbackContent == AudioPlaybackContent.bengaliOnly) {
+        // Bengali only mode - show error and stop
+        _isPlaying = false;
+        notifyListeners();
+      } else if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
+        // Was playing Arabic, then Bengali failed - move to next ayah
+        _isPlayingBengaliPart = false;
+        _handlePlaybackComplete();
+      } else if (_playbackContent == AudioPlaybackContent.bengaliThenArabic) {
+        // Bengali failed at start - play Arabic instead
+        _isPlayingBengaliPart = false;
+        _playArabicAyah(surahNumber, ayahNumber);
+      }
+      return;
+    }
+
+    try {
+      _isLoading = true;
+      _currentContentLabel = 'Bengali';
+      _errorMessage = null;
+      notifyListeners();
+
+      debugPrint('Playing Bengali - Translator: ${_currentBengaliTranslator.displayName}, URL: $url');
+
+      await _player.setUrl(url);
+      await _player.setSpeed(_playbackSpeed);
+      await _player.play();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'বাংলা অডিও লোড করতে সমস্যা হয়েছে। Error loading Bengali audio.';
+
+      // If Bengali audio fails, try to continue with Arabic in combined mode
+      if (_playbackContent == AudioPlaybackContent.arabicThenBengali ||
+          _playbackContent == AudioPlaybackContent.bengaliThenArabic) {
+        debugPrint('Bengali audio failed, skipping to next: $e');
+        _handleBengaliAudioFailed();
+      } else {
+        _isPlaying = false;
+        notifyListeners();
+        debugPrint('Error playing Bengali audio: $e');
+      }
+    }
+  }
+
+  /// Handle when Bengali audio fails in combined mode
+  void _handleBengaliAudioFailed() {
+    if (_playbackContent == AudioPlaybackContent.bengaliThenArabic && _isPlayingBengaliPart) {
+      // Bengali failed, play Arabic instead
+      _isPlayingBengaliPart = false;
+      if (_currentSurah != null && _currentAyah != null) {
+        _playArabicAyah(_currentSurah!, _currentAyah!);
+      }
+    } else {
+      // Just move to next ayah
+      _handlePlaybackComplete();
+    }
+  }
+
+  /// Set playback content mode
+  void setPlaybackContent(AudioPlaybackContent content) {
+    _playbackContent = content;
+    debugPrint('Playback content changed to: ${content.displayName}');
+    notifyListeners();
+  }
+
+  /// Set Bengali translator
+  void setBengaliTranslator(BengaliTranslator translator) {
+    if (_currentBengaliTranslator == translator) return;
+    _currentBengaliTranslator = translator;
+    debugPrint('Bengali translator changed to: ${translator.displayName}');
+    notifyListeners();
+  }
+
+  /// Play Arabic audio directly (for manual control)
+  Future<void> playArabicOnly(int surahNumber, int ayahNumber) async {
+    _currentSurah = surahNumber;
+    _currentAyah = ayahNumber;
+    _isPlayingBengaliPart = false;
+    await _playArabicAyah(surahNumber, ayahNumber);
   }
 
   /// Play from a specific ayah and continue
@@ -265,18 +500,40 @@ class AudioService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Handle playback completion based on repeat mode
+  /// Handle playback completion based on repeat mode and playback content
   void _handlePlaybackComplete() {
+    // First, check if we need to play the second part of a combined mode
+    if (_playbackContent == AudioPlaybackContent.arabicThenBengali && !_isPlayingBengaliPart) {
+      // Arabic finished, now play Bengali
+      _isPlayingBengaliPart = true;
+      if (_currentSurah != null && _currentAyah != null) {
+        _playBengaliAyah(_currentSurah!, _currentAyah!);
+        return;
+      }
+    } else if (_playbackContent == AudioPlaybackContent.bengaliThenArabic && _isPlayingBengaliPart) {
+      // Bengali finished, now play Arabic
+      _isPlayingBengaliPart = false;
+      if (_currentSurah != null && _currentAyah != null) {
+        _playArabicAyah(_currentSurah!, _currentAyah!);
+        return;
+      }
+    }
+
+    // Reset for next ayah
+    _isPlayingBengaliPart = false;
+
+    // Now handle based on repeat mode
     switch (_repeatMode) {
       case AudioRepeatMode.none:
         // Stop playback
         _currentSurah = null;
         _currentAyah = null;
+        _currentContentLabel = '';
         notifyListeners();
         break;
 
       case AudioRepeatMode.single:
-        // Replay the same ayah
+        // Replay the same ayah (from the beginning based on content mode)
         if (_currentSurah != null && _currentAyah != null) {
           playAyah(_currentSurah!, _currentAyah!);
         }
