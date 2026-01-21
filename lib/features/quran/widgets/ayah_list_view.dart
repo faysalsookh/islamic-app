@@ -767,6 +767,7 @@ class BismillahHeader extends StatelessWidget {
                       const Color(0xFF1565C0).withValues(alpha: 0.1),
                       const Color(0xFF42A5F5).withValues(alpha: 0.05),
                     ],
+
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
