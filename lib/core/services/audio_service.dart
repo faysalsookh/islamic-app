@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'bengali_audio_urls.dart';
 import 'cloud_tts_service.dart';
 import 'quran_data_service.dart';
@@ -29,9 +32,6 @@ enum AudioPlaybackContent {
 
   /// Play Arabic first, then Bengali translation
   arabicThenBengali,
-
-  /// Play Bengali translation first, then Arabic
-  bengaliThenArabic,
 }
 
 extension AudioPlaybackContentExtension on AudioPlaybackContent {
@@ -43,8 +43,6 @@ extension AudioPlaybackContentExtension on AudioPlaybackContent {
         return 'Bengali Only';
       case AudioPlaybackContent.arabicThenBengali:
         return 'Arabic + Bengali';
-      case AudioPlaybackContent.bengaliThenArabic:
-        return 'Bengali + Arabic';
     }
   }
 
@@ -56,8 +54,6 @@ extension AudioPlaybackContentExtension on AudioPlaybackContent {
         return 'শুধু বাংলা';
       case AudioPlaybackContent.arabicThenBengali:
         return 'আরবি + বাংলা';
-      case AudioPlaybackContent.bengaliThenArabic:
-        return 'বাংলা + আরবি';
     }
   }
 
@@ -68,8 +64,6 @@ extension AudioPlaybackContentExtension on AudioPlaybackContent {
       case AudioPlaybackContent.bengaliOnly:
         return Icons.translate_rounded;
       case AudioPlaybackContent.arabicThenBengali:
-        return Icons.playlist_play_rounded;
-      case AudioPlaybackContent.bengaliThenArabic:
         return Icons.playlist_play_rounded;
     }
   }
@@ -250,6 +244,14 @@ class AudioService extends ChangeNotifier {
   List<String> _bengaliAudioUrls = [];
   int _currentBengaliChunkIndex = 0;
 
+  // Preloaded Bengali audio for faster playback in combined mode
+  List<String> _preloadedBengaliUrls = [];
+  List<String> _preloadedBengaliFiles = []; // Local cached file paths
+  int? _preloadedSurah;
+  int? _preloadedAyah;
+  bool _isPreloading = false;
+  bool _bengaliAudioPreloaded = false; // True when actual audio is downloaded
+
   // Current playback state
   bool _isPlaying = false;
   bool _isLoading = false;
@@ -325,7 +327,7 @@ class AudioService extends ChangeNotifier {
       notifyListeners();
     });
 
-    // Listen for playback completion
+    // Listen for playback completion on main player
     _player.processingStateStream.listen((state) {
       if (state == ProcessingState.completed) {
         // Check if we're playing Bengali chunks and have more to play
@@ -365,10 +367,6 @@ class AudioService extends ChangeNotifier {
         _isPlayingBengaliPart = false;
         await _playArabicAyah(surahNumber, ayahNumber);
         break;
-      case AudioPlaybackContent.bengaliThenArabic:
-        _isPlayingBengaliPart = true;
-        await _playBengaliAyah(surahNumber, ayahNumber);
-        break;
     }
   }
 
@@ -386,6 +384,11 @@ class AudioService extends ChangeNotifier {
 
       debugPrint('Playing Arabic - Reciter: ${_currentReciter.displayName}, URL: $url');
 
+      // Start preloading Bengali audio in background for combined mode
+      if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
+        _preloadBengaliAudio(surahNumber, ayahNumber);
+      }
+
       await _player.setUrl(url);
       await _player.setSpeed(_playbackSpeed);
       await _player.play();
@@ -401,14 +404,121 @@ class AudioService extends ChangeNotifier {
     }
   }
 
+  /// Preload Bengali audio in background for faster playback
+  /// Downloads audio files to local cache while Arabic is playing
+  Future<void> _preloadBengaliAudio(int surahNumber, int ayahNumber) async {
+    if (_isPreloading) return;
+
+    _isPreloading = true;
+    _preloadedBengaliUrls = [];
+    _preloadedBengaliFiles = [];
+    _preloadedSurah = null;
+    _preloadedAyah = null;
+    _bengaliAudioPreloaded = false;
+
+    try {
+      debugPrint('⏳ Preloading Bengali audio for $surahNumber:$ayahNumber');
+
+      // Get the ayah data with Bengali translation
+      final ayahs = await _quranDataService.getAyahsForSurah(surahNumber);
+      final ayah = ayahs.firstWhere(
+        (a) => a.numberInSurah == ayahNumber,
+        orElse: () => throw Exception('Ayah not found'),
+      );
+
+      final bengaliText = ayah.translationBengali;
+
+      if (bengaliText != null && bengaliText.isNotEmpty) {
+        // Generate cloud TTS audio URLs
+        _preloadedBengaliUrls = _cloudTTSService.generateAudioUrls(bengaliText);
+        _preloadedSurah = surahNumber;
+        _preloadedAyah = ayahNumber;
+
+        // Download ALL chunks to local cache
+        if (_preloadedBengaliUrls.isNotEmpty) {
+          final tempDir = await getTemporaryDirectory();
+          final cacheDir = Directory('${tempDir.path}/bengali_tts_cache');
+          if (!await cacheDir.exists()) {
+            await cacheDir.create(recursive: true);
+          }
+
+          // Download all chunks in parallel
+          final downloadFutures = <Future<String?>>[];
+          for (int i = 0; i < _preloadedBengaliUrls.length; i++) {
+            downloadFutures.add(_downloadAudioChunk(
+              _preloadedBengaliUrls[i],
+              '${cacheDir.path}/bengali_${surahNumber}_${ayahNumber}_$i.mp3',
+            ));
+          }
+
+          final results = await Future.wait(downloadFutures);
+          _preloadedBengaliFiles = results.whereType<String>().toList();
+
+          if (_preloadedBengaliFiles.isNotEmpty) {
+            _bengaliAudioPreloaded = true;
+            debugPrint('✅ Bengali audio downloaded: ${_preloadedBengaliFiles.length} files cached');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error preloading Bengali audio: $e');
+      _bengaliAudioPreloaded = false;
+    } finally {
+      _isPreloading = false;
+    }
+  }
+
+  /// Download a single audio chunk to local file
+  Future<String?> _downloadAudioChunk(String url, String filePath) async {
+    try {
+      final file = File(filePath);
+
+      // Check if already cached
+      if (await file.exists()) {
+        debugPrint('📁 Using cached: $filePath');
+        return filePath;
+      }
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://translate.google.com/',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        await file.writeAsBytes(response.bodyBytes);
+        debugPrint('📥 Downloaded: $filePath');
+        return filePath;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Download failed: $e');
+      return null;
+    }
+  }
+
   /// Play Bengali translation audio
   /// Uses either Cloud TTS or Human Voice based on bengaliAudioSource setting
-  /// Note: When playbackContent is bengaliOnly, we must use TTS because humanVoice files contain both Arabic and Bengali
+  /// Note: For arabicThenBengali mode, ALWAYS use TTS (verse-by-verse) because:
+  /// 1. Human voice files contain both Arabic and Bengali mixed
+  /// 2. TTS provides Bengali-only audio that's cached for instant playback
   Future<void> _playBengaliAyah(int surahNumber, int ayahNumber) async {
-    // If user selected Bengali Only, force TTS because humanVoice files contain both Arabic and Bengali
+    // For Arabic+Bengali mode, ALWAYS use TTS (it's preloaded and cached)
+    if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
+      await _playBengaliTTS(surahNumber, ayahNumber);
+      return;
+    }
+
+    // Bengali Only mode - also use TTS (verse-by-verse Bengali only)
     if (_playbackContent == AudioPlaybackContent.bengaliOnly) {
       await _playBengaliTTS(surahNumber, ayahNumber);
-    } else if (_bengaliAudioSource == BengaliAudioSource.humanVoice) {
+      return;
+    }
+
+    // For other modes, respect user's audio source preference
+    if (_bengaliAudioSource == BengaliAudioSource.humanVoice) {
       await _playBengaliHumanVoice(surahNumber);
     } else {
       await _playBengaliTTS(surahNumber, ayahNumber);
@@ -450,8 +560,7 @@ class AudioService extends ChangeNotifier {
       debugPrint('Error playing Bengali Human Voice: $e');
 
       // If Bengali audio fails, try to continue with Arabic in combined mode
-      if (_playbackContent == AudioPlaybackContent.arabicThenBengali ||
-          _playbackContent == AudioPlaybackContent.bengaliThenArabic) {
+      if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
         _handleBengaliAudioFailed();
       } else {
         _isPlaying = false;
@@ -464,10 +573,35 @@ class AudioService extends ChangeNotifier {
   /// No device TTS engine required - plays audio directly from API
   Future<void> _playBengaliTTS(int surahNumber, int ayahNumber) async {
     try {
-      _isLoading = true;
       _currentContentLabel = 'বাংলা';
       _errorMessage = null;
       _isPlayingFullSurahBengali = false;
+
+      // Check if we have preloaded and cached audio files for this ayah (instant playback)
+      if (_preloadedSurah == surahNumber &&
+          _preloadedAyah == ayahNumber &&
+          _preloadedBengaliFiles.isNotEmpty &&
+          _bengaliAudioPreloaded) {
+        debugPrint('▶️ Using cached Bengali audio for $surahNumber:$ayahNumber');
+
+        // Use cached file paths instead of URLs
+        _bengaliAudioUrls = _preloadedBengaliFiles.map((f) => 'file://$f').toList();
+        _currentBengaliChunkIndex = 0;
+
+        // Clear preloaded data
+        _preloadedBengaliUrls = [];
+        _preloadedBengaliFiles = [];
+        _preloadedSurah = null;
+        _preloadedAyah = null;
+        _bengaliAudioPreloaded = false;
+
+        // Play immediately from local file (no network delay!)
+        await _playBengaliChunk();
+        return;
+      }
+
+      // No preloaded data, load normally
+      _isLoading = true;
       notifyListeners();
 
       // Get the ayah data with Bengali translation
@@ -501,8 +635,7 @@ class AudioService extends ChangeNotifier {
       debugPrint('Error playing Bengali Cloud TTS: $e');
 
       // If Bengali audio fails, try to continue with Arabic in combined mode
-      if (_playbackContent == AudioPlaybackContent.arabicThenBengali ||
-          _playbackContent == AudioPlaybackContent.bengaliThenArabic) {
+      if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
         _handleBengaliAudioFailed();
       } else {
         _isPlaying = false;
@@ -540,35 +673,43 @@ class AudioService extends ChangeNotifier {
   void _handleBengaliPlaybackComplete() {
     debugPrint('Bengali playback complete');
 
-    // Handle combined modes
-    if (_playbackContent == AudioPlaybackContent.bengaliThenArabic && _isPlayingBengaliPart) {
-      // Bengali finished, now play Arabic
-      _isPlayingBengaliPart = false;
-      if (_currentSurah != null && _currentAyah != null) {
-        _playArabicAyah(_currentSurah!, _currentAyah!);
-      }
-    } else if (_playbackContent == AudioPlaybackContent.arabicThenBengali && _isPlayingBengaliPart) {
-      // Both Arabic and Bengali finished, move to next ayah
-      _isPlayingBengaliPart = false;
-      _handlePlaybackComplete();
-    } else if (_playbackContent == AudioPlaybackContent.bengaliOnly) {
-      // Bengali only mode, move to next based on repeat mode
-      _handlePlaybackComplete();
+    // Reset Bengali state
+    _isPlayingBengaliPart = false;
+
+    // Move to next ayah based on repeat mode
+    _moveToNextAyahBasedOnRepeatMode();
+  }
+
+  /// Move to next ayah based on current repeat mode
+  void _moveToNextAyahBasedOnRepeatMode() {
+    switch (_repeatMode) {
+      case AudioRepeatMode.none:
+        // Stop playback
+        _currentSurah = null;
+        _currentAyah = null;
+        _currentContentLabel = '';
+        notifyListeners();
+        break;
+
+      case AudioRepeatMode.single:
+        // Replay the same ayah
+        if (_currentSurah != null && _currentAyah != null) {
+          playAyah(_currentSurah!, _currentAyah!);
+        }
+        break;
+
+      case AudioRepeatMode.surah:
+      case AudioRepeatMode.continuous:
+        // Play next ayah
+        _playNextAyah();
+        break;
     }
   }
 
   /// Handle when Bengali audio fails in combined mode
   void _handleBengaliAudioFailed() {
-    if (_playbackContent == AudioPlaybackContent.bengaliThenArabic && _isPlayingBengaliPart) {
-      // Bengali failed, play Arabic instead
-      _isPlayingBengaliPart = false;
-      if (_currentSurah != null && _currentAyah != null) {
-        _playArabicAyah(_currentSurah!, _currentAyah!);
-      }
-    } else {
-      // Just move to next ayah
-      _handlePlaybackComplete();
-    }
+    // Just move to next ayah
+    _handlePlaybackComplete();
   }
 
   /// Set playback content mode
@@ -649,6 +790,12 @@ class AudioService extends ChangeNotifier {
     _isPlayingFullSurahBengali = false;
     _bengaliAudioUrls = [];
     _currentBengaliChunkIndex = 0;
+    // Clear preloaded data
+    _preloadedBengaliUrls = [];
+    _preloadedBengaliFiles = [];
+    _preloadedSurah = null;
+    _preloadedAyah = null;
+    _bengaliAudioPreloaded = false;
     notifyListeners();
   }
 
@@ -703,49 +850,21 @@ class AudioService extends ChangeNotifier {
 
   /// Handle playback completion based on repeat mode and playback content
   void _handlePlaybackComplete() {
-    // First, check if we need to play the second part of a combined mode
+    debugPrint('Playback complete - content: ${_playbackContent.name}, isPlayingBengali: $_isPlayingBengaliPart');
+
+    // For Arabic+Bengali mode: after Arabic finishes, play Bengali
     if (_playbackContent == AudioPlaybackContent.arabicThenBengali && !_isPlayingBengaliPart) {
-      // Arabic finished, now play Bengali
+      debugPrint('Arabic finished, now playing Bengali...');
       _isPlayingBengaliPart = true;
       if (_currentSurah != null && _currentAyah != null) {
         _playBengaliAyah(_currentSurah!, _currentAyah!);
         return;
       }
-    } else if (_playbackContent == AudioPlaybackContent.bengaliThenArabic && _isPlayingBengaliPart) {
-      // Bengali finished, now play Arabic
-      _isPlayingBengaliPart = false;
-      if (_currentSurah != null && _currentAyah != null) {
-        _playArabicAyah(_currentSurah!, _currentAyah!);
-        return;
-      }
     }
 
-    // Reset for next ayah
+    // For Arabic Only mode or after Bengali completes: move to next ayah
     _isPlayingBengaliPart = false;
-
-    // Now handle based on repeat mode
-    switch (_repeatMode) {
-      case AudioRepeatMode.none:
-        // Stop playback
-        _currentSurah = null;
-        _currentAyah = null;
-        _currentContentLabel = '';
-        notifyListeners();
-        break;
-
-      case AudioRepeatMode.single:
-        // Replay the same ayah (from the beginning based on content mode)
-        if (_currentSurah != null && _currentAyah != null) {
-          playAyah(_currentSurah!, _currentAyah!);
-        }
-        break;
-
-      case AudioRepeatMode.surah:
-      case AudioRepeatMode.continuous:
-        // Play next ayah
-        _playNextAyah();
-        break;
-    }
+    _moveToNextAyahBasedOnRepeatMode();
   }
 
   /// Play the next ayah
