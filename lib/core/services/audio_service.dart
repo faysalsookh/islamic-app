@@ -403,8 +403,12 @@ class AudioService extends ChangeNotifier {
 
   /// Play Bengali translation audio
   /// Uses either Cloud TTS or Human Voice based on bengaliAudioSource setting
+  /// Note: When playbackContent is bengaliOnly, we must use TTS because humanVoice files contain both Arabic and Bengali
   Future<void> _playBengaliAyah(int surahNumber, int ayahNumber) async {
-    if (_bengaliAudioSource == BengaliAudioSource.humanVoice) {
+    // If user selected Bengali Only, force TTS because humanVoice files contain both Arabic and Bengali
+    if (_playbackContent == AudioPlaybackContent.bengaliOnly) {
+      await _playBengaliTTS(surahNumber, ayahNumber);
+    } else if (_bengaliAudioSource == BengaliAudioSource.humanVoice) {
       await _playBengaliHumanVoice(surahNumber);
     } else {
       await _playBengaliTTS(surahNumber, ayahNumber);
