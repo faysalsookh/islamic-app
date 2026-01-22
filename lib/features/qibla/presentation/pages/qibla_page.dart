@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/qibla_calculator.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/compass_service.dart';
+import '../../../../core/services/haptic_service.dart';
 import '../widgets/qibla_compass_widget.dart';
-import '../widgets/qibla_info_card.dart';
+import '../widgets/compass_theme_selector.dart';
 import '../widgets/compass_calibration_dialog.dart';
 
 /// State of the Qibla page
@@ -18,7 +19,15 @@ enum QiblaPageState {
   error,
 }
 
-/// Main Qibla direction page with compass
+/// Qibla status for user feedback
+enum QiblaStatus {
+  searching,
+  almostThere,
+  facingMecca,
+  notFacing,
+}
+
+/// Main Qibla direction page with professional compass
 class QiblaPage extends StatefulWidget {
   const QiblaPage({super.key});
 
@@ -38,11 +47,13 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
   double _qiblaBearing = 0;
   double _distanceKm = 0;
   CompassAccuracy _accuracy = CompassAccuracy.unknown;
+  CompassTheme _selectedTheme = CompassTheme.golden;
 
   StreamSubscription<double>? _headingSubscription;
   StreamSubscription<CompassAccuracy>? _accuracySubscription;
 
   bool _showedCalibrationHint = false;
+  QiblaStatus _lastStatus = QiblaStatus.searching;
 
   @override
   void initState() {
@@ -63,12 +74,25 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Re-check location and compass when app returns to foreground
       if (_pageState == QiblaPageState.noLocation ||
           _pageState == QiblaPageState.error) {
         _initialize();
       }
     }
+  }
+
+  /// Get current Qibla status
+  QiblaStatus get _qiblaStatus {
+    if (_pageState != QiblaPageState.ready) return QiblaStatus.searching;
+
+    final qiblaDirection = (_qiblaBearing - _heading + 360) % 360;
+
+    if (qiblaDirection <= 5 || qiblaDirection >= 355) {
+      return QiblaStatus.facingMecca;
+    } else if (qiblaDirection <= 20 || qiblaDirection >= 340) {
+      return QiblaStatus.almostThere;
+    }
+    return QiblaStatus.notFacing;
   }
 
   Future<void> _initialize() async {
@@ -77,7 +101,6 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
       _errorMessage = null;
     });
 
-    // Get location first
     final locationResult = await _locationService.getCurrentPosition();
 
     if (locationResult.result != LocationResult.success) {
@@ -90,7 +113,6 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
 
     _position = locationResult.position;
 
-    // Calculate Qibla bearing
     _qiblaBearing = QiblaCalculator.calculateQiblaBearing(
       _position!.latitude,
       _position!.longitude,
@@ -101,7 +123,6 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
       _position!.longitude,
     );
 
-    // Check compass availability
     final compassAvailable = await CompassService.isCompassAvailable();
 
     if (!compassAvailable) {
@@ -112,7 +133,6 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
       return;
     }
 
-    // Start compass
     _compassService.startListening();
 
     _headingSubscription = _compassService.headingStream.listen((heading) {
@@ -120,6 +140,13 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
         setState(() {
           _heading = heading;
         });
+
+        // Haptic feedback when facing Qibla
+        final currentStatus = _qiblaStatus;
+        if (currentStatus == QiblaStatus.facingMecca && _lastStatus != QiblaStatus.facingMecca) {
+          HapticService().mediumImpact();
+        }
+        _lastStatus = currentStatus;
       }
     });
 
@@ -129,7 +156,6 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
           _accuracy = accuracy;
         });
 
-        // Show calibration hint if accuracy is low (only once per session)
         if (!_showedCalibrationHint && _compassService.needsCalibration()) {
           _showedCalibrationHint = true;
           _showCalibrationSnackbar();
@@ -143,15 +169,25 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
   }
 
   void _showCalibrationSnackbar() {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Compass accuracy is low. Tap to calibrate.'),
+        content: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 12),
+            Expanded(child: Text('Compass accuracy is low')),
+          ],
+        ),
         action: SnackBarAction(
           label: 'Calibrate',
+          textColor: Colors.amber,
           onPressed: () => CompassCalibrationDialog.show(context),
         ),
         duration: const Duration(seconds: 5),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF333333),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -170,116 +206,188 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.cream,
-      appBar: AppBar(
-        title: Text(
-          'Qibla Direction',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-          ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF121212),
+        body: SafeArea(
+          child: _buildBody(context, isTablet),
         ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(
-          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-        ),
-        actions: [
-          if (_pageState == QiblaPageState.ready)
-            IconButton(
-              onPressed: () => CompassCalibrationDialog.show(context),
-              icon: const Icon(Icons.help_outline_rounded),
-              tooltip: 'Calibration help',
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: _buildBody(context, isDark, isTablet),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, bool isDark, bool isTablet) {
+  Widget _buildBody(BuildContext context, bool isTablet) {
     switch (_pageState) {
       case QiblaPageState.loading:
-        return _buildLoadingState(isDark);
+        return _buildLoadingState(isTablet);
       case QiblaPageState.noLocation:
-        return _buildNoLocationState(isDark, isTablet);
+        return _buildNoLocationState(isTablet);
       case QiblaPageState.noCompass:
-        return _buildNoCompassState(isDark, isTablet);
+        return _buildNoCompassState(isTablet);
       case QiblaPageState.error:
-        return _buildErrorState(isDark, isTablet);
+        return _buildErrorState(isTablet);
       case QiblaPageState.ready:
-        return _buildReadyState(isDark, isTablet);
+        return _buildReadyState(isTablet);
     }
   }
 
-  Widget _buildLoadingState(bool isDark) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            color: AppColors.forestGreen,
-            strokeWidth: 3,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Finding your location...',
-            style: TextStyle(
-              fontSize: 16,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+  Widget _buildLoadingState(bool isTablet) {
+    return Column(
+      children: [
+        _buildAppBar(isTablet),
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 50,
+                  height: 50,
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFD4A853),
+                    strokeWidth: 3,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Finding your location...',
+                  style: TextStyle(
+                    fontSize: isTablet ? 18 : 16,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoLocationState(bool isTablet) {
+    return Column(
+      children: [
+        _buildAppBar(isTablet),
+        Expanded(
+          child: _buildStateMessage(
+            icon: Icons.location_off_rounded,
+            iconColor: Colors.amber,
+            title: 'Location Required',
+            message: _errorMessage ?? 'Please enable location services to find Qibla direction.',
+            buttonLabel: 'Enable Location',
+            onButtonPressed: _handleLocationAction,
+            isTablet: isTablet,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoCompassState(bool isTablet) {
+    return Column(
+      children: [
+        _buildAppBar(isTablet),
+        Expanded(
+          child: _buildStateMessage(
+            icon: Icons.explore_off_rounded,
+            iconColor: Colors.red,
+            title: 'Compass Not Available',
+            message: _errorMessage ?? 'Your device does not have a compass sensor.',
+            buttonLabel: null,
+            onButtonPressed: null,
+            isTablet: isTablet,
+            additionalWidget: _position != null ? _buildStaticBearingInfo(isTablet) : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorState(bool isTablet) {
+    return Column(
+      children: [
+        _buildAppBar(isTablet),
+        Expanded(
+          child: _buildStateMessage(
+            icon: Icons.error_outline_rounded,
+            iconColor: Colors.red,
+            title: 'Something Went Wrong',
+            message: _errorMessage ?? 'An error occurred. Please try again.',
+            buttonLabel: 'Retry',
+            onButtonPressed: _initialize,
+            isTablet: isTablet,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAppBar(bool isTablet) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 24 : 16,
+        vertical: isTablet ? 16 : 12,
+      ),
+      child: Row(
+        children: [
+          // Back button
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.arrow_back_rounded,
+                color: Colors.white,
+                size: isTablet ? 28 : 24,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Title with Qibla bearing
+          Expanded(
+            child: Text(
+              _pageState == QiblaPageState.ready
+                  ? 'Qibla: ${_qiblaBearing.round()}°'
+                  : 'Qibla Direction',
+              style: TextStyle(
+                fontSize: isTablet ? 22 : 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+
+          // Refresh button
+          if (_pageState == QiblaPageState.ready)
+            GestureDetector(
+              onTap: () {
+                HapticService().lightImpact();
+                _initialize();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.refresh_rounded,
+                  color: Colors.white,
+                  size: isTablet ? 28 : 24,
+                ),
+              ),
+            ),
         ],
       ),
-    );
-  }
-
-  Widget _buildNoLocationState(bool isDark, bool isTablet) {
-    return _buildStateMessage(
-      icon: Icons.location_off_rounded,
-      iconColor: AppColors.warning,
-      title: 'Location Required',
-      message: _errorMessage ?? 'Please enable location services to find Qibla direction.',
-      buttonLabel: 'Enable Location',
-      onButtonPressed: _handleLocationAction,
-      isDark: isDark,
-      isTablet: isTablet,
-    );
-  }
-
-  Widget _buildNoCompassState(bool isDark, bool isTablet) {
-    return _buildStateMessage(
-      icon: Icons.explore_off_rounded,
-      iconColor: AppColors.error,
-      title: 'Compass Not Available',
-      message: _errorMessage ?? 'Your device does not have a compass sensor.',
-      buttonLabel: null,
-      onButtonPressed: null,
-      isDark: isDark,
-      isTablet: isTablet,
-      additionalWidget: _buildStaticBearingInfo(isDark, isTablet),
-    );
-  }
-
-  Widget _buildErrorState(bool isDark, bool isTablet) {
-    return _buildStateMessage(
-      icon: Icons.error_outline_rounded,
-      iconColor: AppColors.error,
-      title: 'Something Went Wrong',
-      message: _errorMessage ?? 'An error occurred. Please try again.',
-      buttonLabel: 'Retry',
-      onButtonPressed: _initialize,
-      isDark: isDark,
-      isTablet: isTablet,
     );
   }
 
@@ -290,12 +398,11 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
     required String message,
     required String? buttonLabel,
     required VoidCallback? onButtonPressed,
-    required bool isDark,
     required bool isTablet,
     Widget? additionalWidget,
   }) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.all(isTablet ? 48 : 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -307,11 +414,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
                 color: iconColor.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: isTablet ? 48 : 40,
-                color: iconColor,
-              ),
+              child: Icon(icon, size: isTablet ? 48 : 40, color: iconColor),
             ),
             SizedBox(height: isTablet ? 32 : 24),
             Text(
@@ -319,7 +422,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
               style: TextStyle(
                 fontSize: isTablet ? 24 : 20,
                 fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                color: Colors.white,
               ),
               textAlign: TextAlign.center,
             ),
@@ -328,7 +431,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
               message,
               style: TextStyle(
                 fontSize: isTablet ? 16 : 14,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                color: Colors.white60,
               ),
               textAlign: TextAlign.center,
             ),
@@ -337,8 +440,8 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
               ElevatedButton(
                 onPressed: onButtonPressed,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.forestGreen,
-                  foregroundColor: Colors.white,
+                  backgroundColor: const Color(0xFFD4A853),
+                  foregroundColor: Colors.black,
                   padding: EdgeInsets.symmetric(
                     horizontal: isTablet ? 40 : 32,
                     vertical: isTablet ? 16 : 14,
@@ -366,21 +469,12 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildStaticBearingInfo(bool isDark, bool isTablet) {
-    if (_position == null) return const SizedBox.shrink();
-
+  Widget _buildStaticBearingInfo(bool isTablet) {
     return Container(
       padding: EdgeInsets.all(isTablet ? 24 : 20),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.black26 : AppColors.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -388,7 +482,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
             'Qibla Direction',
             style: TextStyle(
               fontSize: isTablet ? 14 : 12,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              color: Colors.white60,
             ),
           ),
           const SizedBox(height: 8),
@@ -397,7 +491,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
             children: [
               Icon(
                 Icons.navigation_rounded,
-                color: AppColors.forestGreen,
+                color: const Color(0xFF4CAF50),
                 size: isTablet ? 28 : 24,
               ),
               const SizedBox(width: 8),
@@ -406,7 +500,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
                 style: TextStyle(
                   fontSize: isTablet ? 28 : 24,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -416,7 +510,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
             'Use a physical compass to find this direction',
             style: TextStyle(
               fontSize: isTablet ? 13 : 11,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              color: Colors.white54,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -425,116 +519,287 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildReadyState(bool isDark, bool isTablet) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 48 : 20,
-        vertical: isTablet ? 32 : 20,
+  Widget _buildReadyState(bool isTablet) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        final isCompact = availableHeight < 600;
+
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: availableHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  _buildAppBar(isTablet),
+
+                  // Compass area - takes remaining space
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 48 : 16,
+                          vertical: isCompact ? 8 : 16,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Compass widget
+                            QiblaCompassWidget(
+                              heading: _heading,
+                              qiblaBearing: _qiblaBearing,
+                              isTablet: isTablet,
+                              theme: _selectedTheme,
+                            ),
+
+                            SizedBox(height: isCompact ? 16 : 24),
+
+                            // Status message
+                            _buildStatusMessage(isTablet),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Info section
+                  _buildInfoSection(isTablet),
+
+                  // Theme selector
+                  _buildThemeSection(isTablet),
+
+                  SizedBox(height: isTablet ? 20 : 12),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusMessage(bool isTablet) {
+    final status = _qiblaStatus;
+    String message;
+    Color color;
+    IconData? icon;
+
+    switch (status) {
+      case QiblaStatus.facingMecca:
+        message = "You're now facing Mecca";
+        color = const Color(0xFF4CAF50);
+        icon = Icons.check_circle_rounded;
+        break;
+      case QiblaStatus.almostThere:
+        message = 'Almost there';
+        color = const Color(0xFFD4A853);
+        icon = null;
+        break;
+      case QiblaStatus.notFacing:
+        message = 'Turn to find Qibla';
+        color = Colors.white60;
+        icon = null;
+        break;
+      case QiblaStatus.searching:
+        message = 'Searching...';
+        color = Colors.white60;
+        icon = null;
+        break;
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeIn,
+      switchOutCurve: Curves.easeOut,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        key: ValueKey(status), // Use enum as key instead of string
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 24 : 20,
+          vertical: isTablet ? 14 : 12,
+        ),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(30),
+          border: status == QiblaStatus.facingMecca
+              ? Border.all(color: color.withValues(alpha: 0.5), width: 1)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: color, size: isTablet ? 22 : 20),
+              SizedBox(width: isTablet ? 10 : 8),
+            ],
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: isTablet ? 18 : 16,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
+    );
+  }
+
+  Widget _buildInfoSection(bool isTablet) {
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isTablet ? 32 : 16,
+        vertical: isTablet ? 12 : 8,
+      ),
+      padding: EdgeInsets.all(isTablet ? 16 : 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
         children: [
-          // Compass widget
-          Center(
-            child: QiblaCompassWidget(
-              heading: _heading,
-              qiblaBearing: _qiblaBearing,
+          // Distance to Kaaba
+          Expanded(
+            child: _buildInfoItem(
+              icon: Icons.place_rounded,
+              label: 'Distance',
+              value: QiblaCalculator.formatDistance(_distanceKm),
+              color: const Color(0xFFE57373),
               isTablet: isTablet,
             ),
           ),
-
-          SizedBox(height: isTablet ? 40 : 28),
-
-          // Instruction text
           Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 24 : 16,
-              vertical: isTablet ? 14 : 10,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.forestGreen.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: isTablet ? 20 : 18,
-                  color: AppColors.forestGreen,
-                ),
-                SizedBox(width: isTablet ? 12 : 8),
-                Flexible(
-                  child: Text(
-                    'Point your phone towards the mosque icon to face Qibla',
-                    style: TextStyle(
-                      fontSize: isTablet ? 14 : 12,
-                      color: AppColors.forestGreen,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
+            width: 1,
+            height: isTablet ? 45 : 35,
+            color: Colors.white12,
+          ),
+          // Qibla bearing
+          Expanded(
+            child: _buildInfoItem(
+              icon: Icons.navigation_rounded,
+              label: 'Bearing',
+              value: '${_qiblaBearing.round()}° ${QiblaCalculator.getCardinalDirection(_qiblaBearing)}',
+              color: const Color(0xFF4CAF50),
+              isTablet: isTablet,
             ),
           ),
-
-          SizedBox(height: isTablet ? 32 : 24),
-
-          // Info card
-          QiblaInfoCard(
-            qiblaBearing: _qiblaBearing,
-            distanceKm: _distanceKm,
-            accuracy: _accuracy,
-            isTablet: isTablet,
-            onCalibrateTap: () => CompassCalibrationDialog.show(context),
+          Container(
+            width: 1,
+            height: isTablet ? 45 : 35,
+            color: Colors.white12,
           ),
-
-          SizedBox(height: isTablet ? 24 : 16),
-
-          // Location info
-          _buildLocationInfo(isDark, isTablet),
+          // Accuracy
+          Expanded(
+            child: _buildInfoItem(
+              icon: Icons.gps_fixed_rounded,
+              label: 'Accuracy',
+              value: _getAccuracyText(),
+              color: Color(CompassService.getAccuracyColorValue(_accuracy)),
+              isTablet: isTablet,
+              onTap: _compassService.needsCalibration()
+                  ? () => CompassCalibrationDialog.show(context)
+                  : null,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildLocationInfo(bool isDark, bool isTablet) {
-    if (_position == null) return const SizedBox.shrink();
+  String _getAccuracyText() {
+    switch (_accuracy) {
+      case CompassAccuracy.high:
+        return 'High';
+      case CompassAccuracy.medium:
+        return 'Medium';
+      case CompassAccuracy.low:
+        return 'Low';
+      case CompassAccuracy.unreliable:
+        return 'Poor';
+      case CompassAccuracy.unknown:
+        return '...';
+    }
+  }
 
-    return Container(
-      padding: EdgeInsets.all(isTablet ? 16 : 12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkCard.withValues(alpha: 0.5)
-            : Colors.white.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.my_location_rounded,
-            size: isTablet ? 18 : 16,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    required bool isTablet,
+    VoidCallback? onTap,
+  }) {
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: isTablet ? 22 : 18),
+        SizedBox(height: isTablet ? 6 : 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTablet ? 11 : 9,
+            color: Colors.white54,
           ),
-          SizedBox(width: isTablet ? 10 : 8),
-          Text(
-            'Your location: ${_position!.latitude.toStringAsFixed(4)}°, ${_position!.longitude.toStringAsFixed(4)}°',
+        ),
+        SizedBox(height: isTablet ? 2 : 1),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isTablet ? 13 : 11,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: content,
+      );
+    }
+    return content;
+  }
+
+  Widget _buildThemeSection(bool isTablet) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 16),
+          child: Text(
+            'Compass Style',
             style: TextStyle(
               fontSize: isTablet ? 13 : 11,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              color: Colors.white54,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(width: isTablet ? 12 : 8),
-          GestureDetector(
-            onTap: _initialize,
-            child: Icon(
-              Icons.refresh_rounded,
-              size: isTablet ? 18 : 16,
-              color: AppColors.forestGreen,
-            ),
-          ),
-        ],
-      ),
+        ),
+        SizedBox(height: isTablet ? 8 : 6),
+        CompassThemeSelector(
+          selectedTheme: _selectedTheme,
+          onThemeChanged: (theme) {
+            setState(() {
+              _selectedTheme = theme;
+            });
+          },
+          isTablet: isTablet,
+        ),
+      ],
     );
   }
 }

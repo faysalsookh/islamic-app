@@ -2,17 +2,29 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Animated compass widget showing Qibla direction
+/// Compass theme styles
+enum CompassTheme {
+  classic,
+  golden,
+  minimal,
+  elegant,
+  nature,
+}
+
+/// Professional animated compass widget showing Qibla direction
+/// Inspired by Muslim Pro's premium design
 class QiblaCompassWidget extends StatefulWidget {
   final double heading;
   final double qiblaBearing;
   final bool isTablet;
+  final CompassTheme theme;
 
   const QiblaCompassWidget({
     super.key,
     required this.heading,
     required this.qiblaBearing,
     this.isTablet = false,
+    this.theme = CompassTheme.golden,
   });
 
   @override
@@ -20,160 +32,247 @@ class QiblaCompassWidget extends StatefulWidget {
 }
 
 class _QiblaCompassWidgetState extends State<QiblaCompassWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _pulseController.dispose();
     super.dispose();
+  }
+
+  /// Check if device is facing Qibla (within 5 degrees)
+  bool get isFacingQibla {
+    final qiblaDirection = (widget.qiblaBearing - widget.heading + 360) % 360;
+    return qiblaDirection <= 5 || qiblaDirection >= 355;
+  }
+
+  /// Check if almost facing Qibla (within 15 degrees)
+  bool get isAlmostFacingQibla {
+    final qiblaDirection = (widget.qiblaBearing - widget.heading + 360) % 360;
+    return (qiblaDirection <= 15 || qiblaDirection >= 345) && !isFacingQibla;
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final size = widget.isTablet ? 340.0 : 280.0;
-
-    // Calculate the qibla direction relative to device heading
+    final size = widget.isTablet ? 320.0 : 280.0;
     final qiblaDirection = (widget.qiblaBearing - widget.heading + 360) % 360;
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Outer decorative ring
-          _buildOuterRing(size, isDark),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Kaaba indicator at top
+        _buildKaabaIndicator(),
+        const SizedBox(height: 8),
 
-          // Main compass dial (rotates with device)
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: -widget.heading),
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            builder: (context, rotation, child) {
-              return Transform.rotate(
-                angle: rotation * pi / 180,
-                child: _buildCompassDial(size - 40, isDark),
-              );
-            },
+        // Main compass
+        SizedBox(
+          width: size + 40,
+          height: size + 40,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer glow when facing Qibla
+              if (isFacingQibla)
+                AnimatedBuilder(
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return Container(
+                      width: (size + 30) * _pulseAnimation.value,
+                      height: (size + 30) * _pulseAnimation.value,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _getThemeColors().primary.withValues(alpha: 0.4),
+                            blurRadius: 30,
+                            spreadRadius: 10,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
+              // Golden/theme ring
+              Container(
+                width: size + 16,
+                height: size + 16,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _getThemeColors().ringGradient,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Main compass body
+              Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _getThemeColors().background,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Compass dial (rotates with heading)
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: -widget.heading),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                builder: (context, rotation, child) {
+                  return Transform.rotate(
+                    angle: rotation * pi / 180,
+                    child: SizedBox(
+                      width: size - 20,
+                      height: size - 20,
+                      child: CustomPaint(
+                        painter: _ProfessionalCompassPainter(
+                          themeColors: _getThemeColors(),
+                          isTablet: widget.isTablet,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              // Qibla direction cone/indicator
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: qiblaDirection),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                builder: (context, angle, child) {
+                  return Transform.rotate(
+                    angle: angle * pi / 180,
+                    child: _buildQiblaCone(size - 20),
+                  );
+                },
+              ),
+
+              // Sun position indicator (simplified)
+              _buildSunIndicator(size - 20),
+
+              // Center decoration
+              _buildCenterDecoration(),
+            ],
           ),
-
-          // Qibla indicator (points to Mecca)
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: qiblaDirection),
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            builder: (context, angle, child) {
-              return Transform.rotate(
-                angle: angle * pi / 180,
-                child: _buildQiblaIndicator(size - 40, isDark),
-              );
-            },
-          ),
-
-          // Center Kaaba icon
-          _buildCenterIcon(isDark),
-
-          // Fixed north indicator at top
-          Positioned(
-            top: 0,
-            child: _buildNorthIndicator(isDark),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildOuterRing(double size, bool isDark) {
+  Widget _buildKaabaIndicator() {
+    final colors = _getThemeColors();
     return Container(
-      width: size,
-      height: size,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: isDark
-              ? [
-                  AppColors.darkCard,
-                  AppColors.darkSurface,
-                ]
-              : [
-                  Colors.white,
-                  AppColors.warmBeige,
-                ],
-        ),
+        color: colors.primary,
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black38
-                : AppColors.cardShadow.withValues(alpha: 0.3),
-            blurRadius: 20,
-            spreadRadius: 5,
+            color: colors.primary.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: Icon(
+        Icons.square_rounded,
+        color: Colors.white,
+        size: widget.isTablet ? 20 : 16,
       ),
     );
   }
 
-  Widget _buildCompassDial(double size, bool isDark) {
+  Widget _buildQiblaCone(double size) {
+    final colors = _getThemeColors();
+
     return SizedBox(
       width: size,
       height: size,
       child: CustomPaint(
-        painter: _CompassDialPainter(
-          isDark: isDark,
-          primaryColor: AppColors.forestGreen,
-          isTablet: widget.isTablet,
+        painter: _QiblaConePainter(
+          color: colors.qiblaIndicator,
+          glowColor: isFacingQibla ? colors.primary : Colors.transparent,
+          isFacingQibla: isFacingQibla,
         ),
       ),
     );
   }
 
-  Widget _buildQiblaIndicator(double size, bool isDark) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Column(
-        children: [
-          // Qibla arrow at the top
-          Container(
-            width: widget.isTablet ? 50 : 42,
-            height: widget.isTablet ? 50 : 42,
+  Widget _buildSunIndicator(double size) {
+    // Calculate sun position based on time (simplified)
+    final now = DateTime.now();
+    final sunAngle = ((now.hour * 60 + now.minute) / (24 * 60)) * 360 - 90;
+
+    return Transform.rotate(
+      angle: (-widget.heading + sunAngle) * pi / 180,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Align(
+          alignment: const Alignment(-0.6, 0.6),
+          child: Container(
+            width: widget.isTablet ? 28 : 24,
+            height: widget.isTablet ? 28 : 24,
             decoration: BoxDecoration(
-              color: AppColors.forestGreen,
               shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFFFFE082),
+                  const Color(0xFFFFC107),
+                  const Color(0xFFFF9800),
+                ],
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.forestGreen.withValues(alpha: 0.4),
-                  blurRadius: 12,
+                  color: const Color(0xFFFFB300).withValues(alpha: 0.5),
+                  blurRadius: 10,
                   spreadRadius: 2,
                 ),
               ],
             ),
-            child: Icon(
-              Icons.mosque_rounded,
-              color: Colors.white,
-              size: widget.isTablet ? 26 : 22,
-            ),
           ),
-          const Spacer(),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildCenterIcon(bool isDark) {
-    final centerSize = widget.isTablet ? 80.0 : 65.0;
+  Widget _buildCenterDecoration() {
+    final colors = _getThemeColors();
+    final centerSize = widget.isTablet ? 50.0 : 42.0;
 
     return Container(
       width: centerSize,
@@ -184,85 +283,122 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.forestGreen,
-            AppColors.forestGreenDark,
+            colors.centerGradient[0],
+            colors.centerGradient[1],
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.forestGreen.withValues(alpha: 0.3),
-            blurRadius: 15,
-            spreadRadius: 2,
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.square_rounded,
-            color: Colors.white,
-            size: widget.isTablet ? 24 : 20,
-          ),
-          Text(
-            'Kaaba',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: widget.isTablet ? 11 : 9,
-              fontWeight: FontWeight.w600,
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colors.background,
+        ),
+        child: Center(
+          child: Container(
+            width: centerSize * 0.4,
+            height: centerSize * 0.4,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.primary,
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildNorthIndicator(bool isDark) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.darkCard
-                : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black26
-                    : AppColors.cardShadow,
-                blurRadius: 6,
-              ),
-            ],
-          ),
-          child: Text(
-            'N',
-            style: TextStyle(
-              fontSize: widget.isTablet ? 16 : 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.error,
-            ),
-          ),
-        ),
-        CustomPaint(
-          size: Size(2, widget.isTablet ? 12 : 8),
-          painter: _TrianglePainter(color: AppColors.error),
-        ),
-      ],
-    );
+  _CompassThemeColors _getThemeColors() {
+    switch (widget.theme) {
+      case CompassTheme.classic:
+        return _CompassThemeColors(
+          background: const Color(0xFF2C2C2C),
+          primary: AppColors.forestGreen,
+          ringGradient: [const Color(0xFF8B4513), const Color(0xFFD2691E)],
+          cardinalColor: Colors.white,
+          tickColor: Colors.white54,
+          qiblaIndicator: AppColors.forestGreen,
+          centerGradient: [const Color(0xFF8B4513), const Color(0xFF654321)],
+        );
+      case CompassTheme.golden:
+        return _CompassThemeColors(
+          background: const Color(0xFF1E1E1E),
+          primary: const Color(0xFF4CAF50),
+          ringGradient: [const Color(0xFFD4A853), const Color(0xFFB8860B), const Color(0xFFD4A853)],
+          cardinalColor: Colors.white,
+          tickColor: Colors.white60,
+          qiblaIndicator: const Color(0xFF4CAF50),
+          centerGradient: [const Color(0xFFD4A853), const Color(0xFFB8860B)],
+        );
+      case CompassTheme.minimal:
+        return _CompassThemeColors(
+          background: const Color(0xFFF5F5F5),
+          primary: const Color(0xFF2196F3),
+          ringGradient: [const Color(0xFF90CAF9), const Color(0xFF64B5F6)],
+          cardinalColor: const Color(0xFF333333),
+          tickColor: const Color(0xFF666666),
+          qiblaIndicator: const Color(0xFF2196F3),
+          centerGradient: [const Color(0xFF90CAF9), const Color(0xFF64B5F6)],
+        );
+      case CompassTheme.elegant:
+        return _CompassThemeColors(
+          background: const Color(0xFF1A1A2E),
+          primary: const Color(0xFFE94560),
+          ringGradient: [const Color(0xFFE94560), const Color(0xFF0F3460)],
+          cardinalColor: Colors.white,
+          tickColor: Colors.white54,
+          qiblaIndicator: const Color(0xFFE94560),
+          centerGradient: [const Color(0xFFE94560), const Color(0xFF0F3460)],
+        );
+      case CompassTheme.nature:
+        return _CompassThemeColors(
+          background: const Color(0xFF1B4332),
+          primary: const Color(0xFF95D5B2),
+          ringGradient: [const Color(0xFF95D5B2), const Color(0xFF52B788)],
+          cardinalColor: Colors.white,
+          tickColor: Colors.white60,
+          qiblaIndicator: const Color(0xFF95D5B2),
+          centerGradient: [const Color(0xFF74C69D), const Color(0xFF40916C)],
+        );
+    }
   }
 }
 
-/// Custom painter for compass dial
-class _CompassDialPainter extends CustomPainter {
-  final bool isDark;
-  final Color primaryColor;
+/// Theme colors for compass
+class _CompassThemeColors {
+  final Color background;
+  final Color primary;
+  final List<Color> ringGradient;
+  final Color cardinalColor;
+  final Color tickColor;
+  final Color qiblaIndicator;
+  final List<Color> centerGradient;
+
+  _CompassThemeColors({
+    required this.background,
+    required this.primary,
+    required this.ringGradient,
+    required this.cardinalColor,
+    required this.tickColor,
+    required this.qiblaIndicator,
+    required this.centerGradient,
+  });
+}
+
+/// Professional compass dial painter
+class _ProfessionalCompassPainter extends CustomPainter {
+  final _CompassThemeColors themeColors;
   final bool isTablet;
 
-  _CompassDialPainter({
-    required this.isDark,
-    required this.primaryColor,
+  _ProfessionalCompassPainter({
+    required this.themeColors,
     required this.isTablet,
   });
 
@@ -271,32 +407,71 @@ class _CompassDialPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
+    // Draw degree ticks
+    _drawDegreeTicks(canvas, center, radius);
+
     // Draw cardinal directions
-    final cardinalStyle = TextStyle(
-      fontSize: isTablet ? 18 : 15,
-      fontWeight: FontWeight.bold,
-      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-    );
+    _drawCardinalDirections(canvas, center, radius);
+  }
 
-    final ordinalStyle = TextStyle(
-      fontSize: isTablet ? 14 : 12,
-      fontWeight: FontWeight.w500,
-      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-    );
+  void _drawDegreeTicks(Canvas canvas, Offset center, double radius) {
+    final tickPaint = Paint()
+      ..color = themeColors.tickColor
+      ..strokeCap = StrokeCap.round;
 
-    final directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    final angles = [0, 45, 90, 135, 180, 225, 270, 315];
+    for (var i = 0; i < 360; i += 2) {
+      final angle = i * pi / 180 - pi / 2;
+      final isMajor = i % 30 == 0;
+      final isMedium = i % 10 == 0;
+
+      double startRadius;
+      double endRadius;
+
+      if (isMajor) {
+        startRadius = radius - (isTablet ? 8 : 6);
+        endRadius = radius - (isTablet ? 20 : 16);
+        tickPaint.strokeWidth = isTablet ? 2.5 : 2;
+        tickPaint.color = themeColors.cardinalColor;
+      } else if (isMedium) {
+        startRadius = radius - (isTablet ? 8 : 6);
+        endRadius = radius - (isTablet ? 16 : 12);
+        tickPaint.strokeWidth = isTablet ? 1.5 : 1.2;
+        tickPaint.color = themeColors.tickColor;
+      } else {
+        startRadius = radius - (isTablet ? 8 : 6);
+        endRadius = radius - (isTablet ? 12 : 9);
+        tickPaint.strokeWidth = 1;
+        tickPaint.color = themeColors.tickColor.withValues(alpha: 0.5);
+      }
+
+      final startX = center.dx + startRadius * cos(angle);
+      final startY = center.dy + startRadius * sin(angle);
+      final endX = center.dx + endRadius * cos(angle);
+      final endY = center.dy + endRadius * sin(angle);
+
+      canvas.drawLine(Offset(startX, startY), Offset(endX, endY), tickPaint);
+    }
+  }
+
+  void _drawCardinalDirections(Canvas canvas, Offset center, double radius) {
+    final directions = ['N', 'E', 'S', 'W'];
+    final angles = [0, 90, 180, 270];
 
     for (var i = 0; i < directions.length; i++) {
       final angle = angles[i] * pi / 180 - pi / 2;
-      final isCardinal = i % 2 == 0;
-      final textRadius = radius - (isTablet ? 30 : 25);
+      final textRadius = radius - (isTablet ? 38 : 32);
+
+      final isNorth = directions[i] == 'N';
+
+      final textStyle = TextStyle(
+        fontSize: isTablet ? 22 : 18,
+        fontWeight: FontWeight.bold,
+        color: isNorth ? const Color(0xFFE53935) : themeColors.cardinalColor,
+        letterSpacing: 1,
+      );
 
       final textPainter = TextPainter(
-        text: TextSpan(
-          text: directions[i],
-          style: isCardinal ? cardinalStyle : ordinalStyle,
-        ),
+        text: TextSpan(text: directions[i], style: textStyle),
         textDirection: TextDirection.ltr,
       )..layout();
 
@@ -305,98 +480,85 @@ class _CompassDialPainter extends CustomPainter {
 
       textPainter.paint(canvas, Offset(x, y));
     }
-
-    // Draw degree marks
-    final tickPaint = Paint()
-      ..color = isDark
-          ? AppColors.darkTextSecondary.withValues(alpha: 0.5)
-          : AppColors.textSecondary.withValues(alpha: 0.5)
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round;
-
-    for (var i = 0; i < 360; i += 5) {
-      final angle = i * pi / 180 - pi / 2;
-      final isMajor = i % 30 == 0;
-      final isMinor = i % 15 == 0;
-
-      double startRadius;
-      double endRadius;
-
-      if (isMajor) {
-        startRadius = radius - (isTablet ? 50 : 42);
-        endRadius = radius - (isTablet ? 58 : 50);
-        tickPaint.strokeWidth = 2;
-      } else if (isMinor) {
-        startRadius = radius - (isTablet ? 50 : 42);
-        endRadius = radius - (isTablet ? 54 : 46);
-        tickPaint.strokeWidth = 1.5;
-      } else {
-        startRadius = radius - (isTablet ? 50 : 42);
-        endRadius = radius - (isTablet ? 52 : 44);
-        tickPaint.strokeWidth = 1;
-      }
-
-      final startX = center.dx + startRadius * cos(angle);
-      final startY = center.dy + startRadius * sin(angle);
-      final endX = center.dx + endRadius * cos(angle);
-      final endY = center.dy + endRadius * sin(angle);
-
-      canvas.drawLine(
-        Offset(startX, startY),
-        Offset(endX, endY),
-        tickPaint,
-      );
-    }
-
-    // Draw inner circle
-    final innerCirclePaint = Paint()
-      ..color = isDark
-          ? AppColors.darkCard
-          : Colors.white
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(center, isTablet ? 55 : 45, innerCirclePaint);
-
-    // Draw inner circle border
-    final borderPaint = Paint()
-      ..color = isDark
-          ? AppColors.dividerDark
-          : AppColors.divider
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    canvas.drawCircle(center, isTablet ? 55 : 45, borderPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _CompassDialPainter oldDelegate) {
-    return isDark != oldDelegate.isDark;
+  bool shouldRepaint(covariant _ProfessionalCompassPainter oldDelegate) {
+    return themeColors != oldDelegate.themeColors;
   }
 }
 
-/// Triangle pointer painter
-class _TrianglePainter extends CustomPainter {
+/// Qibla direction cone painter
+class _QiblaConePainter extends CustomPainter {
   final Color color;
+  final Color glowColor;
+  final bool isFacingQibla;
 
-  _TrianglePainter({required this.color});
+  _QiblaConePainter({
+    required this.color,
+    required this.glowColor,
+    required this.isFacingQibla,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
 
-    final path = Path()
-      ..moveTo(size.width / 2, size.height)
-      ..lineTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..close();
+    // Draw cone/triangle pointing to Qibla
+    final conePath = Path();
+    final coneWidth = size.width * 0.12;
+    final coneLength = radius - 30;
 
-    canvas.drawPath(path, paint);
+    // Top point
+    conePath.moveTo(center.dx, center.dy - coneLength);
+    // Bottom left
+    conePath.lineTo(center.dx - coneWidth / 2, center.dy);
+    // Bottom right
+    conePath.lineTo(center.dx + coneWidth / 2, center.dy);
+    conePath.close();
+
+    // Gradient for cone
+    final coneGradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        color,
+        color.withValues(alpha: 0.7),
+        color.withValues(alpha: 0.3),
+      ],
+    );
+
+    final conePaint = Paint()
+      ..shader = coneGradient.createShader(
+        Rect.fromCenter(center: center, width: coneWidth, height: coneLength),
+      );
+
+    // Glow effect when facing Qibla
+    if (isFacingQibla) {
+      final glowPaint = Paint()
+        ..color = glowColor.withValues(alpha: 0.3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+      canvas.drawPath(conePath, glowPaint);
+    }
+
+    canvas.drawPath(conePath, conePaint);
+
+    // Draw opposite side (thin line)
+    final oppositePath = Path();
+    oppositePath.moveTo(center.dx, center.dy + coneLength * 0.6);
+    oppositePath.lineTo(center.dx - 2, center.dy);
+    oppositePath.lineTo(center.dx + 2, center.dy);
+    oppositePath.close();
+
+    final oppositePaint = Paint()..color = color.withValues(alpha: 0.4);
+    canvas.drawPath(oppositePath, oppositePaint);
   }
 
   @override
-  bool shouldRepaint(covariant _TrianglePainter oldDelegate) {
-    return color != oldDelegate.color;
+  bool shouldRepaint(covariant _QiblaConePainter oldDelegate) {
+    return color != oldDelegate.color ||
+        glowColor != oldDelegate.glowColor ||
+        isFacingQibla != oldDelegate.isFacingQibla;
   }
 }
