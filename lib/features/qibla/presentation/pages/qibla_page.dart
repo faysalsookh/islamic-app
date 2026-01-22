@@ -541,6 +541,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
                           horizontal: isTablet ? 48 : 16,
                           vertical: isCompact ? 8 : 16,
                         ),
+
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
