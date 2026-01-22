@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/services/tasbih_service.dart';
 import '../../../../core/services/haptic_service.dart';
+import '../../../../core/services/tasbih_sound_service.dart';
 import '../widgets/tasbih_beads_widget.dart';
 import '../widgets/tasbih_counter_widget.dart';
-import '../widgets/tasbih_bead_selector.dart';
 import '../widgets/dhikr_selection_sheet.dart';
 
 /// Main Tasbih (digital prayer beads) page
@@ -17,6 +17,7 @@ class TasbihPage extends StatefulWidget {
 
 class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
   final TasbihService _tasbihService = TasbihService();
+  final TasbihSoundService _soundService = TasbihSoundService();
   bool _isInitialized = false;
 
   late AnimationController _tapAnimationController;
@@ -44,6 +45,7 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
 
   Future<void> _initializeService() async {
     await _tasbihService.initialize();
+    await _soundService.initialize();
     _tasbihService.addListener(_onServiceChanged);
     setState(() {
       _isInitialized = true;
@@ -60,6 +62,7 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
   void dispose() {
     _tasbihService.removeListener(_onServiceChanged);
     _tapAnimationController.dispose();
+    _soundService.dispose();
     super.dispose();
   }
 
@@ -68,11 +71,28 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
       _tapAnimationController.reverse();
     });
 
+    // Check if loop is about to complete
+    final isLoopComplete = _tasbihService.count + 1 >= _tasbihService.target;
+
+    // Haptic feedback
     if (_tasbihService.vibrationEnabled) {
-      HapticService().lightImpact();
+      if (isLoopComplete) {
+        // Strong feedback for loop completion
+        HapticService().heavyImpact();
+      } else {
+        // Medium feedback for regular count
+        HapticService().mediumImpact();
+      }
     }
 
-    // TODO: Add sound if enabled
+    // Play sound if enabled
+    if (_tasbihService.soundEnabled) {
+      if (isLoopComplete) {
+        _soundService.playLoopCompleteSound();
+      } else {
+        _soundService.playClickSound();
+      }
+    }
 
     _tasbihService.increment();
   }
@@ -192,33 +212,39 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
                   scale: _tapAnimation.value,
                   child: Container(
                     color: Colors.transparent,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Counter widget
-                        TasbihCounterWidget(
-                          count: _tasbihService.count,
-                          target: _tasbihService.target,
-                          loop: _tasbihService.loop,
-                          isTablet: isTablet,
-                          onTargetTap: _showTargetDialog,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Counter widget
+                            TasbihCounterWidget(
+                              count: _tasbihService.count,
+                              target: _tasbihService.target,
+                              loop: _tasbihService.loop,
+                              isTablet: isTablet,
+                              onTargetTap: _showTargetDialog,
+                            ),
+
+                            SizedBox(height: isTablet ? 32 : 20),
+
+                            // Beads visualization
+                            TasbihBeadsWidget(
+                              count: _tasbihService.count,
+                              target: _tasbihService.target,
+                              beadStyle: _tasbihService.beadStyle,
+                              isTablet: isTablet,
+                            ),
+
+                            SizedBox(height: isTablet ? 24 : 16),
+
+                            // Instructions
+                            _buildInstructions(isTablet),
+                          ],
                         ),
-
-                        SizedBox(height: isTablet ? 48 : 32),
-
-                        // Beads visualization
-                        TasbihBeadsWidget(
-                          count: _tasbihService.count,
-                          target: _tasbihService.target,
-                          beadStyle: _tasbihService.beadStyle,
-                          isTablet: isTablet,
-                        ),
-
-                        SizedBox(height: isTablet ? 32 : 24),
-
-                        // Instructions
-                        _buildInstructions(isTablet),
-                      ],
+                      ),
                     ),
                   ),
                 );
@@ -227,7 +253,7 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
           ),
         ),
 
-        // Bottom section
+        // Bottom section - Muslim Pro style
         _buildBottomSection(isTablet),
       ],
     );
@@ -244,17 +270,10 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
           // Back button
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.arrow_back_rounded,
-                color: Colors.white,
-                size: isTablet ? 28 : 24,
-              ),
+            child: Icon(
+              Icons.arrow_back_rounded,
+              color: Colors.white,
+              size: isTablet ? 28 : 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -274,21 +293,14 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
           // Reset button
           GestureDetector(
             onTap: _showResetConfirmation,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.refresh_rounded,
-                color: Colors.white,
-                size: isTablet ? 28 : 24,
-              ),
+            child: Icon(
+              Icons.refresh_rounded,
+              color: Colors.white,
+              size: isTablet ? 28 : 24,
             ),
           ),
 
-          const SizedBox(width: 12),
+          SizedBox(width: isTablet ? 24 : 20),
 
           // Sound toggle
           GestureDetector(
@@ -296,21 +308,14 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
               HapticService().lightImpact();
               _tasbihService.toggleSound();
             },
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _tasbihService.soundEnabled
-                    ? Icons.volume_up_rounded
-                    : Icons.volume_off_rounded,
-                color: _tasbihService.soundEnabled
-                    ? Colors.white
-                    : Colors.white38,
-                size: isTablet ? 28 : 24,
-              ),
+            child: Icon(
+              _tasbihService.soundEnabled
+                  ? Icons.volume_up_rounded
+                  : Icons.volume_off_rounded,
+              color: _tasbihService.soundEnabled
+                  ? Colors.white
+                  : Colors.white38,
+              size: isTablet ? 28 : 24,
             ),
           ),
         ],
@@ -342,7 +347,20 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
 
   Widget _buildBottomSection(bool isTablet) {
     return Container(
-      padding: EdgeInsets.all(isTablet ? 24 : 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -350,139 +368,171 @@ class _TasbihPageState extends State<TasbihPage> with TickerProviderStateMixin {
           Container(
             width: 40,
             height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
+            margin: const EdgeInsets.only(top: 10, bottom: 12),
             decoration: BoxDecoration(
               color: Colors.white24,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
 
-          // Dhikr section
-          _buildDhikrSection(isTablet),
+          // Start Dhikr header with View All button
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Start Dhikr',
+                  style: TextStyle(
+                    fontSize: isTablet ? 16 : 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _showDhikrSheet,
+                  child: Text(
+                    'View All',
+                    style: TextStyle(
+                      fontSize: isTablet ? 13 : 11,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF4CAF50),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-          SizedBox(height: isTablet ? 20 : 16),
+          SizedBox(height: isTablet ? 12 : 8),
 
-          // Bead style selector
-          _buildBeadStyleSection(isTablet),
-        ],
-      ),
-    );
-  }
+          // Bead style selector (horizontal scroll like Muslim Pro)
+          SizedBox(
+            height: isTablet ? 70 : 56,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 12),
+              itemCount: TasbihBeadStyle.values.length,
+              itemBuilder: (context, index) {
+                final style = TasbihBeadStyle.values[index];
+                final isSelected = _tasbihService.beadStyle == style;
+                final gradientColors = TasbihService.getBeadGradientValues(style)
+                    .map((v) => Color(v))
+                    .toList();
 
-  Widget _buildDhikrSection(bool isTablet) {
-    final selectedDhikr = _tasbihService.selectedDhikr;
-
-    return GestureDetector(
-      onTap: _showDhikrSheet,
-      child: Container(
-        padding: EdgeInsets.all(isTablet ? 20 : 16),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            // Dhikr info or prompt
-            Expanded(
-              child: selectedDhikr != null
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                return GestureDetector(
+                  onTap: () {
+                    HapticService().lightImpact();
+                    _tasbihService.setBeadStyle(style);
+                  },
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: isTablet ? 6 : 4),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          selectedDhikr.arabic,
-                          style: TextStyle(
-                            fontSize: isTablet ? 22 : 18,
-                            fontFamily: 'Amiri',
-                            color: const Color(0xFF4CAF50),
-                            height: 1.4,
+                        Container(
+                          width: isTablet ? 48 : 40,
+                          height: isTablet ? 48 : 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              center: const Alignment(-0.3, -0.3),
+                              radius: 1.0,
+                              colors: gradientColors,
+                            ),
+                            border: isSelected
+                                ? Border.all(
+                                    color: const Color(0xFF4CAF50),
+                                    width: 3,
+                                  )
+                                : null,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          textDirection: TextDirection.rtl,
+                          child: Center(
+                            child: Container(
+                              width: isTablet ? 16 : 12,
+                              height: isTablet ? 16 : 12,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.3),
+                              ),
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${selectedDhikr.transliteration} • ${selectedDhikr.meaning}',
+                        if (isSelected) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFF4CAF50),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Selected dhikr display (if any)
+          if (_tasbihService.selectedDhikr != null) ...[
+            SizedBox(height: isTablet ? 8 : 6),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
+              child: GestureDetector(
+                onTap: _showDhikrSheet,
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 14 : 10,
+                    vertical: isTablet ? 10 : 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${_tasbihService.selectedDhikr!.arabic}  •  ${_tasbihService.selectedDhikr!.transliteration}',
                           style: TextStyle(
                             fontSize: isTablet ? 14 : 12,
-                            color: Colors.white54,
+                            color: const Color(0xFF4CAF50),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Start Dhikr',
-                          style: TextStyle(
-                            fontSize: isTablet ? 18 : 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Don't just count your Tasbihs, make your Tasbihs count",
-                          style: TextStyle(
-                            fontSize: isTablet ? 13 : 11,
-                            color: Colors.white54,
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
-
-            const SizedBox(width: 16),
-
-            // Select button
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isTablet ? 20 : 16,
-                vertical: isTablet ? 12 : 10,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                selectedDhikr != null ? 'Change' : 'Select a Dhikr',
-                style: TextStyle(
-                  fontSize: isTablet ? 14 : 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white38,
+                        size: isTablet ? 20 : 16,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildBeadStyleSection(bool isTablet) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(left: isTablet ? 8 : 4, bottom: 8),
-          child: Text(
-            'Bead Style',
-            style: TextStyle(
-              fontSize: isTablet ? 13 : 11,
-              color: Colors.white54,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        TasbihBeadSelector(
-          selectedStyle: _tasbihService.beadStyle,
-          onStyleChanged: (style) {
-            _tasbihService.setBeadStyle(style);
-          },
-          isTablet: isTablet,
-        ),
-      ],
+          SizedBox(height: isTablet ? 12 : 10),
+        ],
+      ),
     );
   }
 }

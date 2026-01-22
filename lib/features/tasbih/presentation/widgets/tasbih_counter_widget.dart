@@ -216,16 +216,19 @@ class _TargetSelectionDialogState extends State<TargetSelectionDialog> {
                       color: Colors.white,
                       fontSize: 18,
                     ),
+                    cursorColor: const Color(0xFF4CAF50),
                     decoration: InputDecoration(
                       labelText: 'Custom',
-                      labelStyle: TextStyle(color: Colors.white54),
+                      labelStyle: const TextStyle(color: Colors.white54),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.1),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.white24),
+                        borderSide: const BorderSide(color: Colors.white24),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: const Color(0xFF4CAF50)),
+                        borderSide: const BorderSide(color: Color(0xFF4CAF50)),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
