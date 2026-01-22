@@ -57,6 +57,15 @@ class QuickAccessSection extends StatelessWidget {
         },
       ),
       _QuickAccessCard(
+        icon: Icons.radio_button_on_rounded,
+        label: 'Tasbih',
+        subtitle: 'Counter',
+        color: AppColors.roseGoldPrimary,
+        onTap: () {
+          Navigator.pushNamed(context, '/tasbih');
+        },
+      ),
+      _QuickAccessCard(
         icon: Icons.palette_rounded,
         label: 'Themes',
         subtitle: 'Customize',
