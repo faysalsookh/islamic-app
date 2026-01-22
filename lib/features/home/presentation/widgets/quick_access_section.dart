@@ -48,6 +48,15 @@ class QuickAccessSection extends StatelessWidget {
         },
       ),
       _QuickAccessCard(
+        icon: Icons.explore_rounded,
+        label: 'Qibla',
+        subtitle: 'Direction',
+        color: AppColors.mutedTealDark,
+        onTap: () {
+          Navigator.pushNamed(context, '/qibla');
+        },
+      ),
+      _QuickAccessCard(
         icon: Icons.palette_rounded,
         label: 'Themes',
         subtitle: 'Customize',

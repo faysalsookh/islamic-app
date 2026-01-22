@@ -61,6 +61,10 @@ dependencies:
   # HTTP client for API requests
   http: ^1.2.0
 
+  # Qibla direction feature
+  geolocator: ^12.0.0
+  flutter_compass: ^0.8.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

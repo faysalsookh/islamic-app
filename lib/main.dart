@@ -12,6 +12,7 @@ import 'package:islamic_app/features/quran/pages/tajweed_rules_page.dart';
 import 'package:islamic_app/features/bookmarks/presentation/pages/bookmarks_page.dart';
 import 'package:islamic_app/features/settings/presentation/pages/settings_page.dart';
 import 'package:islamic_app/features/search/presentation/pages/search_page.dart';
+import 'package:islamic_app/features/qibla/presentation/pages/qibla_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +65,7 @@ class IslamicApp extends StatelessWidget {
             '/bookmarks': (context) => const BookmarksPage(),
             '/settings': (context) => const SettingsPage(),
             '/search': (context) => const SearchPage(),
+            '/qibla': (context) => const QiblaPage(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/quran-reader') {

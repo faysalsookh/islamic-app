@@ -45,5 +45,9 @@
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to your location to calculate the Qibla direction towards Mecca for prayer.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>This app uses the compass sensor to show the Qibla direction in real-time.</string>
 </dict>
 </plist>
