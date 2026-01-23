@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/zakat_data.dart';
 
 class ZakatProvider with ChangeNotifier {
-  static const String _storageKey = 'zakat_data_v1';
-  
+  static const String _storageKey = 'zakat_data_v2';
+
   // Standard Nisab Thresholds (Grams)
   static const double NISAB_GOLD_GRAMS = 87.48;
   static const double NISAB_SILVER_GRAMS = 612.36;
@@ -15,6 +15,10 @@ class ZakatProvider with ChangeNotifier {
 
   ZakatData get data => _data;
   bool get isLoading => _isLoading;
+
+  // Currency helper
+  String get currencySymbol => _data.currency.symbol;
+  ZakatCurrency get currency => _data.currency;
 
   // Calculators
   double get totalGoldValue => _data.goldGrams * _data.goldPricePerGram;
@@ -70,6 +74,7 @@ class ZakatProvider with ChangeNotifier {
     double? goldPricePerGram,
     double? silverPricePerGram,
     bool? useSilverNisab,
+    ZakatCurrency? currency,
   }) {
     _data = _data.copyWith(
       cashInHand: cashInHand,
@@ -83,7 +88,15 @@ class ZakatProvider with ChangeNotifier {
       goldPricePerGram: goldPricePerGram,
       silverPricePerGram: silverPricePerGram,
       useSilverNisab: useSilverNisab,
+      currency: currency,
     );
+    notifyListeners();
+    _saveData();
+  }
+
+  // Update currency only
+  void setCurrency(ZakatCurrency currency) {
+    _data = _data.copyWith(currency: currency);
     notifyListeners();
     _saveData();
   }

@@ -75,6 +75,15 @@ class QuickAccessSection extends StatelessWidget {
         },
       ),
       _QuickAccessCard(
+        icon: Icons.calculate_rounded,
+        label: 'Zakat',
+        subtitle: 'Calculator',
+        color: AppColors.forestGreen,
+        onTap: () {
+          Navigator.pushNamed(context, '/zakat-calculator');
+        },
+      ),
+      _QuickAccessCard(
         icon: Icons.palette_rounded,
         label: 'Themes',
         subtitle: 'Customize',

@@ -1,3 +1,29 @@
+/// Supported currencies for Zakat calculation
+enum ZakatCurrency {
+  usd('USD', '\$', 'US Dollar'),
+  bdt('BDT', '৳', 'Bangladeshi Taka'),
+  sar('SAR', '﷼', 'Saudi Riyal'),
+  aed('AED', 'د.إ', 'UAE Dirham'),
+  gbp('GBP', '£', 'British Pound'),
+  eur('EUR', '€', 'Euro'),
+  inr('INR', '₹', 'Indian Rupee'),
+  pkr('PKR', '₨', 'Pakistani Rupee'),
+  myr('MYR', 'RM', 'Malaysian Ringgit'),
+  idr('IDR', 'Rp', 'Indonesian Rupiah');
+
+  final String code;
+  final String symbol;
+  final String name;
+
+  const ZakatCurrency(this.code, this.symbol, this.name);
+
+  static ZakatCurrency fromCode(String code) {
+    return ZakatCurrency.values.firstWhere(
+      (c) => c.code == code,
+      orElse: () => ZakatCurrency.usd,
+    );
+  }
+}
 
 class ZakatData {
   // Asset Values
@@ -8,16 +34,17 @@ class ZakatData {
   final double investments; // Stocks, mutual funds, etc.
   final double propertyForTrade; // Real estate bought for resale
   final double otherSavings;
-  
+
   // Liabilities
   final double liablities; // Debts due immediately
 
   // Prices (User inputs)
   final double goldPricePerGram;
   final double silverPricePerGram;
-  
+
   // Settings
   final bool useSilverNisab; // Standard: Silver is safer (lower threshold), Gold is optional
+  final ZakatCurrency currency; // Selected currency
 
   ZakatData({
     this.cashInHand = 0.0,
@@ -30,7 +57,8 @@ class ZakatData {
     this.liablities = 0.0,
     this.goldPricePerGram = 0.0,
     this.silverPricePerGram = 0.0,
-    this.useSilverNisab = true, 
+    this.useSilverNisab = true,
+    this.currency = ZakatCurrency.usd,
   });
 
   // CopyWith for immutability
@@ -46,6 +74,7 @@ class ZakatData {
     double? goldPricePerGram,
     double? silverPricePerGram,
     bool? useSilverNisab,
+    ZakatCurrency? currency,
   }) {
     return ZakatData(
       cashInHand: cashInHand ?? this.cashInHand,
@@ -59,6 +88,7 @@ class ZakatData {
       goldPricePerGram: goldPricePerGram ?? this.goldPricePerGram,
       silverPricePerGram: silverPricePerGram ?? this.silverPricePerGram,
       useSilverNisab: useSilverNisab ?? this.useSilverNisab,
+      currency: currency ?? this.currency,
     );
   }
 
@@ -76,6 +106,7 @@ class ZakatData {
       'goldPricePerGram': goldPricePerGram,
       'silverPricePerGram': silverPricePerGram,
       'useSilverNisab': useSilverNisab,
+      'currency': currency.code,
     };
   }
 
@@ -92,6 +123,7 @@ class ZakatData {
       goldPricePerGram: (json['goldPricePerGram'] as num?)?.toDouble() ?? 0.0,
       silverPricePerGram: (json['silverPricePerGram'] as num?)?.toDouble() ?? 0.0,
       useSilverNisab: json['useSilverNisab'] as bool? ?? true,
+      currency: ZakatCurrency.fromCode(json['currency'] as String? ?? 'USD'),
     );
   }
 }
