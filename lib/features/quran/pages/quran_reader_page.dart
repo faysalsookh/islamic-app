@@ -233,6 +233,22 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
     }
   }
 
+  void _showSurahInfo() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _SurahInfoSheet(
+        surah: _currentSurah,
+        isDark: isDark,
+        theme: theme,
+      ),
+    );
+  }
+
   void _openMoreOptions() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -261,6 +277,14 @@ class _QuranReaderPageState extends State<QuranReaderPage> {
                 ),
               ),
               const SizedBox(height: 16),
+              _OptionTile(
+                icon: Icons.info_outline_rounded,
+                label: 'Surah Information',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSurahInfo();
+                },
+              ),
               _OptionTile(
                 icon: Icons.share_rounded,
                 label: 'Share Ayah',
@@ -537,6 +561,245 @@ class _OptionTile extends StatelessWidget {
         ),
       ),
       onTap: onTap,
+    );
+  }
+}
+
+class _SurahInfoSheet extends StatelessWidget {
+  final Surah surah;
+  final bool isDark;
+  final ThemeData theme;
+
+  const _SurahInfoSheet({
+    required this.surah,
+    required this.isDark,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkTextSecondary.withValues(alpha: 0.5)
+                      : AppColors.textTertiary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Surah number badge
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    surah.number.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Arabic name
+              Text(
+                surah.nameArabic,
+                textDirection: TextDirection.rtl,
+                style: AppTypography.surahNameArabic(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : theme.colorScheme.primary,
+                  fontSize: 36,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // English name and meaning
+              Text(
+                surah.nameTransliteration,
+                style: AppTypography.heading4(
+                  color:
+                      isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '(${surah.nameEnglish})',
+                style: AppTypography.bodyMedium(
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Info cards
+              Row(
+                children: [
+                  Expanded(
+                    child: _InfoCard(
+                      icon: Icons.location_on_outlined,
+                      label: 'Revelation',
+                      value: surah.revelationType,
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _InfoCard(
+                      icon: Icons.format_list_numbered_rounded,
+                      label: 'Verses',
+                      value: '${surah.ayahCount} Ayahs',
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _InfoCard(
+                      icon: Icons.menu_book_rounded,
+                      label: 'Position',
+                      value: 'Surah ${surah.number}',
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _InfoCard(
+                      icon: Icons.layers_outlined,
+                      label: 'Juz',
+                      // Juz start is available in surah
+                      value: 'Juz ${surah.juzStart}', 
+                      isDark: isDark,
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Close button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isDark;
+  final ThemeData theme;
+
+  const _InfoCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isDark,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.darkBackground
+            : theme.colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppColors.darkTextSecondary.withValues(alpha: 0.1)
+              : theme.colorScheme.primary.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: theme.colorScheme.primary,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: AppTypography.caption(
+              color:
+                  isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTypography.bodyMedium(
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ).copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 }

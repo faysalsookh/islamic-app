@@ -23,8 +23,14 @@
 | **Zakat Calculator** | ✅ Verified | UI + Logic complete. |
 | **Tracker & Planner** | ✅ Verified | Persisting correctly. |
 
+### 3. **Codebase Cleanup** 🧹
+| Action | Result | Details |
+|--------|--------|---------|
+| **Duplicate Removal** | ✅ Cnfrmd | Removed `features/quran_reader` directory. Verified only 1 `QuranReaderPage` remains. |
+
 ---
 
 ## 🏁 Conclusion
 The "Verse of the Day" is now **dynamic** and changes daily!
 It is randomized based on the date, picking from a list of impactful verses like Ayatul Kursi, Light Verse, etc.
+Duplicate files have been removed.
