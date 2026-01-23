@@ -638,63 +638,42 @@ class _AyahsContent extends StatelessWidget {
         ? const Color(0xFFD4AF37)
         : const Color(0xFF8B6914);
 
-    return ListenableBuilder(
-      listenable: AudioService(),
-      builder: (context, child) {
-        final audioService = AudioService();
-
-        return RichText(
-          textDirection: TextDirection.rtl,
-          textAlign: TextAlign.justify,
-          text: TextSpan(
-            children: ayahs.map((ayah) {
-              final isPlaying = audioService.isAyahPlaying(
-                surahNumber,
-                ayah.numberInSurah,
-              );
-
-              return TextSpan(
-                children: [
-                  // Ayah text
-                  TextSpan(
-                    text: ayah.textArabic,
-                    style: AppTypography.quranText(
+    return RichText(
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.justify,
+      text: TextSpan(
+        children: ayahs.map((ayah) {
+          return TextSpan(
+            children: [
+              // Ayah text
+              TextSpan(
+                text: ayah.textArabic,
+                style: AppTypography.quranText(
+                  fontSize: fontSize,
+                  color: textColor,
+                  height: 2.4,
+                ),
+              ),
+              // Ayah end marker
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: GestureDetector(
+                  onTap: () => onAyahTap(ayah),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: _AyahEndMarker(
+                      number: ayah.numberInSurah,
                       fontSize: fontSize,
-                      color: isPlaying
-                          ? (isDark
-                              ? const Color(0xFFD4AF37)
-                              : const Color(0xFF8B6914))
-                          : textColor,
-                      height: 2.4,
+                      color: ayahMarkerColor,
                     ),
                   ),
-                  // Ayah end marker
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: GestureDetector(
-                      onTap: () => onAyahTap(ayah),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: _AyahEndMarker(
-                          number: ayah.numberInSurah,
-                          fontSize: fontSize,
-                          color: isPlaying
-                              ? (isDark
-                                  ? const Color(0xFFD4AF37)
-                                  : const Color(0xFF8B6914))
-                              : ayahMarkerColor,
-                          isPlaying: isPlaying,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const TextSpan(text: ' '),
-                ],
-              );
-            }).toList(),
-          ),
-        );
-      },
+                ),
+              ),
+              const TextSpan(text: ' '),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 }
@@ -704,13 +683,11 @@ class _AyahEndMarker extends StatelessWidget {
   final int number;
   final double fontSize;
   final Color color;
-  final bool isPlaying;
 
   const _AyahEndMarker({
     required this.number,
     required this.fontSize,
     required this.color,
-    required this.isPlaying,
   });
 
   @override
@@ -726,7 +703,6 @@ class _AyahEndMarker extends StatelessWidget {
           color: color,
           width: 1.5,
         ),
-        color: isPlaying ? color.withValues(alpha: 0.15) : Colors.transparent,
       ),
       child: Center(
         child: Text(
