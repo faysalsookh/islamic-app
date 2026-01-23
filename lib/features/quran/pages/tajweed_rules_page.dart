@@ -422,20 +422,6 @@ class TajweedRulesPage extends StatelessWidget {
           ),
         ),
       ),
-
-      // Floating action button to view original guide image
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showGuideImage(context),
-        backgroundColor: isDark ? AppColors.softRose : AppColors.forestGreen,
-        icon: const Icon(Icons.image_rounded, color: Colors.white),
-        label: const Text(
-          'মূল গাইড',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
     );
   }
 
