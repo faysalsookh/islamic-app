@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/ramadan_provider.dart';
+import '../../../../core/models/ramadan_settings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/elegant_card.dart';
@@ -38,6 +39,36 @@ class _RamadanCalendarPageState extends State<RamadanCalendarPage> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check_circle_outline_rounded),
+            onPressed: () {
+              Navigator.pushNamed(context, '/daily-tracker');
+            },
+            tooltip: 'Daily Tracker',
+          ),
+          IconButton(
+            icon: const Icon(Icons.auto_stories_rounded),
+            onPressed: () {
+              Navigator.pushNamed(context, '/quran-planner');
+            },
+            tooltip: 'Khatam Planner',
+          ),
+          IconButton(
+            icon: const Icon(Icons.calculate_rounded),
+            onPressed: () {
+              Navigator.pushNamed(context, '/zakat-calculator');
+            },
+            tooltip: 'Zakat Calculator',
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_rounded),
+            onPressed: () {
+              Navigator.pushNamed(context, '/ramadan-settings');
+            },
+            tooltip: 'Ramadan Settings',
+          ),
+        ],
       ),
       body: Consumer<RamadanProvider>(
         builder: (context, ramadanProvider, child) {
@@ -58,25 +89,45 @@ class _RamadanCalendarPageState extends State<RamadanCalendarPage> {
           final calendar = ramadanProvider.ramadanCalendar;
           final currentDay = ramadanProvider.currentRamadanDay;
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: calendar.length,
-            itemBuilder: (context, index) {
-              final dayNumber = index + 1;
-              final prayerTimes = calendar[index];
-              final isToday = dayNumber == currentDay;
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: calendar.length,
+                  itemBuilder: (context, index) {
+                    final dayNumber = index + 1;
+                    final prayerTimes = calendar[index];
+                    final isToday = dayNumber == currentDay;
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildDayCard(
-                  dayNumber: dayNumber,
-                  prayerTimes: prayerTimes,
-                  isToday: isToday,
-                  isDark: isDark,
-                  theme: theme,
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildDayCard(
+                        dayNumber: dayNumber,
+                        prayerTimes: prayerTimes,
+                        isToday: isToday,
+                        isDark: isDark,
+                        theme: theme,
+                        use24HourFormat: ramadanProvider.settings.use24HourFormat,
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                color: isDark ? AppColors.darkCard : theme.colorScheme.primary.withOpacity(0.05),
+                child: Text(
+                  'Calculation: ${CalculationMethods.getDisplayName(ramadanProvider.settings.calculationMethod)} | Madhab: ${ramadanProvider.settings.madhab.toUpperCase()}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -103,9 +154,11 @@ class _RamadanCalendarPageState extends State<RamadanCalendarPage> {
     required bool isToday,
     required bool isDark,
     required ThemeData theme,
+    required bool use24HourFormat,
   }) {
-    final sehriTime = DateFormat('h:mm a').format(prayerTimes.fajr);
-    final iftarTime = DateFormat('h:mm a').format(prayerTimes.maghrib);
+    final timeFormat = use24HourFormat ? DateFormat('HH:mm') : DateFormat('h:mm a');
+    final sehriTime = timeFormat.format(prayerTimes.fajr);
+    final iftarTime = timeFormat.format(prayerTimes.maghrib);
     final dateStr = DateFormat('EEEE, MMM d').format(prayerTimes.date);
 
     return ElegantCard(

@@ -17,6 +17,13 @@ import 'package:islamic_app/features/qibla/presentation/pages/qibla_page.dart';
 import 'package:islamic_app/features/tasbih/presentation/pages/tasbih_page.dart';
 import 'package:islamic_app/features/ramadan/presentation/pages/ramadan_calendar_page.dart';
 import 'package:islamic_app/features/ramadan/presentation/pages/ramadan_duas_page.dart';
+import 'package:islamic_app/features/ramadan/presentation/pages/ramadan_settings_page.dart';
+import 'package:islamic_app/features/ramadan/presentation/pages/daily_tracker_page.dart';
+import 'package:islamic_app/features/ramadan/presentation/pages/quran_planner_page.dart';
+import 'package:islamic_app/features/ramadan/presentation/pages/zakat_calculator_page.dart';
+import 'package:islamic_app/core/providers/daily_tracker_provider.dart';
+import 'package:islamic_app/core/providers/quran_plan_provider.dart';
+import 'package:islamic_app/core/providers/zakat_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +40,15 @@ void main() async {
   final ramadanProvider = RamadanProvider();
   await ramadanProvider.initialize();
   
+  final dailyTrackerProvider = DailyTrackerProvider();
+  await dailyTrackerProvider.initialize();
+
+  final quranPlanProvider = QuranPlanProvider();
+  await quranPlanProvider.initialize();
+
+  final zakatProvider = ZakatProvider();
+  await zakatProvider.initialize();
+  
   // Set Ramadan start date (2026 Ramadan starts around February 17)
   // TODO: Make this configurable in settings
   await ramadanProvider.setRamadanStartDate(DateTime(2026, 2, 17));
@@ -42,6 +58,9 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: appState),
         ChangeNotifierProvider.value(value: ramadanProvider),
+        ChangeNotifierProvider.value(value: dailyTrackerProvider),
+        ChangeNotifierProvider.value(value: quranPlanProvider),
+        ChangeNotifierProvider.value(value: zakatProvider),
       ],
       child: const IslamicApp(),
     ),
@@ -83,6 +102,10 @@ class IslamicApp extends StatelessWidget {
             '/tasbih': (context) => const TasbihPage(),
             '/ramadan-calendar': (context) => const RamadanCalendarPage(),
             '/ramadan-duas': (context) => const RamadanDuasPage(),
+            '/ramadan-settings': (context) => const RamadanSettingsPage(),
+            '/daily-tracker': (context) => const DailyTrackerPage(),
+            '/quran-planner': (context) => const QuranPlannerPage(),
+            '/zakat-calculator': (context) => const ZakatCalculatorPage(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/quran-reader') {

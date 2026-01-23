@@ -1,11 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/prayer_times_data.dart';
+import '../models/ramadan_settings.dart';
 import '../services/prayer_time_service.dart';
+import '../services/ramadan_notification_scheduler.dart';
 
 /// Provider for managing Ramadan-related state and countdown timers
 class RamadanProvider with ChangeNotifier {
   final PrayerTimeService _prayerTimeService = PrayerTimeService();
+  final RamadanNotificationScheduler _notificationScheduler = RamadanNotificationScheduler();
   
   PrayerTimesData? _todayPrayerTimes;
   Timer? _countdownTimer;
@@ -15,6 +20,10 @@ class RamadanProvider with ChangeNotifier {
   // Ramadan configuration
   DateTime? _ramadanStartDate;
   List<PrayerTimesData> _ramadanCalendar = [];
+  
+  // Settings
+  RamadanSettings _settings = RamadanSettings.defaults();
+  static const String _settingsKey = 'ramadan_settings';
 
   // Getters
   PrayerTimesData? get todayPrayerTimes => _todayPrayerTimes;
@@ -22,6 +31,7 @@ class RamadanProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   DateTime? get ramadanStartDate => _ramadanStartDate;
   List<PrayerTimesData> get ramadanCalendar => _ramadanCalendar;
+  RamadanSettings get settings => _settings;
 
   /// Check if we're currently in Ramadan
   bool get isRamadan {
@@ -50,6 +60,8 @@ class RamadanProvider with ChangeNotifier {
 
   /// Initialize and load prayer times
   Future<void> initialize() async {
+    await _loadSettings();
+    _ramadanStartDate = _settings.ramadanStartDate;
     await loadTodayPrayerTimes();
     _startCountdownTimer();
   }
@@ -61,9 +73,12 @@ class RamadanProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _todayPrayerTimes = await _prayerTimeService.getTodayPrayerTimes();
+      _todayPrayerTimes = await _prayerTimeService.getTodayPrayerTimes(settings: _settings);
       if (_todayPrayerTimes == null) {
         _errorMessage = 'Unable to calculate prayer times. Please check location permissions.';
+      } else {
+        // Schedule notifications if in Ramadan
+        await _scheduleNotificationsIfNeeded();
       }
     } catch (e) {
       _errorMessage = 'Error loading prayer times: $e';
@@ -80,7 +95,7 @@ class RamadanProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _ramadanCalendar = await _prayerTimeService.getRamadanCalendar(startDate);
+      _ramadanCalendar = await _prayerTimeService.getRamadanCalendar(startDate, settings: _settings);
     } catch (e) {
       _errorMessage = 'Error generating Ramadan calendar: $e';
     } finally {
@@ -107,6 +122,94 @@ class RamadanProvider with ChangeNotifier {
     if (_ramadanStartDate != null) {
       await setRamadanStartDate(_ramadanStartDate!);
     }
+  }
+
+  /// Load settings from SharedPreferences
+  Future<void> _loadSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final settingsJson = prefs.getString(_settingsKey);
+      
+      if (settingsJson != null) {
+        final Map<String, dynamic> json = jsonDecode(settingsJson);
+        _settings = RamadanSettings.fromJson(json);
+      } else {
+        _settings = RamadanSettings.defaults();
+        await _saveSettings();
+      }
+    } catch (e) {
+      print('Error loading Ramadan settings: $e');
+      _settings = RamadanSettings.defaults();
+    }
+  }
+
+  /// Save settings to SharedPreferences
+  Future<void> _saveSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final settingsJson = jsonEncode(_settings.toJson());
+      await prefs.setString(_settingsKey, settingsJson);
+    } catch (e) {
+      print('Error saving Ramadan settings: $e');
+    }
+  }
+
+  /// Update settings and save
+  Future<void> updateSettings(RamadanSettings newSettings) async {
+    _settings = newSettings;
+    await _saveSettings();
+    
+    // Update ramadan start date if changed
+    if (_ramadanStartDate != newSettings.ramadanStartDate) {
+      _ramadanStartDate = newSettings.ramadanStartDate;
+      if (_ramadanStartDate != null) {
+        await setRamadanStartDate(_ramadanStartDate!);
+      }
+    }
+    
+    // Refresh prayer times with new calculation method
+    _prayerTimeService.clearCache();
+    await loadTodayPrayerTimes();
+    
+    notifyListeners();
+  }
+
+  /// Schedule notifications if in Ramadan and settings allow
+  Future<void> _scheduleNotificationsIfNeeded() async {
+    if (!isRamadan || _todayPrayerTimes == null) return;
+    
+    final day = currentRamadanDay;
+    if (day == null) return;
+
+    try {
+      await _notificationScheduler.scheduleNotificationsForToday(
+        prayerTimes: _todayPrayerTimes!,
+        settings: _settings,
+        ramadanDay: day,
+      );
+    } catch (e) {
+      print('Error scheduling notifications: $e');
+    }
+  }
+
+  /// Request notification permissions
+  Future<bool> requestNotificationPermissions() async {
+    return await _notificationScheduler.requestPermissions();
+  }
+
+  /// Check if notifications are enabled
+  Future<bool> areNotificationsEnabled() async {
+    return await _notificationScheduler.areNotificationsEnabled();
+  }
+
+  /// Show test notification
+  Future<void> showTestNotification() async {
+    await _notificationScheduler.showTestNotification();
+  }
+
+  /// Manually schedule notifications (useful for testing)
+  Future<void> scheduleNotifications() async {
+    await _scheduleNotificationsIfNeeded();
   }
 
   @override
