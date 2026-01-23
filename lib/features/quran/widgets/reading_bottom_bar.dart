@@ -82,7 +82,7 @@ class ReadingBottomBar extends StatelessWidget {
 
             // Main controls
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
               child: Row(
                 children: [
                   // Left side - View & Display controls
