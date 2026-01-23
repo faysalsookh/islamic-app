@@ -26,8 +26,8 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
   late TextEditingController _silverPriceController;
   late TextEditingController _cashHandController;
   late TextEditingController _cashBankController;
-  late TextEditingController _goldGramsController;
-  late TextEditingController _silverGramsController;
+  late TextEditingController _goldWeightController;
+  late TextEditingController _silverWeightController;
   late TextEditingController _investmentsController;
   late TextEditingController _propertyController;
   late TextEditingController _otherSavingsController;
@@ -41,17 +41,17 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
     final data = provider.data;
 
     _goldPriceController = TextEditingController(
-        text: data.goldPricePerGram > 0 ? data.goldPricePerGram.toString() : '');
+        text: data.goldPricePerUnit > 0 ? data.goldPricePerUnit.toString() : '');
     _silverPriceController = TextEditingController(
-        text: data.silverPricePerGram > 0 ? data.silverPricePerGram.toString() : '');
+        text: data.silverPricePerUnit > 0 ? data.silverPricePerUnit.toString() : '');
     _cashHandController = TextEditingController(
         text: data.cashInHand > 0 ? data.cashInHand.toString() : '');
     _cashBankController = TextEditingController(
         text: data.cashInBank > 0 ? data.cashInBank.toString() : '');
-    _goldGramsController = TextEditingController(
-        text: data.goldGrams > 0 ? data.goldGrams.toString() : '');
-    _silverGramsController = TextEditingController(
-        text: data.silverGrams > 0 ? data.silverGrams.toString() : '');
+    _goldWeightController = TextEditingController(
+        text: data.goldWeight > 0 ? data.goldWeight.toString() : '');
+    _silverWeightController = TextEditingController(
+        text: data.silverWeight > 0 ? data.silverWeight.toString() : '');
     _investmentsController = TextEditingController(
         text: data.investments > 0 ? data.investments.toString() : '');
     _propertyController = TextEditingController(
@@ -69,8 +69,8 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
     _silverPriceController.dispose();
     _cashHandController.dispose();
     _cashBankController.dispose();
-    _goldGramsController.dispose();
-    _silverGramsController.dispose();
+    _goldWeightController.dispose();
+    _silverWeightController.dispose();
     _investmentsController.dispose();
     _propertyController.dispose();
     _otherSavingsController.dispose();
@@ -81,12 +81,12 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
   void _updateProvider() {
     if (_formKey.currentState!.validate()) {
       context.read<ZakatProvider>().updateData(
-            goldPricePerGram: double.tryParse(_goldPriceController.text) ?? 0.0,
-            silverPricePerGram: double.tryParse(_silverPriceController.text) ?? 0.0,
+            goldPricePerUnit: double.tryParse(_goldPriceController.text) ?? 0.0,
+            silverPricePerUnit: double.tryParse(_silverPriceController.text) ?? 0.0,
             cashInHand: double.tryParse(_cashHandController.text) ?? 0.0,
             cashInBank: double.tryParse(_cashBankController.text) ?? 0.0,
-            goldGrams: double.tryParse(_goldGramsController.text) ?? 0.0,
-            silverGrams: double.tryParse(_silverGramsController.text) ?? 0.0,
+            goldWeight: double.tryParse(_goldWeightController.text) ?? 0.0,
+            silverWeight: double.tryParse(_silverWeightController.text) ?? 0.0,
             investments: double.tryParse(_investmentsController.text) ?? 0.0,
             propertyForTrade: double.tryParse(_propertyController.text) ?? 0.0,
             otherSavings: double.tryParse(_otherSavingsController.text) ?? 0.0,
@@ -134,11 +134,11 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
                   ),
                 ),
 
-                // Currency Selector
+                // Currency & Weight Unit Selectors
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                    child: _buildCurrencySelector(provider, theme, isDark),
+                    child: _buildCurrencyAndWeightSelector(provider, theme, isDark),
                   ),
                 ),
 
@@ -442,7 +442,7 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
     );
   }
 
-  Widget _buildCurrencySelector(
+  Widget _buildCurrencyAndWeightSelector(
       ZakatProvider provider, ThemeData theme, bool isDark) {
     return ElegantCard(
       backgroundColor: isDark ? AppColors.darkCard : Colors.white,
@@ -450,12 +450,13 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Currency Selection
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -466,7 +467,7 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
               ),
               const SizedBox(width: 12),
               Text(
-                'Select Currency',
+                'Currency',
                 style: AppTypography.heading4(
                   color: isDark
                       ? AppColors.darkTextPrimary
@@ -475,7 +476,7 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -496,6 +497,68 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
                 );
               }).toList(),
             ),
+          ),
+          const SizedBox(height: 20),
+          // Divider
+          Container(
+            height: 1,
+            color: isDark ? AppColors.dividerDark : AppColors.divider,
+          ),
+          const SizedBox(height: 20),
+          // Weight Unit Selection
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.forestGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.scale_rounded,
+                  color: AppColors.forestGreen,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Weight Unit',
+                style: AppTypography.heading4(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '1 ভরি = 11.664g',
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: WeightUnit.values.map((unit) {
+              final isSelected = provider.weightUnit == unit;
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: _WeightUnitChip(
+                  unit: unit,
+                  isSelected: isSelected,
+                  onTap: () {
+                    HapticService().selectionClick();
+                    provider.setWeightUnit(unit);
+                  },
+                  theme: theme,
+                  isDark: isDark,
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -555,6 +618,21 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
 
   Widget _buildPricesSection(
       ThemeData theme, bool isDark, ZakatProvider provider) {
+    final weightUnit = provider.weightUnit;
+    final unitLabel = weightUnit == WeightUnit.bhori ? 'Bhori (ভরি)' : 'Gram';
+    final unitSymbol = weightUnit.symbol;
+
+    // Dynamic hints based on currency and weight unit
+    String goldHint;
+    String silverHint;
+    if (provider.currency == ZakatCurrency.bdt) {
+      goldHint = weightUnit == WeightUnit.bhori ? 'e.g., 99000' : 'e.g., 8500';
+      silverHint = weightUnit == WeightUnit.bhori ? 'e.g., 1200' : 'e.g., 100';
+    } else {
+      goldHint = weightUnit == WeightUnit.bhori ? 'e.g., 760' : 'e.g., 65';
+      silverHint = weightUnit == WeightUnit.bhori ? 'e.g., 9.50' : 'e.g., 0.80';
+    }
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: ElegantCard(
@@ -573,7 +651,7 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Enter current market prices per gram in ${provider.currency.name}',
+                    'Enter current market prices per $unitLabel in ${provider.currency.name}',
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -587,24 +665,26 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
             const SizedBox(height: 20),
             _buildTextField(
               controller: _goldPriceController,
-              label: 'Gold Price per Gram',
-              hint: 'e.g., ${provider.currency == ZakatCurrency.bdt ? "8500" : "65"}',
+              label: 'Gold Price per $unitLabel',
+              hint: goldHint,
               icon: Icons.monetization_on_rounded,
               iconColor: const Color(0xFFFFD700),
               theme: theme,
               isDark: isDark,
               prefix: provider.currencySymbol,
+              suffix: '/$unitSymbol',
             ),
             const SizedBox(height: 16),
             _buildTextField(
               controller: _silverPriceController,
-              label: 'Silver Price per Gram',
-              hint: 'e.g., ${provider.currency == ZakatCurrency.bdt ? "100" : "0.80"}',
+              label: 'Silver Price per $unitLabel',
+              hint: silverHint,
               icon: Icons.monetization_on_outlined,
               iconColor: const Color(0xFFC0C0C0),
               theme: theme,
               isDark: isDark,
               prefix: provider.currencySymbol,
+              suffix: '/$unitSymbol',
             ),
           ],
         ),
@@ -614,6 +694,10 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
 
   Widget _buildAssetsSection(
       ThemeData theme, bool isDark, ZakatProvider provider) {
+    final weightUnit = provider.weightUnit;
+    final unitLabel = weightUnit == WeightUnit.bhori ? 'ভরি' : 'grams';
+    final unitSymbol = weightUnit.symbol;
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Column(
@@ -636,27 +720,27 @@ class _ZakatCalculatorPageState extends State<ZakatCalculatorPage>
                   children: [
                     Expanded(
                       child: _buildTextField(
-                        controller: _goldGramsController,
-                        label: 'Gold (grams)',
+                        controller: _goldWeightController,
+                        label: 'Gold ($unitLabel)',
                         hint: '0',
                         icon: Icons.balance_rounded,
                         iconColor: const Color(0xFFFFD700),
                         theme: theme,
                         isDark: isDark,
-                        suffix: 'g',
+                        suffix: unitSymbol,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildTextField(
-                        controller: _silverGramsController,
-                        label: 'Silver (grams)',
+                        controller: _silverWeightController,
+                        label: 'Silver ($unitLabel)',
                         hint: '0',
                         icon: Icons.scale_rounded,
                         iconColor: const Color(0xFFC0C0C0),
                         theme: theme,
                         isDark: isDark,
-                        suffix: 'g',
+                        suffix: unitSymbol,
                       ),
                     ),
                   ],
@@ -1106,13 +1190,94 @@ class _CurrencyChip extends StatelessWidget {
               currency.code,
               style: TextStyle(
                 color: isSelected
-                    ? Colors.white.withOpacity(0.9)
+                    ? Colors.white.withValues(alpha: 0.9)
                     : (isDark
                         ? AppColors.darkTextSecondary
                         : AppColors.textSecondary),
                 fontWeight: FontWeight.w500,
                 fontSize: 13,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeightUnitChip extends StatelessWidget {
+  final WeightUnit unit;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final ThemeData theme;
+  final bool isDark;
+
+  const _WeightUnitChip({
+    required this.unit,
+    required this.isSelected,
+    required this.onTap,
+    required this.theme,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.forestGreen
+              : (isDark ? AppColors.darkSurface : AppColors.cream),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.forestGreen
+                : (isDark ? AppColors.dividerDark : AppColors.divider),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              unit == WeightUnit.bhori ? Icons.diamond_outlined : Icons.straighten,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  unit.name,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  unit.nameBangla,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.8)
+                        : (isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

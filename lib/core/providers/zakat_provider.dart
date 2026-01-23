@@ -20,9 +20,13 @@ class ZakatProvider with ChangeNotifier {
   String get currencySymbol => _data.currency.symbol;
   ZakatCurrency get currency => _data.currency;
 
-  // Calculators
-  double get totalGoldValue => _data.goldGrams * _data.goldPricePerGram;
-  double get totalSilverValue => _data.silverGrams * _data.silverPricePerGram;
+  // Weight unit helper
+  WeightUnit get weightUnit => _data.weightUnit;
+  String get weightUnitSymbol => _data.weightUnit.symbol;
+
+  // Calculators (using grams internally via ZakatData getters)
+  double get totalGoldValue => _data.goldWeight * _data.goldPricePerUnit;
+  double get totalSilverValue => _data.silverWeight * _data.silverPricePerUnit;
   
   double get totalCashAssets => 
       _data.cashInHand + 
@@ -65,30 +69,32 @@ class ZakatProvider with ChangeNotifier {
   void updateData({
     double? cashInHand,
     double? cashInBank,
-    double? goldGrams,
-    double? silverGrams,
+    double? goldWeight,
+    double? silverWeight,
     double? investments,
     double? propertyForTrade,
     double? otherSavings,
     double? liablities,
-    double? goldPricePerGram,
-    double? silverPricePerGram,
+    double? goldPricePerUnit,
+    double? silverPricePerUnit,
     bool? useSilverNisab,
     ZakatCurrency? currency,
+    WeightUnit? weightUnit,
   }) {
     _data = _data.copyWith(
       cashInHand: cashInHand,
       cashInBank: cashInBank,
-      goldGrams: goldGrams,
-      silverGrams: silverGrams,
+      goldWeight: goldWeight,
+      silverWeight: silverWeight,
       investments: investments,
       propertyForTrade: propertyForTrade,
       otherSavings: otherSavings,
       liablities: liablities,
-      goldPricePerGram: goldPricePerGram,
-      silverPricePerGram: silverPricePerGram,
+      goldPricePerUnit: goldPricePerUnit,
+      silverPricePerUnit: silverPricePerUnit,
       useSilverNisab: useSilverNisab,
       currency: currency,
+      weightUnit: weightUnit,
     );
     notifyListeners();
     _saveData();
@@ -97,6 +103,13 @@ class ZakatProvider with ChangeNotifier {
   // Update currency only
   void setCurrency(ZakatCurrency currency) {
     _data = _data.copyWith(currency: currency);
+    notifyListeners();
+    _saveData();
+  }
+
+  // Update weight unit only
+  void setWeightUnit(WeightUnit unit) {
+    _data = _data.copyWith(weightUnit: unit);
     notifyListeners();
     _saveData();
   }
