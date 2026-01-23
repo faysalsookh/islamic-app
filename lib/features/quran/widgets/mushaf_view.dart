@@ -4,9 +4,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/models/surah.dart';
 import '../../../../core/models/ayah.dart';
+import '../../../../core/models/tajweed.dart';
 import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/services/audio_service.dart';
 import '../../../../core/services/haptic_service.dart';
+import '../../../../core/services/tajweed_service.dart';
 
 /// Premium Mushaf (page style) view of the Quran
 /// Designed to look like a real physical Quran with ornamental borders
@@ -183,15 +185,20 @@ class _MushafPage extends StatelessWidget {
                           ),
 
                         // Ayahs content
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          child: _AyahsContent(
-                            ayahs: ayahs,
-                            surahNumber: surah.number,
-                            fontSize: fontSize,
-                            isDark: isDark,
-                            onAyahTap: onAyahTap,
-                          ),
+                        Consumer<AppStateProvider>(
+                          builder: (context, appState, child) {
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                              child: _AyahsContent(
+                                ayahs: ayahs,
+                                surahNumber: surah.number,
+                                fontSize: fontSize,
+                                isDark: isDark,
+                                showTajweedColors: appState.showTajweedColors,
+                                onAyahTap: onAyahTap,
+                              ),
+                            );
+                          },
                         ),
 
                         // Page footer
@@ -613,12 +620,13 @@ class _BismillahSection extends StatelessWidget {
   }
 }
 
-/// Ayahs content with proper Arabic text layout
+/// Ayahs content with proper Arabic text layout and Tajweed colors
 class _AyahsContent extends StatelessWidget {
   final List<Ayah> ayahs;
   final int surahNumber;
   final double fontSize;
   final bool isDark;
+  final bool showTajweedColors;
   final Function(Ayah) onAyahTap;
 
   const _AyahsContent({
@@ -626,6 +634,7 @@ class _AyahsContent extends StatelessWidget {
     required this.surahNumber,
     required this.fontSize,
     required this.isDark,
+    required this.showTajweedColors,
     required this.onAyahTap,
   });
 
@@ -638,14 +647,38 @@ class _AyahsContent extends StatelessWidget {
         ? const Color(0xFFD4AF37)
         : const Color(0xFF8B6914);
 
+    final tajweedService = TajweedService();
+    final tajweedColors = TajweedColors.bengaliQuran;
+
     return RichText(
       textDirection: TextDirection.rtl,
       textAlign: TextAlign.justify,
       text: TextSpan(
-        children: ayahs.map((ayah) {
-          return TextSpan(
-            children: [
-              // Ayah text
+        children: ayahs.expand((ayah) {
+          final List<InlineSpan> spans = [];
+
+          // Add Tajweed colored text or plain text
+          if (showTajweedColors && ayah.textWithTajweed != null && ayah.textWithTajweed!.isNotEmpty) {
+            // Parse Tajweed markup and create colored spans
+            final segments = tajweedService.parseMarkup(ayah.textWithTajweed);
+            for (final segment in segments) {
+              final color = segment.rule == TajweedRule.normal
+                  ? textColor
+                  : tajweedColors.colorForRule(segment.rule);
+              spans.add(
+                TextSpan(
+                  text: segment.text,
+                  style: AppTypography.quranText(
+                    fontSize: fontSize,
+                    color: color,
+                    height: 2.4,
+                  ),
+                ),
+              );
+            }
+          } else {
+            // Plain text without Tajweed colors
+            spans.add(
               TextSpan(
                 text: ayah.textArabic,
                 style: AppTypography.quranText(
@@ -654,24 +687,31 @@ class _AyahsContent extends StatelessWidget {
                   height: 2.4,
                 ),
               ),
-              // Ayah end marker
-              WidgetSpan(
-                alignment: PlaceholderAlignment.middle,
-                child: GestureDetector(
-                  onTap: () => onAyahTap(ayah),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: _AyahEndMarker(
-                      number: ayah.numberInSurah,
-                      fontSize: fontSize,
-                      color: ayahMarkerColor,
-                    ),
+            );
+          }
+
+          // Add ayah end marker
+          spans.add(
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: GestureDetector(
+                onTap: () => onAyahTap(ayah),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: _AyahEndMarker(
+                    number: ayah.numberInSurah,
+                    fontSize: fontSize,
+                    color: ayahMarkerColor,
                   ),
                 ),
               ),
-              const TextSpan(text: ' '),
-            ],
+            ),
           );
+
+          // Add spacing after ayah
+          spans.add(const TextSpan(text: ' '));
+
+          return spans;
         }).toList(),
       ),
     );

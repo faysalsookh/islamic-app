@@ -5,8 +5,9 @@ import '../../../core/models/surah.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/services/tafsir_service.dart';
+import '../../../core/services/haptic_service.dart';
 
-/// Bottom sheet showing Tafsir (interpretation) and Shani Nuzul (context of revelation)
+/// Premium bottom sheet showing Tafsir (interpretation) and Shani Nuzul (context of revelation)
 class TafsirBottomSheet extends StatefulWidget {
   final Ayah ayah;
   final Surah surah;
@@ -28,8 +29,8 @@ class TafsirBottomSheet extends StatefulWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.4,
+        initialChildSize: 0.75,
+        minChildSize: 0.5,
         maxChildSize: 0.95,
         builder: (context, scrollController) => TafsirBottomSheet(
           ayah: ayah,
@@ -54,7 +55,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
+
     // Fetch tafsir if Bengali tafsir is missing locally
     if (widget.ayah.tafsirBengali == null || widget.ayah.tafsirBengali!.isEmpty) {
       _fetchTafsir();
@@ -62,13 +63,11 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
   }
 
   Future<void> _fetchTafsir() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     final tafsir = await _tafsirService.fetchTafsir(
-      widget.surah.number, 
-      widget.ayah.numberInSurah
+      widget.surah.number,
+      widget.ayah.numberInSurah,
     );
 
     if (mounted) {
@@ -92,8 +91,15 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -103,26 +109,25 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.2)
-                  : Colors.black.withValues(alpha: 0.1),
+              color: (isDark ? AppColors.darkTextSecondary : AppColors.textTertiary)
+                  .withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
 
-          // Header with ayah reference
-          _buildHeader(isDark),
+          // Premium Header
+          _buildPremiumHeader(isDark, theme),
 
           // Tab bar
-          _buildTabBar(isDark),
+          _buildPremiumTabBar(isDark, theme),
 
           // Tab content
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildTafsirTab(isDark),
-                _buildShaniNuzulTab(isDark),
+                _buildTafsirTab(isDark, theme),
+                _buildShaniNuzulTab(isDark, theme),
               ],
             ),
           ),
@@ -131,106 +136,252 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildPremiumHeader(bool isDark, ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.black.withValues(alpha: 0.05),
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Column(
+        children: [
+          // Top row with close button
+          Row(
+            children: [
+              // Ayah badge with ornamental design
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _toArabicNumerals(widget.ayah.numberInSurah),
+                        style: const TextStyle(
+                          fontFamily: 'Amiri',
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          height: 1,
+                        ),
+                      ),
+                      Text(
+                        'آية',
+                        style: TextStyle(
+                          fontFamily: 'Amiri',
+                          fontSize: 10,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Surah info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.surah.nameArabic,
+                      style: TextStyle(
+                        fontFamily: 'Amiri',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${widget.surah.nameTransliteration} • Ayah ${widget.ayah.numberInSurah}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Action buttons
+              _buildIconButton(
+                icon: Icons.copy_rounded,
+                onTap: () => _copyContent(),
+                isDark: isDark,
+                tooltip: 'Copy',
+              ),
+              const SizedBox(width: 8),
+              _buildIconButton(
+                icon: Icons.close_rounded,
+                onTap: () => Navigator.pop(context),
+                isDark: isDark,
+                tooltip: 'Close',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Arabic ayah text in ornamental card
+          _buildArabicAyahCard(isDark, theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isDark,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticService().selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.darkSurface
+                  : AppColors.cream,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.textSecondary,
+            ),
           ),
         ),
       ),
-      child: Row(
+    );
+  }
+
+  Widget _buildArabicAyahCard(bool isDark, ThemeData theme) {
+    final ornamentColor = isDark
+        ? const Color(0xFFD4AF37).withValues(alpha: 0.4)
+        : const Color(0xFFB8860B).withValues(alpha: 0.3);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF1E1E1E)
+            : const Color(0xFFFFFDF5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ornamentColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
         children: [
-          // Ayah number badge
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                widget.ayah.numberInSurah.toString(),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+          // Decorative top element
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(width: 30, height: 1, color: ornamentColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '۞',
+                  style: TextStyle(fontSize: 14, color: ornamentColor),
                 ),
               ),
+              Container(width: 30, height: 1, color: ornamentColor),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Arabic text
+          Text(
+            widget.ayah.textArabic,
+            textDirection: TextDirection.rtl,
+            textAlign: TextAlign.center,
+            style: AppTypography.quranText(
+              color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1A1A1A),
+              fontSize: 26,
+              height: 2.0,
             ),
           ),
-          const SizedBox(width: 16),
-
-          // Surah and ayah info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.surah.nameTransliteration,
-                  style: AppTypography.heading3(
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
-                  ),
+          const SizedBox(height: 12),
+          // Decorative bottom element
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(width: 30, height: 1, color: ornamentColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '۞',
+                  style: TextStyle(fontSize: 14, color: ornamentColor),
                 ),
-                Text(
-                  'Surah ${widget.surah.number}, Ayah ${widget.ayah.numberInSurah}',
-                  style: AppTypography.bodySmall(
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Share button
-          IconButton(
-            onPressed: () => _shareContent(),
-            icon: Icon(
-              Icons.share_rounded,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
-          ),
-
-          // Close button
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(
-              Icons.close_rounded,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
+              ),
+              Container(width: 30, height: 1, color: ornamentColor),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTabBar(bool isDark) {
+  Widget _buildPremiumTabBar(bool isDark, ThemeData theme) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+            ? AppColors.darkSurface
+            : AppColors.cream.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
+          color: theme.colorScheme.primary,
           borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
@@ -239,296 +390,122 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
             ? AppColors.darkTextSecondary
             : AppColors.textSecondary,
         labelStyle: const TextStyle(
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
-        tabs: const [
-          Tab(text: 'Tafsir'),
-          Tab(text: 'Shani Nuzul'),
+        tabs: [
+          Tab(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.menu_book_rounded, size: 16),
+                const SizedBox(width: 6),
+                const Text('তাফসীর'),
+              ],
+            ),
+          ),
+          Tab(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.history_edu_rounded, size: 16),
+                const SizedBox(width: 6),
+                const Text('শানে নুযূল'),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTafsirTab(bool isDark) {
-    // Check for content availability
+  Widget _buildTafsirTab(bool isDark, ThemeData theme) {
     final hasEnglishTafsir = widget.ayah.tafsir != null && widget.ayah.tafsir!.isNotEmpty;
-    final hasBengaliTafsir = (widget.ayah.tafsirBengali != null && widget.ayah.tafsirBengali!.isNotEmpty) || (_apiTafsir != null && _apiTafsir!.isNotEmpty);
+    final hasBengaliTafsir = (widget.ayah.tafsirBengali != null && widget.ayah.tafsirBengali!.isNotEmpty) ||
+        (_apiTafsir != null && _apiTafsir!.isNotEmpty);
     final hasTafsir = hasEnglishTafsir || hasBengaliTafsir;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Arabic text of ayah
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              widget.ayah.textArabic,
-              textDirection: TextDirection.rtl,
-              textAlign: TextAlign.center,
-              style: AppTypography.quranText(
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.textPrimary,
-                fontSize: 24,
-              ),
-            ),
+          // Guide card
+          _buildGuideCard(
+            isDark: isDark,
+            theme: theme,
+            icon: Icons.lightbulb_outline_rounded,
+            title: 'What is Tafsir?',
+            titleBengali: 'তাফসীর কী?',
+            description: 'Tafsir is the scholarly interpretation and explanation of the Quran, helping understand the deeper meaning of each verse.',
+            descriptionBengali: 'তাফসীর হলো কুরআনের পণ্ডিত ব্যাখ্যা ও বিশ্লেষণ, যা প্রতিটি আয়াতের গভীর অর্থ বুঝতে সাহায্য করে।',
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          // Tafsir title
-          Row(
-            children: [
-              Icon(
-                Icons.menu_book_rounded,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'তাফসীর / Tafsir',
-                style: AppTypography.heading4(
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ],
+          // Tafsir Section
+          _buildSectionHeader(
+            isDark: isDark,
+            theme: theme,
+            icon: Icons.menu_book_rounded,
+            title: 'Tafsir Ibn Kathir',
+            titleBengali: 'তাফসীর ইবনে কাসীর',
           ),
 
           const SizedBox(height: 12),
 
           // Tafsir content
-           if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (hasTafsir) ...[
-            if (widget.ayah.tafsirBengali != null && widget.ayah.tafsirBengali!.isNotEmpty)
-              Text(
-                widget.ayah.tafsirBengali!,
-                style: TextStyle(
-                  fontSize: 16,
-                  height: 1.7,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
-                ),
-              )
-            else if (_apiTafsir != null)
-               Text(
-                _apiTafsir!,
-                style: TextStyle(
-                  fontSize: 16,
-                  height: 1.7,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            
-            if (hasBengaliTafsir && hasEnglishTafsir)
-              const SizedBox(height: 16),
-              
-             if (hasEnglishTafsir && (!hasBengaliTafsir)) // Show English if Bengali is missing
-              Text(
-                widget.ayah.tafsir!,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.7,
-                  color: hasBengaliTafsir 
-                      ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
-                      : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-                ),
-              ),
-          ] else
-            _buildNoContentMessage(
-              isDark,
-              'Tafsir not available',
-              'Detailed interpretation for this ayah will be added soon.',
-            ),
-
-          const SizedBox(height: 32),
-
-          // Translation
-          Text(
-            'অনুবাদ / Translation',
-            style: AppTypography.heading4(
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.textPrimary,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Bengali translation (Prioritize Bengali)
-          if (widget.ayah.translationBengali != null) ...[
-            _buildTranslationSection(
-              isDark,
-              'বাংলা',
-              widget.ayah.translationBengali!,
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // English translation
-          if (widget.ayah.translationEnglish != null)
-            _buildTranslationSection(
-              isDark,
-              'English',
-              widget.ayah.translationEnglish!,
-            ),
-
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShaniNuzulTab(bool isDark) {
-    final hasEnglishShaniNuzul = widget.ayah.shaniNuzul != null && widget.ayah.shaniNuzul!.isNotEmpty;
-    final hasBengaliShaniNuzul = widget.ayah.shaniNuzulBengali != null && widget.ayah.shaniNuzulBengali!.isNotEmpty;
-    // Use API Tafsir as fallback since it usually contains the context
-    final hasShaniNuzul = hasEnglishShaniNuzul || hasBengaliShaniNuzul || (_apiTafsir != null && _apiTafsir!.isNotEmpty);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section title
-          Row(
-            children: [
-              Icon(
-                Icons.history_edu_rounded,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'শানে নুযূল / Context',
-                style: AppTypography.heading4(
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            'Context of Revelation',
-            style: TextStyle(
-              fontSize: 14,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Content
           if (_isLoading)
-             const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (hasShaniNuzul)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   if (hasBengaliShaniNuzul)
-                    Text(
-                      widget.ayah.shaniNuzulBengali!,
-                      style: TextStyle(
-                        fontSize: 16, // Slightly larger for Bengali
-                        height: 1.7,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
-                      ),
-                    )
-                  else if (!hasEnglishShaniNuzul && _apiTafsir != null)
-                    // Fallback to API Tafsir content which contains context
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Note: Specific context not separated. Displaying full Tafsir which includes context:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _apiTafsir!,
-                          style: TextStyle(
-                            fontSize: 16,
-                            height: 1.7,
-                            color: isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  if (hasBengaliShaniNuzul && hasEnglishShaniNuzul)
-                    Divider(height: 24, color: isDark ? Colors.white24 : Colors.black12),
-                    
-                  if (hasEnglishShaniNuzul)
-                    Text(
-                      widget.ayah.shaniNuzul!,
-                      style: TextStyle(
-                        fontSize: 15,
-                        height: 1.7,
-                        color: hasBengaliShaniNuzul
-                            ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
-                            : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-                      ),
-                    ),
-                ],
-              ),
-            )
+            _buildLoadingState(isDark)
+          else if (hasTafsir)
+            _buildTafsirContent(isDark, theme, hasBengaliTafsir, hasEnglishTafsir)
           else
-            _buildNoContentMessage(
-              isDark,
-              'Context not available',
-              'The historical context of this revelation will be added soon.',
+            _buildNoContentCard(
+              isDark: isDark,
+              theme: theme,
+              icon: Icons.auto_stories_rounded,
+              title: 'Tafsir Coming Soon',
+              titleBengali: 'তাফসীর শীঘ্রই আসছে',
+              message: 'Detailed interpretation for this ayah will be added soon.',
+              messageBengali: 'এই আয়াতের বিস্তারিত ব্যাখ্যা শীঘ্রই যোগ করা হবে।',
             ),
 
           const SizedBox(height: 24),
 
-          // Additional info about the surah
-          _buildSurahInfo(isDark),
+          // Translation Section
+          _buildSectionHeader(
+            isDark: isDark,
+            theme: theme,
+            icon: Icons.translate_rounded,
+            title: 'Translation',
+            titleBengali: 'অনুবাদ',
+          ),
+
+          const SizedBox(height: 12),
+
+          // Translations
+          if (widget.ayah.translationBengali != null)
+            _buildTranslationCard(
+              isDark: isDark,
+              theme: theme,
+              language: 'বাংলা',
+              languageIcon: '🇧🇩',
+              text: widget.ayah.translationBengali!,
+              isBengali: true,
+            ),
+
+          if (widget.ayah.translationBengali != null && widget.ayah.translationEnglish != null)
+            const SizedBox(height: 12),
+
+          if (widget.ayah.translationEnglish != null)
+            _buildTranslationCard(
+              isDark: isDark,
+              theme: theme,
+              language: 'English',
+              languageIcon: '🇬🇧',
+              text: widget.ayah.translationEnglish!,
+              isBengali: false,
+            ),
 
           SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
         ],
@@ -536,37 +513,456 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
     );
   }
 
-  Widget _buildTranslationSection(bool isDark, String language, String text) {
+  Widget _buildShaniNuzulTab(bool isDark, ThemeData theme) {
+    final hasEnglishShaniNuzul = widget.ayah.shaniNuzul != null && widget.ayah.shaniNuzul!.isNotEmpty;
+    final hasBengaliShaniNuzul = widget.ayah.shaniNuzulBengali != null && widget.ayah.shaniNuzulBengali!.isNotEmpty;
+    final hasShaniNuzul = hasEnglishShaniNuzul || hasBengaliShaniNuzul;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Guide card
+          _buildGuideCard(
+            isDark: isDark,
+            theme: theme,
+            icon: Icons.history_rounded,
+            title: 'What is Shan-e-Nuzul?',
+            titleBengali: 'শানে নুযূল কী?',
+            description: 'Shan-e-Nuzul describes the historical context and circumstances under which a verse was revealed, helping understand its specific meaning.',
+            descriptionBengali: 'শানে নুযূল হলো কোন আয়াত কোন প্রেক্ষাপটে এবং কোন ঘটনার পরিপ্রেক্ষিতে নাযিল হয়েছিল তার বর্ণনা, যা আয়াতের নির্দিষ্ট অর্থ বুঝতে সাহায্য করে।',
+          ),
+
+          const SizedBox(height: 20),
+
+          // Revelation Context Section
+          _buildSectionHeader(
+            isDark: isDark,
+            theme: theme,
+            icon: Icons.history_edu_rounded,
+            title: 'Context of Revelation',
+            titleBengali: 'নাযিলের প্রেক্ষাপট',
+          ),
+
+          const SizedBox(height: 12),
+
+          // Content
+          if (_isLoading)
+            _buildLoadingState(isDark)
+          else if (hasShaniNuzul)
+            _buildShaniNuzulContent(isDark, theme, hasBengaliShaniNuzul, hasEnglishShaniNuzul)
+          else
+            _buildNoContentCard(
+              isDark: isDark,
+              theme: theme,
+              icon: Icons.history_toggle_off_rounded,
+              title: 'Context Coming Soon',
+              titleBengali: 'প্রেক্ষাপট শীঘ্রই আসছে',
+              message: 'The historical context of this revelation will be added soon.',
+              messageBengali: 'এই আয়াত নাযিলের ঐতিহাসিক প্রেক্ষাপট শীঘ্রই যোগ করা হবে।',
+            ),
+
+          const SizedBox(height: 24),
+
+          // Surah Info Section
+          _buildSurahInfoCard(isDark, theme),
+
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuideCard({
+    required bool isDark,
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String titleBengali,
+    required String description,
+    required String descriptionBengali,
+  }) {
     return Container(
-      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary.withValues(alpha: 0.1),
+            theme.colorScheme.primary.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              size: 22,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$titleBengali / $title',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  descriptionBengali,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'NotoSansBengali',
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark
+                        ? AppColors.darkTextSecondary.withValues(alpha: 0.7)
+                        : AppColors.textTertiary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required bool isDark,
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String titleBengali,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              titleBengali,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'NotoSansBengali',
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingState(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.darkSurface
+            : AppColors.cream.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading...',
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTafsirContent(bool isDark, ThemeData theme, bool hasBengali, bool hasEnglish) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.dividerDark : AppColors.divider,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Source badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.forestGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.verified_rounded,
+                  size: 14,
+                  color: AppColors.forestGreen,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Ibn Kathir',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.forestGreen,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Bengali Tafsir
+          if (widget.ayah.tafsirBengali != null && widget.ayah.tafsirBengali!.isNotEmpty)
+            Text(
+              widget.ayah.tafsirBengali!,
+              style: TextStyle(
+                fontSize: 15,
+                fontFamily: 'NotoSansBengali',
+                height: 1.8,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            )
+          else if (_apiTafsir != null && _apiTafsir!.isNotEmpty)
+            Text(
+              _apiTafsir!,
+              style: TextStyle(
+                fontSize: 15,
+                fontFamily: 'NotoSansBengali',
+                height: 1.8,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+
+          // English Tafsir (if Bengali is missing)
+          if (hasEnglish && !hasBengali) ...[
+            const SizedBox(height: 12),
+            Text(
+              widget.ayah.tafsir!,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.7,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShaniNuzulContent(bool isDark, ThemeData theme, bool hasBengali, bool hasEnglish) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.dividerDark : AppColors.divider,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeline indicator
+          Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                height: 2,
+                width: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withValues(alpha: 0.2),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Historical Context',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Bengali Shani Nuzul
+          if (hasBengali)
+            Text(
+              widget.ayah.shaniNuzulBengali!,
+              style: TextStyle(
+                fontSize: 15,
+                fontFamily: 'NotoSansBengali',
+                height: 1.8,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+
+          if (hasBengali && hasEnglish)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Divider(
+                color: isDark ? AppColors.dividerDark : AppColors.divider,
+              ),
+            ),
+
+          // English Shani Nuzul
+          if (hasEnglish)
+            Text(
+              widget.ayah.shaniNuzul!,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.7,
+                color: hasBengali
+                    ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
+                    : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTranslationCard({
+    required bool isDark,
+    required ThemeData theme,
+    required String language,
+    required String languageIcon,
+    required String text,
+    required bool isBengali,
+  }) {
+    return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+            ? AppColors.darkSurface
+            : AppColors.cream.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.dividerDark : AppColors.divider.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            language,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.primary,
-              letterSpacing: 0.5,
-            ),
+          Row(
+            children: [
+              Text(languageIcon, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Text(
+                language,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             text,
             style: TextStyle(
-              fontSize: 15,
-              height: 1.6,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.textPrimary,
+              fontSize: isBengali ? 15 : 14,
+              fontFamily: isBengali ? 'NotoSansBengali' : null,
+              height: 1.7,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
           ),
         ],
@@ -574,62 +970,147 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
     );
   }
 
-  Widget _buildSurahInfo(bool isDark) {
+  Widget _buildSurahInfoCard(bool isDark, ThemeData theme) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.black.withValues(alpha: 0.1),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  AppColors.darkSurface,
+                  AppColors.darkCard,
+                ]
+              : [
+                  Colors.white,
+                  AppColors.cream.withValues(alpha: 0.5),
+                ],
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.dividerDark : AppColors.divider,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'About ${widget.surah.nameTransliteration}',
-            style: AppTypography.heading4(
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.textPrimary,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'About ${widget.surah.nameTransliteration}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Info grid
+          Row(
+            children: [
+              Expanded(
+                child: _buildInfoItem(
+                  isDark: isDark,
+                  theme: theme,
+                  icon: Icons.tag_rounded,
+                  label: 'Surah',
+                  value: widget.surah.number.toString(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInfoItem(
+                  isDark: isDark,
+                  theme: theme,
+                  icon: Icons.format_list_numbered_rounded,
+                  label: 'Ayahs',
+                  value: widget.surah.ayahCount.toString(),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          _buildInfoRow(isDark, 'Surah Number', widget.surah.number.toString()),
-          _buildInfoRow(isDark, 'Total Ayahs', widget.surah.ayahCount.toString()),
-          _buildInfoRow(isDark, 'Revelation', widget.surah.revelationType),
-          _buildInfoRow(isDark, 'Juz', widget.ayah.juz.toString()),
+          Row(
+            children: [
+              Expanded(
+                child: _buildInfoItem(
+                  isDark: isDark,
+                  theme: theme,
+                  icon: Icons.location_on_outlined,
+                  label: 'Revelation',
+                  value: widget.surah.revelationType,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInfoItem(
+                  isDark: isDark,
+                  theme: theme,
+                  icon: Icons.layers_outlined,
+                  label: 'Juz',
+                  value: widget.ayah.juz.toString(),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(bool isDark, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+  Widget _buildInfoItem({
+    required bool isDark,
+    required ThemeData theme,
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.darkBackground.withValues(alpha: 0.5)
+            : theme.colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
-            ),
+          Icon(
+            icon,
+            size: 18,
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.textPrimary,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -637,34 +1118,71 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
     );
   }
 
-  Widget _buildNoContentMessage(bool isDark, String title, String message) {
+  Widget _buildNoContentCard({
+    required bool isDark,
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String titleBengali,
+    required String message,
+    required String messageBengali,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withValues(alpha: 0.03)
-            : Colors.black.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(12),
+            ? AppColors.darkSurface
+            : AppColors.cream.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.dividerDark : AppColors.divider.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.info_outline_rounded,
-            size: 32,
-            color: isDark
-                ? AppColors.darkTextSecondary
-                : AppColors.textTertiary,
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.darkCard
+                  : Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 32,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
-            title,
+            titleBengali,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondary,
+              fontFamily: 'NotoSansBengali',
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            messageBengali,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontFamily: 'NotoSansBengali',
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              height: 1.5,
             ),
           ),
           const SizedBox(height: 4),
@@ -672,9 +1190,9 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               color: isDark
-                  ? AppColors.darkTextSecondary
+                  ? AppColors.darkTextSecondary.withValues(alpha: 0.7)
                   : AppColors.textTertiary,
             ),
           ),
@@ -683,24 +1201,44 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
     );
   }
 
-  void _shareContent() {
+  void _copyContent() {
+    HapticService().mediumImpact();
+
     final shareText = '''
 ${widget.surah.nameTransliteration} (${widget.surah.nameArabic})
 Ayah ${widget.ayah.numberInSurah}
 
 ${widget.ayah.textArabic}
 
-${widget.ayah.translationEnglish ?? ''}
+${widget.ayah.translationBengali ?? ''}
 
-${widget.ayah.tafsir != null ? 'Tafsir: ${widget.ayah.tafsir}' : ''}
-''';
+${widget.ayah.translationEnglish ?? ''}
+'''.trim();
 
     Clipboard.setData(ClipboardData(text: shareText));
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied to clipboard'),
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            const Text('Copied to clipboard'),
+          ],
+        ),
+        backgroundColor: AppColors.forestGreen,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  String _toArabicNumerals(int number) {
+    const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    return number.toString().split('').map((digit) {
+      final index = int.tryParse(digit);
+      return index != null ? arabicNumerals[index] : digit;
+    }).join();
   }
 }
