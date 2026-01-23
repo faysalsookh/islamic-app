@@ -355,21 +355,27 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      source.displayName,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                    Flexible(
+                                      child: Text(
+                                        source.displayName,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      '(${source.displayNameBengali})',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontFamily: 'NotoSansBengali',
-                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                    Flexible(
+                                      child: Text(
+                                        '(${source.displayNameBengali})',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontFamily: 'NotoSansBengali',
+                                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],

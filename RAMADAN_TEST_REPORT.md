@@ -28,9 +28,16 @@
 |--------|--------|---------|
 | **Duplicate Removal** | ✅ Cnfrmd | Removed `features/quran_reader` directory. Verified only 1 `QuranReaderPage` remains. |
 
+### 4. **Audio Enhancements** 🔊
+| Action | Result | Details |
+|--------|--------|---------|
+| **Mixed Human Voice** | ✅ Added | Enabled "Arabic + Bengali" Human Voice (BIF) mode. |
+| **Device TTS** | ✅ Added | Integrates `flutter_tts` to use System Voice (allows Male voice if set in OS). |
+| **Bengali Only** | ✅ Fixed | Reverted to Pure Bengali (TTS) to avoid mixed Arabic audio. |
+
 ---
 
 ## 🏁 Conclusion
 The "Verse of the Day" is now **dynamic** and changes daily!
-It is randomized based on the date, picking from a list of impactful verses like Ayatul Kursi, Light Verse, etc.
+Audio system is significantly upgraded with **Device TTS** and **Human Voice** options.
 Duplicate files have been removed.

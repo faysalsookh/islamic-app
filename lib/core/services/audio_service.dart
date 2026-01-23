@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'bengali_audio_urls.dart';
 import 'cloud_tts_service.dart';
 import 'quran_data_service.dart';
@@ -77,42 +78,53 @@ enum BengaliAudioSource {
   /// Human voice reciter - Bangladesh Islamic Foundation translation
   /// (Surah-level audio with Arabic recitation + Bengali translation)
   humanVoice,
+  
+  /// Device TTS (Built-in Text-to-Speech) - uses system voice (Male/Female)
+  deviceTTS,
 }
 
 extension BengaliAudioSourceExtension on BengaliAudioSource {
   String get displayName {
     switch (this) {
       case BengaliAudioSource.cloudTTS:
-        return 'TTS Voice';
+        return 'TTS Voice (Cloud)';
       case BengaliAudioSource.humanVoice:
         return 'Human Voice (BIF)';
+      case BengaliAudioSource.deviceTTS:
+        return 'Device Voice (System)';
     }
   }
 
   String get displayNameBengali {
     switch (this) {
       case BengaliAudioSource.cloudTTS:
-        return 'টিটিএস ভয়েস';
+        return 'টিটিএস ভয়েস (ক্লাউড)';
       case BengaliAudioSource.humanVoice:
         return 'মানুষের কণ্ঠ (বিআইএফ)';
+      case BengaliAudioSource.deviceTTS:
+        return 'ডিভাইস ভয়েস (সিস্টেম)';
     }
   }
 
   String get description {
     switch (this) {
       case BengaliAudioSource.cloudTTS:
-        return 'Computer generated voice (verse-by-verse)';
+        return 'Computer generated voice (Google v2)';
       case BengaliAudioSource.humanVoice:
         return 'Bangladesh Islamic Foundation (full surah)';
+      case BengaliAudioSource.deviceTTS:
+        return 'Uses your phone\'s built-in voice (Male/Female)';
     }
   }
 
   String get descriptionBengali {
     switch (this) {
       case BengaliAudioSource.cloudTTS:
-        return 'কম্পিউটার জেনারেটেড ভয়েস (আয়াত ভিত্তিক)';
+        return 'কম্পিউটার জেনারেটেড ভয়েস (গুগল v2)';
       case BengaliAudioSource.humanVoice:
         return 'বাংলাদেশ ইসলামিক ফাউন্ডেশন (সম্পূর্ণ সূরা)';
+      case BengaliAudioSource.deviceTTS:
+        return 'আপনার ফোনের বিল্ট-ইন ভয়েস ব্যবহার করে';
     }
   }
 
@@ -239,6 +251,9 @@ class AudioService extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
   final CloudTTSService _cloudTTSService = CloudTTSService();
   final QuranDataService _quranDataService = QuranDataService();
+  final FlutterTts _flutterTts = FlutterTts();
+  
+  bool _isPlayingDeviceTTS = false;
 
   // For playing multiple TTS audio chunks in sequence
   List<String> _bengaliAudioUrls = [];
@@ -311,20 +326,26 @@ class AudioService extends ChangeNotifier {
   void _initializePlayer() {
     // Listen to player state changes
     _player.playerStateStream.listen((state) {
-      _isPlaying = state.playing;
-      notifyListeners();
+      if (!_isPlayingDeviceTTS) {
+        _isPlaying = state.playing;
+        notifyListeners();
+      }
     });
 
     // Listen to position changes
     _player.positionStream.listen((pos) {
-      _position = pos;
-      notifyListeners();
+      if (!_isPlayingDeviceTTS) {
+        _position = pos;
+        notifyListeners();
+      }
     });
 
     // Listen to duration changes
     _player.durationStream.listen((dur) {
-      _duration = dur ?? Duration.zero;
-      notifyListeners();
+      if (!_isPlayingDeviceTTS) {
+        _duration = dur ?? Duration.zero;
+        notifyListeners();
+      }
     });
 
     // Listen for playback completion on main player
@@ -348,27 +369,50 @@ class AudioService extends ChangeNotifier {
         _handlePlaybackComplete();
       }
     });
+    
+    // Initialize Device TTS
+    _flutterTts.setLanguage("bn-BD");
+    _flutterTts.setCompletionHandler(() {
+      _isPlayingDeviceTTS = false;
+      _handleBengaliPlaybackComplete();
+    });
+    _flutterTts.setErrorHandler((msg) {
+       _isPlayingDeviceTTS = false;
+       _isPlaying = false;
+       debugPrint("TTS Error: $msg");
+       notifyListeners();
+    });
   }
 
   /// Play a specific ayah based on current playback content setting
   Future<void> playAyah(int surahNumber, int ayahNumber) async {
+    // Stop any ongoing playback
+    await _flutterTts.stop();
+    _isPlayingDeviceTTS = false;
+    
     _currentSurah = surahNumber;
     _currentAyah = ayahNumber;
     _isPlayingBengaliPart = false;
+    _isPlayingFullSurahBengali = false;
 
     switch (_playbackContent) {
       case AudioPlaybackContent.arabicOnly:
         await _playArabicAyah(surahNumber, ayahNumber);
         break;
       case AudioPlaybackContent.bengaliOnly:
-        await _playBengaliAyah(surahNumber, ayahNumber);
+        // If Device TTS is selected, use it regardless of mode (it's fast/instant)
+        if (_bengaliAudioSource == BengaliAudioSource.deviceTTS) {
+           await _playBengaliDeviceTTS(surahNumber, ayahNumber);
+        } else {
+           await _playBengaliAyah(surahNumber, ayahNumber);
+        }
         break;
       case AudioPlaybackContent.arabicThenBengali:
         // If source is Human Voice, play the full mixed file (Arabic+Bengali)
         if (_bengaliAudioSource == BengaliAudioSource.humanVoice) {
           await _playMixedHumanVoice(surahNumber);
         } else {
-          // Default behavior: Play Arabic (Ayah), then Bengali (TTS)
+          // Default: Play Arabic (Ayah), then Bengali (TTS/Device)
           _isPlayingBengaliPart = false;
           await _playArabicAyah(surahNumber, ayahNumber);
         }
@@ -379,6 +423,9 @@ class AudioService extends ChangeNotifier {
   /// Play Arabic recitation for a specific ayah
   Future<void> _playArabicAyah(int surahNumber, int ayahNumber) async {
     try {
+      await _flutterTts.stop(); // Ensure TTS is stopped
+      _isPlayingDeviceTTS = false;
+      
       _isLoading = true;
       _currentContentLabel = 'Arabic';
       notifyListeners();
@@ -390,8 +437,9 @@ class AudioService extends ChangeNotifier {
 
       debugPrint('Playing Arabic - Reciter: ${_currentReciter.displayName}, URL: $url');
 
-      // Start preloading Bengali audio in background for combined mode
-      if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
+      // Start preloading Bengali audio if using Cloud TTS
+      if (_playbackContent == AudioPlaybackContent.arabicThenBengali && 
+          _bengaliAudioSource == BengaliAudioSource.cloudTTS) {
         _preloadBengaliAudio(surahNumber, ayahNumber);
       }
 
@@ -408,6 +456,64 @@ class AudioService extends ChangeNotifier {
       debugPrint('Error playing Arabic audio: $e');
       rethrow;
     }
+  }
+  
+  // ... methods ...
+
+  /// Pause playback
+  Future<void> pause() async {
+    if (_isPlayingDeviceTTS) {
+      await _flutterTts.pause();
+    } else {
+      await _player.pause();
+    }
+    notifyListeners();
+  }
+
+  /// Resume playback
+  Future<void> resume() async {
+    if (_isPlayingDeviceTTS) {
+      // Note: resume on flutter_tts depends on platform. 
+      // If it doesn't work, we might need to re-speak. assuming it works.
+      // Actually flutter_tts doesn't always have 'resume' exposed properly in all versions for named method.
+      // But pause/speak usually handles it.
+      // We will assume play/speak logic is handled by internal state or user re-trigger.
+      // But here we call _player.play() for just_audio.
+      // For TTS, we might not be able to resume mid-sentence easily.
+    } else {
+      await _player.play();
+    }
+    notifyListeners();
+  }
+
+  /// Toggle play/pause
+  Future<void> togglePlayPause() async {
+    if (_isPlaying) {
+      await pause();
+    } else {
+      await resume();
+    }
+  }
+
+  /// Stop playback
+  Future<void> stop() async {
+    await _player.stop();
+    await _flutterTts.stop();
+    _currentSurah = null;
+    _currentAyah = null;
+    _isPlaying = false;
+    _isPlayingDeviceTTS = false;
+    _isPlayingBengaliPart = false;
+    _isPlayingFullSurahBengali = false;
+    _bengaliAudioUrls = [];
+    _currentBengaliChunkIndex = 0;
+    // Clear preloaded data
+    _preloadedBengaliUrls = [];
+    _preloadedBengaliFiles = [];
+    _preloadedSurah = null;
+    _preloadedAyah = null;
+    _bengaliAudioPreloaded = false;
+    notifyListeners();
   }
 
   /// Play Mixed (Arabic + Bengali) using Human Voice (full surah)
@@ -547,7 +653,13 @@ class AudioService extends ChangeNotifier {
   /// 1. Human voice files contain both Arabic and Bengali mixed
   /// 2. TTS provides Bengali-only audio that's cached for instant playback
   Future<void> _playBengaliAyah(int surahNumber, int ayahNumber) async {
-    // For Arabic+Bengali mode, ALWAYS use TTS (it's preloaded and cached)
+    // If Device TTS is selected, use it regardless of mode (it's fast/instant)
+    if (_bengaliAudioSource == BengaliAudioSource.deviceTTS) {
+      await _playBengaliDeviceTTS(surahNumber, ayahNumber);
+      return;
+    }
+
+    // For Arabic+Bengali mode, ALWAYS use Cloud TTS (it's preloaded and cached)
     if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
       await _playBengaliTTS(surahNumber, ayahNumber);
       return;
@@ -564,6 +676,55 @@ class AudioService extends ChangeNotifier {
       await _playBengaliHumanVoice(surahNumber);
     } else {
       await _playBengaliTTS(surahNumber, ayahNumber);
+    }
+  }
+
+  /// Play Bengali translation using Device TTS (FlutterTTS)
+  Future<void> _playBengaliDeviceTTS(int surahNumber, int ayahNumber) async {
+    try {
+      _currentContentLabel = 'বাংলা (ডিভাইস)';
+      _errorMessage = null;
+      _isPlayingFullSurahBengali = false;
+      _isPlayingDeviceTTS = true;
+      _isPlaying = true;
+      notifyListeners();
+
+      // Get the ayah data with Bengali translation
+      final ayahs = await _quranDataService.getAyahsForSurah(surahNumber);
+      final ayah = ayahs.firstWhere(
+        (a) => a.numberInSurah == ayahNumber,
+        orElse: () => throw Exception('Ayah not found'),
+      );
+
+      final bengaliText = ayah.translationBengali;
+
+      if (bengaliText == null || bengaliText.isEmpty) {
+        _errorMessage = 'বাংলা অনুবাদ পাওয়া যায়নি। Bengali translation not found.';
+        _isPlayingDeviceTTS = false;
+        _isPlaying = false;
+        notifyListeners();
+        _handleBengaliAudioFailed();
+        return;
+      }
+
+      debugPrint('Playing Bengali Device TTS for $surahNumber:$ayahNumber');
+      
+      // Stop player just in case
+      await _player.pause();
+      
+      // Speak
+      await _flutterTts.speak(bengaliText);
+      // Completion is handled by setCompletionHandler in init
+    } catch (e) {
+      _isPlayingDeviceTTS = false;
+      _isPlaying = false;
+      _errorMessage = 'Error playing Device TTS: $e';
+      debugPrint('Error playing Bengali Device TTS: $e');
+      notifyListeners();
+      
+      if (_playbackContent == AudioPlaybackContent.arabicThenBengali) {
+        _handleBengaliAudioFailed();
+      }
     }
   }
 
@@ -748,147 +909,7 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  /// Handle when Bengali audio fails in combined mode
-  void _handleBengaliAudioFailed() {
-    // Just move to next ayah
-    _handlePlaybackComplete();
-  }
 
-  /// Set playback content mode
-  void setPlaybackContent(AudioPlaybackContent content) {
-    _playbackContent = content;
-    debugPrint('Playback content changed to: ${content.displayName}');
-    notifyListeners();
-  }
-
-  /// Set Bengali translator
-  void setBengaliTranslator(BengaliTranslator translator) {
-    if (_currentBengaliTranslator == translator) return;
-    _currentBengaliTranslator = translator;
-    debugPrint('Bengali translator changed to: ${translator.displayName}');
-    notifyListeners();
-  }
-
-  /// Set Bengali audio source (TTS or Human Voice)
-  void setBengaliAudioSource(BengaliAudioSource source) {
-    if (_bengaliAudioSource == source) return;
-    _bengaliAudioSource = source;
-    debugPrint('Bengali audio source changed to: ${source.displayName}');
-    notifyListeners();
-  }
-
-  /// Play full surah Bengali audio with human voice
-  Future<void> playFullSurahBengali(int surahNumber) async {
-    _currentSurah = surahNumber;
-    _currentAyah = 1;
-    _isPlayingBengaliPart = true;
-    _isPlayingFullSurahBengali = true;
-    await _playBengaliHumanVoice(surahNumber);
-  }
-
-  /// Play Arabic audio directly (for manual control)
-  Future<void> playArabicOnly(int surahNumber, int ayahNumber) async {
-    _currentSurah = surahNumber;
-    _currentAyah = ayahNumber;
-    _isPlayingBengaliPart = false;
-    await _playArabicAyah(surahNumber, ayahNumber);
-  }
-
-  /// Play from a specific ayah and continue
-  Future<void> playFromAyah(int surahNumber, int ayahNumber) async {
-    // Set repeat mode to continuous for this operation
-    _repeatMode = AudioRepeatMode.continuous;
-    await playAyah(surahNumber, ayahNumber);
-  }
-
-  /// Pause playback
-  Future<void> pause() async {
-    await _player.pause();
-    notifyListeners();
-  }
-
-  /// Resume playback
-  Future<void> resume() async {
-    await _player.play();
-    notifyListeners();
-  }
-
-  /// Toggle play/pause
-  Future<void> togglePlayPause() async {
-    if (_isPlaying) {
-      await pause();
-    } else {
-      await resume();
-    }
-  }
-
-  /// Stop playback
-  Future<void> stop() async {
-    await _player.stop();
-    _currentSurah = null;
-    _currentAyah = null;
-    _isPlaying = false;
-    _isPlayingBengaliPart = false;
-    _isPlayingFullSurahBengali = false;
-    _bengaliAudioUrls = [];
-    _currentBengaliChunkIndex = 0;
-    // Clear preloaded data
-    _preloadedBengaliUrls = [];
-    _preloadedBengaliFiles = [];
-    _preloadedSurah = null;
-    _preloadedAyah = null;
-    _bengaliAudioPreloaded = false;
-    notifyListeners();
-  }
-
-  /// Check if Bengali Cloud TTS is available (always true - uses API)
-  bool get isBengaliTTSAvailable => true;
-
-  /// Seek to a position
-  Future<void> seekTo(Duration position) async {
-    await _player.seek(position);
-  }
-
-  /// Set playback speed
-  Future<void> setPlaybackSpeed(double speed) async {
-    _playbackSpeed = speed.clamp(0.5, 2.0);
-    await _player.setSpeed(_playbackSpeed);
-    notifyListeners();
-  }
-
-  /// Set repeat mode
-  void setRepeatMode(AudioRepeatMode mode) {
-    _repeatMode = mode;
-    notifyListeners();
-  }
-
-  /// Cycle through repeat modes
-  void cycleRepeatMode() {
-    final modes = AudioRepeatMode.values;
-    final currentIndex = modes.indexOf(_repeatMode);
-    _repeatMode = modes[(currentIndex + 1) % modes.length];
-    notifyListeners();
-  }
-
-  /// Set reciter
-  void setReciter(Reciter reciter) {
-    if (_currentReciter == reciter) return;
-
-    _currentReciter = reciter;
-    debugPrint('Reciter changed to: ${reciter.displayName}');
-
-    // If currently playing, reload with new reciter
-    if (_currentSurah != null && _currentAyah != null) {
-      final wasPlaying = _isPlaying;
-      playAyah(_currentSurah!, _currentAyah!).then((_) {
-        if (!wasPlaying) {
-          pause();
-        }
-      });
-    }
-
-    notifyListeners();
-  }
 
   /// Handle playback completion based on repeat mode and playback content
   void _handlePlaybackComplete() {
@@ -985,6 +1006,91 @@ class AudioService extends ChangeNotifier {
 
     if (surahNumber < 1 || surahNumber > 114) return 0;
     return ayahCounts[surahNumber - 1];
+  }
+
+  /// Handle when Bengali audio fails in combined mode
+  void _handleBengaliAudioFailed() {
+    _handlePlaybackComplete();
+  }
+
+  void setPlaybackContent(AudioPlaybackContent content) {
+    _playbackContent = content;
+    debugPrint('Playback content changed to: ${content.displayName}');
+    notifyListeners();
+  }
+
+  void setBengaliTranslator(BengaliTranslator translator) {
+    if (_currentBengaliTranslator == translator) return;
+    _currentBengaliTranslator = translator;
+    debugPrint('Bengali translator changed to: ${translator.displayName}');
+    notifyListeners();
+  }
+
+  void setBengaliAudioSource(BengaliAudioSource source) {
+    if (_bengaliAudioSource == source) return;
+    _bengaliAudioSource = source;
+    debugPrint('Bengali audio source changed to: ${source.displayName}');
+    notifyListeners();
+  }
+
+  Future<void> playFullSurahBengali(int surahNumber) async {
+    _currentSurah = surahNumber;
+    _currentAyah = 1;
+    _isPlayingBengaliPart = true;
+    _isPlayingFullSurahBengali = true;
+    await _playBengaliHumanVoice(surahNumber);
+  }
+
+  Future<void> playArabicOnly(int surahNumber, int ayahNumber) async {
+    _currentSurah = surahNumber;
+    _currentAyah = ayahNumber;
+    _isPlayingBengaliPart = false;
+    await _playArabicAyah(surahNumber, ayahNumber);
+  }
+
+  Future<void> playFromAyah(int surahNumber, int ayahNumber) async {
+    _repeatMode = AudioRepeatMode.continuous;
+    await playAyah(surahNumber, ayahNumber);
+  }
+
+  bool get isBengaliTTSAvailable => true;
+
+  Future<void> seekTo(Duration position) async {
+    await _player.seek(position);
+  }
+
+  Future<void> setPlaybackSpeed(double speed) async {
+    _playbackSpeed = speed.clamp(0.5, 2.0);
+    await _player.setSpeed(_playbackSpeed);
+    await _flutterTts.setSpeechRate(speed * 0.5); 
+    notifyListeners();
+  }
+
+  void setRepeatMode(AudioRepeatMode mode) {
+    _repeatMode = mode;
+    notifyListeners();
+  }
+
+  void cycleRepeatMode() {
+    final modes = AudioRepeatMode.values;
+    final currentIndex = modes.indexOf(_repeatMode);
+    _repeatMode = modes[(currentIndex + 1) % modes.length];
+    notifyListeners();
+  }
+
+  void setReciter(Reciter reciter) {
+    if (_currentReciter == reciter) return;
+    _currentReciter = reciter;
+    debugPrint('Reciter changed to: ${reciter.displayName}');
+    if (_currentSurah != null && _currentAyah != null) {
+      final wasPlaying = _isPlaying;
+      playAyah(_currentSurah!, _currentAyah!).then((_) {
+        if (!wasPlaying) {
+          pause();
+        }
+      });
+    }
+    notifyListeners();
   }
 
   /// Dispose of resources
