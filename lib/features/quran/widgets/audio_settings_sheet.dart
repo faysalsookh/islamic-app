@@ -31,10 +31,20 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
       margin: EdgeInsets.only(bottom: bottomPadding),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -43,83 +53,40 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
           children: [
             // Handle bar
             Container(
-              width: 40,
+              width: 36,
               height: 4,
               margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
+                color: (isDark ? AppColors.darkTextSecondary : AppColors.textTertiary)
+                    .withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
 
-            // Title
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.headphones_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Audio Settings',
-                    style: AppTypography.heading3(
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Divider(
-              height: 1,
-              color: isDark ? AppColors.dividerDark : AppColors.divider,
-            ),
+            // Header
+            _buildHeader(isDark, theme),
 
             // Content
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Playback Content Section
-                    _buildSectionTitle('Playback Content', 'কি বাজবে', isDark),
-                    const SizedBox(height: 12),
-                    _buildPlaybackContentSelector(isDark, theme),
-
-                    const SizedBox(height: 24),
-
-                    // Arabic Reciter Section
-                    _buildSectionTitle('Arabic Reciter', 'আরবি ক্বারী', isDark),
-                    const SizedBox(height: 12),
-                    _buildReciterSelector(isDark, theme),
-
-                    const SizedBox(height: 24),
-
-                    // Bengali Audio Source Section - HIDDEN (always uses Human Voice)
-                    // _buildSectionTitle('Bengali Audio Source', 'বাংলা অডিও সোর্স', isDark),
-                    // const SizedBox(height: 12),
-                    // _buildBengaliAudioSourceSelector(isDark, theme),
-                    //
-                    // const SizedBox(height: 24),
-
-
-                    // Playback Speed Section
-                    _buildSectionTitle('Playback Speed', 'গতি', isDark),
-                    const SizedBox(height: 12),
-                    _buildSpeedSelector(isDark, theme),
-
-                    const SizedBox(height: 24),
-
-                    // Repeat Mode Section
-                    _buildSectionTitle('Repeat Mode', 'পুনরাবৃত্তি', isDark),
-                    const SizedBox(height: 12),
-                    _buildRepeatModeSelector(isDark, theme),
+                    // Audio Language Section
+                    _buildAudioLanguageSection(isDark, theme),
 
                     const SizedBox(height: 20),
+
+                    // Reciter Section
+                    _buildReciterSection(isDark, theme),
+
+                    const SizedBox(height: 20),
+
+                    // Speed & Repeat Row
+                    _buildSpeedAndRepeatSection(isDark, theme),
+
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -130,219 +97,666 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
     );
   }
 
-  Widget _buildSectionTitle(String title, String bengaliTitle, bool isDark) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: AppTypography.label(
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+  Widget _buildHeader(bool isDark, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.graphic_eq_rounded,
+              color: theme.colorScheme.primary,
+              size: 22,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '($bengaliTitle)',
-          style: TextStyle(
-            fontSize: 12,
-            fontFamily: 'NotoSansBengali',
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Audio Settings',
+                  style: AppTypography.heading3(
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Customize your listening experience',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            style: IconButton.styleFrom(
+              backgroundColor: isDark
+                  ? AppColors.darkSurface
+                  : AppColors.cream,
+            ),
+            icon: Icon(
+              Icons.close_rounded,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              size: 20,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildPlaybackContentSelector(bool isDark, ThemeData theme) {
-    return ListenableBuilder(
-      listenable: _audioService,
-      builder: (context, child) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ...AudioPlaybackContent.values.map((content) {
-              final isSelected = _audioService.playbackContent == content;
-
-              // Determine badge text and type for each option
-              String? badgeText;
-              bool isWarningBadge = false;
-
-              switch (content) {
-                case AudioPlaybackContent.arabicOnly:
-                case AudioPlaybackContent.arabicThenBengali:
-                  badgeText = 'Recommended';
-                  isWarningBadge = false;
-                  break;
-                case AudioPlaybackContent.bengaliOnly:
-                  badgeText = 'Warning';
-                  isWarningBadge = true;
-                  break;
-              }
-
-              return _buildOptionTile(
-                icon: content.icon,
-                title: content.displayName,
-                subtitle: content.displayNameBengali,
-                isSelected: isSelected,
-                isDark: isDark,
-                theme: theme,
-                isDisabled: false,
-                badgeText: badgeText,
-                isWarningBadge: isWarningBadge,
-                onTap: () {
-                  HapticService().selectionClick();
-                  _audioService.setPlaybackContent(content);
-                },
-              );
-            }),
-            const SizedBox(height: 8),
-            // Warning note for Bengali Only
-            if (_audioService.playbackContent == AudioPlaybackContent.bengaliOnly)
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.orange.withValues(alpha: 0.1)
-                      : Colors.orange.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.orange.withValues(alpha: 0.3)
-                        : Colors.orange.withValues(alpha: 0.2),
+  Widget _buildSectionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Widget child,
+    required bool isDark,
+    required ThemeData theme,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.cream.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.dividerDark : AppColors.divider.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      size: 18,
-                      color: Colors.orange,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'বাংলা অডিও TTS (টেক্সট-টু-স্পিচ) দ্বারা তৈরি, উচ্চারণে ভুল থাকতে পারে। আরবি তেলাওয়াত ছাড়া কুরআনের আসল সুর ও তাজবীদ অনুভব করা যায় না।\n'
-                        'Bengali audio is generated by TTS (Text-to-Speech), pronunciation may have errors. Without Arabic recitation, you miss the original melody and proper Tajweed of the Quran.',
+                const SizedBox(width: 8),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'NotoSansBengali',
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Section Content
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAudioLanguageSection(bool isDark, ThemeData theme) {
+    return _buildSectionCard(
+      title: 'Audio Language',
+      subtitle: '(ভাষা)',
+      icon: Icons.language_rounded,
+      isDark: isDark,
+      theme: theme,
+      child: ListenableBuilder(
+        listenable: _audioService,
+        builder: (context, child) {
+          return Column(
+            children: [
+              ...AudioPlaybackContent.values.map((content) {
+                final isSelected = _audioService.playbackContent == content;
+                final isBengaliOnly = content == AudioPlaybackContent.bengaliOnly;
+                final isRecommended = content == AudioPlaybackContent.arabicOnly ||
+                    content == AudioPlaybackContent.arabicThenBengali;
+
+                return _buildLanguageOption(
+                  content: content,
+                  isSelected: isSelected,
+                  isBengaliOnly: isBengaliOnly,
+                  isRecommended: isRecommended,
+                  isDark: isDark,
+                  theme: theme,
+                );
+              }),
+              // Bengali Only Warning
+              if (_audioService.playbackContent == AudioPlaybackContent.bengaliOnly)
+                _buildWarningNote(isDark),
+              // Bengali Source Info
+              _buildBengaliSourceInfo(isDark),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption({
+    required AudioPlaybackContent content,
+    required bool isSelected,
+    required bool isBengaliOnly,
+    required bool isRecommended,
+    required bool isDark,
+    required ThemeData theme,
+  }) {
+    return InkWell(
+      onTap: () {
+        HapticService().selectionClick();
+        _audioService.setPlaybackContent(content);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withValues(alpha: 0.08)
+              : (isDark ? AppColors.darkCard : Colors.white),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Radio indicator
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : (isDark ? AppColors.darkTextSecondary : AppColors.textTertiary),
+                  width: isSelected ? 0 : 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? theme.colorScheme.primary.withValues(alpha: 0.15)
+                    : (isDark ? AppColors.darkSurface : AppColors.cream),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                content.icon,
+                size: 18,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Text content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        content.displayName,
                         style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                          height: 1.4,
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            // Note about Bengali audio source
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.forestGreen.withValues(alpha: 0.1)
-                    : AppColors.forestGreen.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.forestGreen.withValues(alpha: 0.3)
-                      : AppColors.forestGreen.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
-                        ? Icons.record_voice_over_rounded
-                        : Icons.cloud_done_rounded,
-                    size: 18,
-                    color: AppColors.forestGreen,
+                      const SizedBox(width: 8),
+                      if (isRecommended)
+                        _buildBadge(
+                          text: 'Recommended',
+                          color: AppColors.forestGreen,
+                          isDark: isDark,
+                        ),
+                      if (isBengaliOnly)
+                        _buildBadge(
+                          text: 'TTS Audio',
+                          color: Colors.orange,
+                          isDark: isDark,
+                        ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
-                          ? 'বাংলা: মানুষের কণ্ঠে সম্পূর্ণ সূরা (বিআইএফ)।\nBengali: Human voice full surah (BIF).'
-                          : 'বাংলা: TTS ভয়েস (আয়াত ভিত্তিক)।\nBengali: TTS voice (verse-by-verse).',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        height: 1.4,
-                      ),
+                  const SizedBox(height: 2),
+                  Text(
+                    content.displayNameBengali,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'NotoSansBengali',
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildReciterSelector(bool isDark, ThemeData theme) {
+  Widget _buildBadge({
+    required String text,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.2 : 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          color: color,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWarningNote(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: isDark ? 0.1 : 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Icon(
+              Icons.info_outline_rounded,
+              size: 14,
+              color: Colors.orange,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Note about Bengali Only',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Bengali audio uses TTS (Text-to-Speech) which may have pronunciation variations. For the authentic Quranic experience with proper Tajweed, we recommend including Arabic recitation.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBengaliSourceInfo(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.forestGreen.withValues(alpha: isDark ? 0.08 : 0.06),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
+                ? Icons.record_voice_over_rounded
+                : Icons.smart_toy_rounded,
+            size: 16,
+            color: AppColors.forestGreen,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
+                  ? 'Bengali: Human voice narration (BIF)'
+                  : 'Bengali: AI-generated voice',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppColors.forestGreen,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReciterSection(bool isDark, ThemeData theme) {
+    return _buildSectionCard(
+      title: 'Reciter',
+      subtitle: '(ক্বারী)',
+      icon: Icons.person_rounded,
+      isDark: isDark,
+      theme: theme,
+      child: ListenableBuilder(
+        listenable: _audioService,
+        builder: (context, child) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Column(
+              children: Reciter.values.map((reciter) {
+                final isSelected = _audioService.currentReciter == reciter;
+                return _buildReciterOption(
+                  reciter: reciter,
+                  isSelected: isSelected,
+                  isDark: isDark,
+                  theme: theme,
+                );
+              }).toList(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildReciterOption({
+    required Reciter reciter,
+    required bool isSelected,
+    required bool isDark,
+    required ThemeData theme,
+  }) {
+    return InkWell(
+      onTap: () {
+        HapticService().selectionClick();
+        _audioService.setReciter(reciter);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withValues(alpha: 0.08)
+              : (isDark ? AppColors.darkCard : Colors.white),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Avatar with initials
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: isSelected
+                    ? LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.primary.withValues(alpha: 0.8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isSelected ? null : (isDark ? AppColors.darkSurface : AppColors.cream),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  _getReciterInitials(reciter),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Amiri',
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Reciter info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    reciter.displayName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    reciter.displayNameArabic,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Amiri',
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Selection indicator
+            if (isSelected)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 14,
+                  color: Colors.white,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getReciterInitials(Reciter reciter) {
+    switch (reciter) {
+      case Reciter.misharyRashidAlafasy:
+        return 'م';
+      case Reciter.abdulBasitAbdulSamad:
+        return 'ع';
+      case Reciter.abdulRahmanAlSudais:
+        return 'س';
+      case Reciter.maherAlMuaiqly:
+        return 'ﻡ';
+      case Reciter.abuBakrAlShatri:
+        return 'أ';
+      case Reciter.haniArRifai:
+        return 'ه';
+    }
+  }
+
+  Widget _buildSpeedAndRepeatSection(bool isDark, ThemeData theme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Speed Section
+        Expanded(
+          child: _buildCompactSectionCard(
+            title: 'Speed',
+            subtitle: 'গতি',
+            icon: Icons.speed_rounded,
+            isDark: isDark,
+            theme: theme,
+            child: _buildSpeedSelector(isDark, theme),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Repeat Section
+        Expanded(
+          child: _buildCompactSectionCard(
+            title: 'Repeat',
+            subtitle: 'পুনরাবৃত্তি',
+            icon: Icons.repeat_rounded,
+            isDark: isDark,
+            theme: theme,
+            child: _buildRepeatSelector(isDark, theme),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactSectionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Widget child,
+    required bool isDark,
+    required ThemeData theme,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.cream.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.dividerDark : AppColors.divider.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+            child: Row(
+              children: [
+                Icon(icon, size: 16, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '($subtitle)',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontFamily: 'NotoSansBengali',
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpeedSelector(bool isDark, ThemeData theme) {
+    final speeds = [0.75, 1.0, 1.25, 1.5];
+
     return ListenableBuilder(
       listenable: _audioService,
       builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : AppColors.cream,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: Reciter.values.map((reciter) {
-              final isSelected = _audioService.currentReciter == reciter;
-              return InkWell(
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: speeds.map((speed) {
+              final isSelected = (_audioService.playbackSpeed - speed).abs() < 0.01;
+              final isNormal = speed == 1.0;
+              return GestureDetector(
                 onTap: () {
                   HapticService().selectionClick();
-                  _audioService.setReciter(reciter);
+                  _audioService.setPlaybackSpeed(speed);
                 },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : (isDark ? AppColors.darkTextSecondary : AppColors.textTertiary),
-                            width: 2,
-                          ),
-                          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-                        ),
-                        child: isSelected
-                            ? const Icon(Icons.check, size: 12, color: Colors.white)
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              reciter.displayName,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              reciter.displayNameArabic,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontFamily: 'Amiri',
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : (isDark ? AppColors.darkCard : Colors.white),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : (isDark ? AppColors.dividerDark : AppColors.divider),
+                    ),
+                  ),
+                  child: Text(
+                    isNormal ? '1x' : '${speed}x',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                    ),
                   ),
                 ),
               );
@@ -353,367 +767,54 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
     );
   }
 
-  Widget _buildBengaliAudioSourceSelector(bool isDark, ThemeData theme) {
+  Widget _buildRepeatSelector(bool isDark, ThemeData theme) {
     return ListenableBuilder(
       listenable: _audioService,
       builder: (context, child) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.cream,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: BengaliAudioSource.values.map((source) {
-                  final isSelected = _audioService.bengaliAudioSource == source;
-                  return InkWell(
-                    onTap: () {
-                      HapticService().selectionClick();
-                      _audioService.setBengaliAudioSource(source);
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : (isDark ? AppColors.darkTextSecondary : AppColors.textTertiary),
-                                width: 2,
-                              ),
-                              color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-                            ),
-                            child: isSelected
-                                ? const Icon(Icons.check, size: 12, color: Colors.white)
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(
-                            source == BengaliAudioSource.humanVoice
-                                ? Icons.record_voice_over_rounded
-                                : Icons.speaker_phone_rounded,
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        source.displayName,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        '(${source.displayNameBengali})',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontFamily: 'NotoSansBengali',
-                                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  source.description,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Note about human voice
-            if (_audioService.bengaliAudioSource == BengaliAudioSource.humanVoice)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.blue.withValues(alpha: 0.1)
-                      : Colors.blue.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.blue.withValues(alpha: 0.3)
-                        : Colors.blue.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 18,
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'মানুষের কণ্ঠে সম্পূর্ণ সূরা বাজবে (আয়াত ভিত্তিক নয়)।\nHuman voice plays full surah (not verse-by-verse).',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildSpeedSelector(bool isDark, ThemeData theme) {
-    final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
-
-    return ListenableBuilder(
-      listenable: _audioService,
-      builder: (context, child) {
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: speeds.map((speed) {
-            final isSelected = (_audioService.playbackSpeed - speed).abs() < 0.01;
-            return GestureDetector(
-              onTap: () {
-                HapticService().selectionClick();
-                _audioService.setPlaybackSpeed(speed);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : (isDark ? AppColors.darkSurface : AppColors.cream),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: AudioRepeatMode.values.map((mode) {
+              final isSelected = _audioService.repeatMode == mode;
+              return GestureDetector(
+                onTap: () {
+                  HapticService().selectionClick();
+                  _audioService.setRepeatMode(mode);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
                     color: isSelected
                         ? theme.colorScheme.primary
-                        : (isDark ? AppColors.dividerDark : AppColors.divider),
-                  ),
-                ),
-                child: Text(
-                  '${speed}x',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildRepeatModeSelector(bool isDark, ThemeData theme) {
-    return ListenableBuilder(
-      listenable: _audioService,
-      builder: (context, child) {
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: AudioRepeatMode.values.map((mode) {
-            final isSelected = _audioService.repeatMode == mode;
-            return GestureDetector(
-              onTap: () {
-                HapticService().selectionClick();
-                _audioService.setRepeatMode(mode);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : (isDark ? AppColors.darkSurface : AppColors.cream),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : (isDark ? AppColors.dividerDark : AppColors.divider),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _getRepeatIcon(mode),
-                      size: 16,
+                        : (isDark ? AppColors.darkCard : Colors.white),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
                       color: isSelected
-                          ? Colors.white
-                          : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                          ? theme.colorScheme.primary
+                          : (isDark ? AppColors.dividerDark : AppColors.divider),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _getRepeatLabel(mode),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getRepeatIcon(mode),
+                        size: 14,
                         color: isSelected
                             ? Colors.white
                             : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         );
       },
-    );
-  }
-
-  Widget _buildOptionTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required bool isDark,
-    required ThemeData theme,
-    required VoidCallback onTap,
-    bool isDisabled = false,
-    String? badgeText,
-    bool isWarningBadge = false,
-  }) {
-    final effectiveDisabled = isDisabled && !isSelected;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Opacity(
-        opacity: effectiveDisabled ? 0.6 : 1.0,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                : (isDark ? AppColors.darkSurface : AppColors.cream),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? theme.colorScheme.primary
-                  : (isDark ? AppColors.dividerDark : AppColors.divider),
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : (isDark ? AppColors.darkCard : Colors.white),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                          ),
-                        ),
-                        if (badgeText != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: isWarningBadge
-                                  ? Colors.orange.withValues(alpha: 0.2)
-                                  : AppColors.forestGreen.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              badgeText,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: isWarningBadge ? Colors.orange : AppColors.forestGreen,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontFamily: 'NotoSansBengali',
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -727,19 +828,6 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
         return Icons.repeat_rounded;
       case AudioRepeatMode.continuous:
         return Icons.all_inclusive_rounded;
-    }
-  }
-
-  String _getRepeatLabel(AudioRepeatMode mode) {
-    switch (mode) {
-      case AudioRepeatMode.none:
-        return 'Off';
-      case AudioRepeatMode.single:
-        return 'One';
-      case AudioRepeatMode.surah:
-        return 'Surah';
-      case AudioRepeatMode.continuous:
-        return 'All';
     }
   }
 }
