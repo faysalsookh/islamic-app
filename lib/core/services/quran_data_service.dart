@@ -664,6 +664,78 @@ class QuranDataService extends ChangeNotifier {
     }
   }
 
+  /// Get the "Verse of the Day"
+  /// Selects a verse based on the current date so it remains consistent for the day
+  Future<Ayah?> getDailyVerse() async {
+    try {
+      final now = DateTime.now();
+      // Simple hash to pick a consistent verse for the day
+      final index = (now.year * 1000 + now.month * 100 + now.day) % _inspirationalVerses.length;
+      final verseRef = _inspirationalVerses[index];
+      
+      final surahNumber = verseRef['surah']!;
+      final ayahNumber = verseRef['ayah']!;
+      
+      // Fetch surah data
+      final ayahs = await getAyahsForSurah(surahNumber);
+      
+      // Return specific ayah
+      return ayahs.firstWhere(
+        (a) => a.numberInSurah == ayahNumber,
+        orElse: () => ayahs.first,
+      );
+    } catch (e) {
+      debugPrint('Error getting daily verse: $e');
+      return AyahData.alFatihah[0]; // Fallback to Bismillah
+    }
+  }
+
+  // Curated list of inspirational verses (Surah:Ayah)
+  static const List<Map<String, int>> _inspirationalVerses = [
+    {'surah': 1, 'ayah': 1},   // Al-Fatihah 1:1
+    {'surah': 2, 'ayah': 152}, // Al-Baqarah 2:152 (Remember Me)
+    {'surah': 2, 'ayah': 153}, // Al-Baqarah 2:153 (Patience & Prayer)
+    {'surah': 2, 'ayah': 186}, // Al-Baqarah 2:186 (I am near)
+    {'surah': 2, 'ayah': 255}, // Ayatul Kursi
+    {'surah': 2, 'ayah': 286}, // Al-Baqarah 2:286 (Burden)
+    {'surah': 3, 'ayah': 8},   // Al-Imran 3:8 (Hearts deviate)
+    {'surah': 3, 'ayah': 139}, // Al-Imran 3:139 (Do not weaken)
+    {'surah': 3, 'ayah': 159}, // Al-Imran 3:159 (Trust in Allah)
+    {'surah': 4, 'ayah': 135}, // An-Nisa 4:135 (Justice)
+    {'surah': 6, 'ayah': 17},  // Al-An'am 6:17 (Touch you with harm)
+    {'surah': 7, 'ayah': 156}, // Al-A'raf 7:156 (My mercy)
+    {'surah': 8, 'ayah': 46},  // Al-Anfal 8:46 (Patience)
+    {'surah': 9, 'ayah': 40},  // At-Tawbah 9:40 (Allah is with us)
+    {'surah': 9, 'ayah': 51},  // At-Tawbah 9:51 (Nothing will strike us)
+    {'surah': 9, 'ayah': 129}, // At-Tawbah 9:129 (Allah is sufficient)
+    {'surah': 13, 'ayah': 28}, // Ar-Ra'd 13:28 (Hearts find rest)
+    {'surah': 14, 'ayah': 7},  // Ibrahim 14:7 (If you are grateful)
+    {'surah': 15, 'ayah': 9},  // Al-Hijr 15:9 (We preserve Quran)
+    {'surah': 15, 'ayah': 85}, // Al-Hijr 15:85 (Forgive with grace)
+    {'surah': 16, 'ayah': 128},// An-Nahl 16:128 (Allah is with those who fear Him)
+    {'surah': 18, 'ayah': 10}, // Al-Kahf 18:10 (Mercy from You)
+    {'surah': 18, 'ayah': 46}, // Al-Kahf 18:46 (Good deeds remain)
+    {'surah': 20, 'ayah': 25}, // Ta-Ha 20:25 (Expand my chest)
+    {'surah': 21, 'ayah': 87}, // Al-Anbya 21:87 (La ilaha illa anta)
+    {'surah': 23, 'ayah': 118},// Al-Mu'minun 23:118 (Forgive and have mercy)
+    {'surah': 24, 'ayah': 35}, // An-Nur 24:35 (Light verse)
+    {'surah': 25, 'ayah': 63}, // Al-Furqan 25:63 (Walk gently)
+    {'surah': 28, 'ayah': 24}, // Al-Qasas 28:24 (In need of good)
+    {'surah': 29, 'ayah': 45}, // Al-Ankabut 29:45 (Prayer prohibits immorality)
+    {'surah': 29, 'ayah': 69}, // Al-Ankabut 29:69 (Strive for Us)
+    {'surah': 39, 'ayah': 53}, // Az-Zumar 39:53 (Despair not of mercy)
+    {'surah': 40, 'ayah': 60}, // Ghafir 40:60 (Call upon Me)
+    {'surah': 41, 'ayah': 34}, // Fussilat 41:34 (Repel with good)
+    {'surah': 49, 'ayah': 10}, // Al-Hujurat 49:10 (Believers are brothers)
+    {'surah': 49, 'ayah': 13}, // Al-Hujurat 49:13 (Know each other)
+    {'surah': 57, 'ayah': 4},  // Al-Hadid 57:4 (He is with you)
+    {'surah': 59, 'ayah': 21}, // Al-Hashr 59:21 (Quran on mountain)
+    {'surah': 65, 'ayah': 2},  // At-Talaq 65:2-3 (Way out)
+    {'surah': 67, 'ayah': 13}, // Al-Mulk 67:13 (Knower of chests)
+    {'surah': 94, 'ayah': 5},  // Ash-Sharh 94:5 (With hardship comes ease)
+    {'surah': 94, 'ayah': 6},  // Ash-Sharh 94:6 (With hardship comes ease)
+  ];
+
   // ============================================================
   // ACCURATE BENGALI TRANSLITERATIONS (উচ্চারণ)
   // Professionally transliterated following standard Bengali Quran

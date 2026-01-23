@@ -6,6 +6,9 @@ import '../../../../core/widgets/elegant_card.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/services/haptic_service.dart';
+import '../../../../core/services/quran_data_service.dart';
+import '../../../../core/models/ayah.dart';
+import '../../../../core/models/surah.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,13 +20,16 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  Ayah? _verseOfTheDay;
+  bool _isLoadingVerse = true;
 
   @override
   void initState() {
     super.initState();
+    _loadVerseOfTheDay();
     _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
+       vsync: this,
+       duration: const Duration(milliseconds: 800),
     );
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
@@ -34,6 +40,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppStateProvider>().setNavIndex(0);
     });
+  }
+
+  Future<void> _loadVerseOfTheDay() async {
+    try {
+      final verse = await QuranDataService().getDailyVerse();
+      if (mounted) {
+        setState(() {
+          _verseOfTheDay = verse;
+          _isLoadingVerse = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading verse of the day: $e');
+      if (mounted) {
+        setState(() => _isLoadingVerse = false);
+      }
+    }
   }
 
   @override
@@ -415,6 +438,37 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildFeaturedCard(ThemeData theme, bool isDark) {
+    if (_isLoadingVerse && _verseOfTheDay == null) {
+      // Loading state
+      return _buildFeaturedCardLoading(theme, isDark);
+    }
+
+    // Default/Fallback
+    String arabicText = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+    String translation = 'In the name of Allah, the Most Gracious, the Most Merciful';
+    String reference = 'Al-Fatiha 1:1';
+    int surahNum = 1;
+    int ayahNum = 1;
+
+    if (_verseOfTheDay != null) {
+      arabicText = _verseOfTheDay!.textArabic;
+      translation = _verseOfTheDay!.translationEnglish ?? translation;
+      
+      // Try to get surah name
+      String surahName = 'Surah ${_verseOfTheDay!.surahNumber}';
+      try {
+         if (SurahData.surahs.length >= _verseOfTheDay!.surahNumber) {
+           surahName = SurahData.surahs[_verseOfTheDay!.surahNumber - 1].nameTransliteration;
+         }
+      } catch (e) {
+        // Fallback or ignore
+      }
+      
+      reference = '$surahName ${_verseOfTheDay!.surahNumber}:${_verseOfTheDay!.numberInSurah}';
+      surahNum = _verseOfTheDay!.surahNumber;
+      ayahNum = _verseOfTheDay!.numberInSurah;
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -466,9 +520,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 20),
-          const Text(
-            'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
-            style: TextStyle(
+          Text(
+            arabicText,
+            style: const TextStyle(
               fontFamily: 'Amiri',
               fontSize: 28,
               color: Colors.white,
@@ -478,19 +532,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 12),
           Text(
-            'In the name of Allah, the Most Gracious, the Most Merciful',
+            translation,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
               fontStyle: FontStyle.italic,
             ),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Al-Fatiha 1:1',
+                reference,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
@@ -499,7 +555,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               GestureDetector(
                 onTap: () {
                   HapticService().lightImpact();
-                  Navigator.pushNamed(context, '/quran-reader', arguments: 1);
+                  Navigator.pushNamed(
+                    context, 
+                    '/quran-reader', 
+                    arguments: {'surahNumber': surahNum, 'ayahNumber': ayahNum},
+                  );
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -528,6 +588,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFeaturedCardLoading(ThemeData theme, bool isDark) {
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 
