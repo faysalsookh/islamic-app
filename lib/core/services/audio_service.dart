@@ -364,8 +364,14 @@ class AudioService extends ChangeNotifier {
         await _playBengaliAyah(surahNumber, ayahNumber);
         break;
       case AudioPlaybackContent.arabicThenBengali:
-        _isPlayingBengaliPart = false;
-        await _playArabicAyah(surahNumber, ayahNumber);
+        // If source is Human Voice, play the full mixed file (Arabic+Bengali)
+        if (_bengaliAudioSource == BengaliAudioSource.humanVoice) {
+          await _playMixedHumanVoice(surahNumber);
+        } else {
+          // Default behavior: Play Arabic (Ayah), then Bengali (TTS)
+          _isPlayingBengaliPart = false;
+          await _playArabicAyah(surahNumber, ayahNumber);
+        }
         break;
     }
   }
@@ -401,6 +407,42 @@ class AudioService extends ChangeNotifier {
       notifyListeners();
       debugPrint('Error playing Arabic audio: $e');
       rethrow;
+    }
+  }
+
+  /// Play Mixed (Arabic + Bengali) using Human Voice (full surah)
+  Future<void> _playMixedHumanVoice(int surahNumber) async {
+    try {
+      _isLoading = true;
+      _currentContentLabel = 'Arabic + Bengali (Human)';
+      _errorMessage = null;
+      _isPlayingFullSurahBengali = true; // Treating it as full surah mode
+      notifyListeners();
+
+      final url = BengaliAudioUrls.getSurahAudioUrl(surahNumber);
+      if (url == null) {
+        _errorMessage = 'Audio not found for surah $surahNumber';
+        _isLoading = false;
+        _isPlayingFullSurahBengali = false;
+        notifyListeners();
+        return;
+      }
+
+      debugPrint('Playing Mixed Human Voice for Surah $surahNumber: $url');
+
+      await _player.setUrl(url);
+      await _player.setSpeed(_playbackSpeed);
+      await _player.play();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _isPlayingFullSurahBengali = false;
+      _errorMessage = 'Error playing audio: $e';
+      debugPrint('Error playing Mixed Human Voice: $e');
+      _isPlaying = false;
+      notifyListeners();
     }
   }
 
@@ -850,7 +892,14 @@ class AudioService extends ChangeNotifier {
 
   /// Handle playback completion based on repeat mode and playback content
   void _handlePlaybackComplete() {
-    debugPrint('Playback complete - content: ${_playbackContent.name}, isPlayingBengali: $_isPlayingBengaliPart');
+    debugPrint('Playback complete - content: ${_playbackContent.name}, isPlayingBengali: $_isPlayingBengaliPart, FullSurah: $_isPlayingFullSurahBengali');
+
+    // If we were playing full surah (Human Voice Mixed), we are done with the surah.
+    if (_isPlayingFullSurahBengali) {
+      _isPlayingFullSurahBengali = false;
+      stop(); // Simple behavior: stop after full surah.
+      return;
+    }
 
     // For Arabic+Bengali mode: after Arabic finishes, play Bengali
     if (_playbackContent == AudioPlaybackContent.arabicThenBengali && !_isPlayingBengaliPart) {
