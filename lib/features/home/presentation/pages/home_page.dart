@@ -10,6 +10,7 @@ import '../widgets/greeting_header.dart';
 import '../widgets/continue_reading_card.dart';
 import '../widgets/quick_access_section.dart';
 import '../widgets/surah_list_section.dart';
+import '../widgets/ramadan_countdown_card.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -81,6 +82,14 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
+                  ),
+                ),
+
+                // Ramadan Countdown Card
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 0),
+                    child: const RamadanCountdownCard(),
                   ),
                 ),
 

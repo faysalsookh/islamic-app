@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:islamic_app/core/theme/app_theme.dart';
 import 'package:islamic_app/core/providers/app_state_provider.dart';
+import 'package:islamic_app/core/providers/ramadan_provider.dart';
 import 'package:islamic_app/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:islamic_app/features/home/presentation/pages/home_page.dart';
 import 'package:islamic_app/features/quran/pages/quran_reader_page.dart';
@@ -14,6 +15,8 @@ import 'package:islamic_app/features/settings/presentation/pages/settings_page.d
 import 'package:islamic_app/features/search/presentation/pages/search_page.dart';
 import 'package:islamic_app/features/qibla/presentation/pages/qibla_page.dart';
 import 'package:islamic_app/features/tasbih/presentation/pages/tasbih_page.dart';
+import 'package:islamic_app/features/ramadan/presentation/pages/ramadan_calendar_page.dart';
+import 'package:islamic_app/features/ramadan/presentation/pages/ramadan_duas_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,9 +30,19 @@ void main() async {
   final appState = AppStateProvider();
   await appState.initialize();
 
+  final ramadanProvider = RamadanProvider();
+  await ramadanProvider.initialize();
+  
+  // Set Ramadan start date (2026 Ramadan starts around February 17)
+  // TODO: Make this configurable in settings
+  await ramadanProvider.setRamadanStartDate(DateTime(2026, 2, 17));
+
   runApp(
-    ChangeNotifierProvider.value(
-      value: appState,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: appState),
+        ChangeNotifierProvider.value(value: ramadanProvider),
+      ],
       child: const IslamicApp(),
     ),
   );
@@ -68,6 +81,8 @@ class IslamicApp extends StatelessWidget {
             '/search': (context) => const SearchPage(),
             '/qibla': (context) => const QiblaPage(),
             '/tasbih': (context) => const TasbihPage(),
+            '/ramadan-calendar': (context) => const RamadanCalendarPage(),
+            '/ramadan-duas': (context) => const RamadanDuasPage(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/quran-reader') {

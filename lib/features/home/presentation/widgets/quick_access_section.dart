@@ -21,6 +21,15 @@ class QuickAccessSection extends StatelessWidget {
         },
       ),
       _QuickAccessCard(
+        icon: Icons.nightlight_round,
+        label: 'Ramadan',
+        subtitle: 'Calendar',
+        color: AppColors.softRoseDark,
+        onTap: () {
+          Navigator.pushNamed(context, '/ramadan-calendar');
+        },
+      ),
+      _QuickAccessCard(
         icon: Icons.layers_rounded,
         label: 'By Juz',
         subtitle: '30 Juz',

@@ -1,0 +1,211 @@
+import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/elegant_card.dart';
+
+/// Page displaying essential Ramadan Duas (supplications)
+class RamadanDuasPage extends StatelessWidget {
+  const RamadanDuasPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ramadan Duas'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildDuaCard(
+            title: 'Sehri Dua (Intention for Fasting)',
+            titleBengali: 'সেহরির দোয়া (রোজার নিয়ত)',
+            arabic: 'وَبِصَوْمِ غَدٍ نَّوَيْتُ مِنْ شَهْرِ رَمَضَانَ',
+            transliteration: 'Wa bisawmi ghadinn nawaiytu min shahri ramadan',
+            translation: 'I intend to keep the fast for tomorrow in the month of Ramadan',
+            translationBengali: 'আমি আগামীকাল রমজান মাসের রোজা রাখার নিয়ত করছি',
+            isDark: isDark,
+            theme: theme,
+          ),
+          const SizedBox(height: 16),
+          _buildDuaCard(
+            title: 'Iftar Dua (Breaking the Fast)',
+            titleBengali: 'ইফতারের দোয়া (রোজা ভাঙ্গার দোয়া)',
+            arabic: 'اللَّهُمَّ إِنِّي لَكَ صُمْتُ وَبِكَ آمَنْتُ وَعَلَيْكَ تَوَكَّلْتُ وَعَلَى رِزْقِكَ أَفْطَرْتُ',
+            transliteration: 'Allahumma inni laka sumtu wa bika aamantu wa \'alayka tawakkaltu wa \'ala rizq-ika aftartu',
+            translation: 'O Allah! I fasted for You and I believe in You and I put my trust in You and I break my fast with Your sustenance',
+            translationBengali: 'হে আল্লাহ! আমি তোমার জন্য রোজা রেখেছি এবং তোমার উপর ঈমান এনেছি এবং তোমার উপর ভরসা করেছি এবং তোমার দেয়া রিযিক দিয়ে ইফতার করছি',
+            isDark: isDark,
+            theme: theme,
+          ),
+          const SizedBox(height: 16),
+          _buildDuaCard(
+            title: 'Short Iftar Dua',
+            titleBengali: 'সংক্ষিপ্ত ইফতারের দোয়া',
+            arabic: 'ذَهَبَ الظَّمَأُ وَابْتَلَّتِ الْعُرُوقُ وَثَبَتَ الأَجْرُ إِنْ شَاءَ اللَّهُ',
+            transliteration: 'Dhahaba al-zama\'u wa abtalat al-\'uruqu wa thabata al-ajru in sha Allah',
+            translation: 'The thirst is gone, the veins are moistened, and the reward is confirmed, if Allah wills',
+            translationBengali: 'পিপাসা দূর হয়েছে, শিরা-উপশিরা সিক্ত হয়েছে এবং ইনশাআল্লাহ সওয়াব নির্ধারিত হয়েছে',
+            isDark: isDark,
+            theme: theme,
+          ),
+          const SizedBox(height: 16),
+          _buildDuaCard(
+            title: 'Laylatul Qadr Dua',
+            titleBengali: 'লাইলাতুল কদরের দোয়া',
+            arabic: 'اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي',
+            transliteration: 'Allahumma innaka \'afuwwun tuhibbul \'afwa fa\'fu \'anni',
+            translation: 'O Allah, You are Most Forgiving, and You love forgiveness; so forgive me',
+            translationBengali: 'হে আল্লাহ! নিশ্চয়ই তুমি ক্ষমাশীল, ক্ষমা করা তুমি পছন্দ কর, অতএব আমাকে ক্ষমা করে দাও',
+            isDark: isDark,
+            theme: theme,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDuaCard({
+    required String title,
+    required String titleBengali,
+    required String arabic,
+    required String transliteration,
+    required String translation,
+    required String translationBengali,
+    required bool isDark,
+    required ThemeData theme,
+  }) {
+    return ElegantCard(
+      padding: const EdgeInsets.all(20),
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Title
+          Text(
+            title,
+            style: AppTypography.heading3(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          Text(
+            titleBengali,
+            style: AppTypography.bodyMedium(
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Arabic text
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              arabic,
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+              style: AppTypography.quranText(
+                fontSize: 24,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Transliteration
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.darkSurface
+                  : AppColors.warmBeige,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Transliteration:',
+                  style: AppTypography.bodySmall(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  transliteration,
+                  style: AppTypography.bodyMedium(
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // English Translation
+          _buildTranslation(
+            'Translation:',
+            translation,
+            isDark,
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Bengali Translation
+          _buildTranslation(
+            'বাংলা অনুবাদ:',
+            translationBengali,
+            isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTranslation(String label, String text, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.bodySmall(
+            color: isDark
+                ? AppColors.darkTextSecondary
+                : AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          text,
+          style: AppTypography.bodyMedium(
+            color: isDark
+                ? AppColors.darkTextPrimary
+                : AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
