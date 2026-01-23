@@ -99,12 +99,13 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
 
                     const SizedBox(height: 24),
 
-                    // Bengali Audio Source Section
-                    _buildSectionTitle('Bengali Audio Source', 'বাংলা অডিও সোর্স', isDark),
-                    const SizedBox(height: 12),
-                    _buildBengaliAudioSourceSelector(isDark, theme),
+                    // Bengali Audio Source Section - HIDDEN (always uses Human Voice)
+                    // _buildSectionTitle('Bengali Audio Source', 'বাংলা অডিও সোর্স', isDark),
+                    // const SizedBox(height: 12),
+                    // _buildBengaliAudioSourceSelector(isDark, theme),
+                    //
+                    // const SizedBox(height: 24),
 
-                    const SizedBox(height: 24),
 
                     // Playback Speed Section
                     _buildSectionTitle('Playback Speed', 'গতি', isDark),
