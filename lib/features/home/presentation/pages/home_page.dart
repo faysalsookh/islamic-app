@@ -880,17 +880,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         route: '/juz-list',
       ),
       _FeatureItem(
-        icon: Icons.bookmark_rounded,
-        title: 'Bookmarks',
-        subtitle: 'Saved verses',
-        color: AppColors.softRoseDark,
-        route: '/bookmarks',
+        icon: Icons.category_rounded,
+        title: 'Topic Verses',
+        subtitle: 'By themes',
+        color: AppColors.roseGoldPrimary,
+        route: '/quran-topics',
       ),
       _FeatureItem(
         icon: Icons.school_rounded,
         title: 'Tajweed',
         subtitle: 'Learn rules',
-        color: AppColors.roseGoldPrimary,
+        color: AppColors.softRoseDark,
         route: '/tajweed-rules',
       ),
     ];

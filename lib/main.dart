@@ -10,6 +10,9 @@ import 'package:islamic_app/features/quran/pages/quran_reader_page.dart';
 import 'package:islamic_app/features/quran/pages/surah_list_page.dart';
 import 'package:islamic_app/features/quran/pages/juz_list_page.dart';
 import 'package:islamic_app/features/quran/pages/tajweed_rules_page.dart';
+import 'package:islamic_app/features/quran/pages/quran_topics_page.dart';
+import 'package:islamic_app/features/quran/pages/topic_verses_page.dart';
+import 'package:islamic_app/core/models/quran_topic.dart';
 import 'package:islamic_app/features/bookmarks/presentation/pages/bookmarks_page.dart';
 import 'package:islamic_app/features/settings/presentation/pages/settings_page.dart';
 import 'package:islamic_app/features/search/presentation/pages/search_page.dart';
@@ -106,6 +109,7 @@ class IslamicApp extends StatelessWidget {
             '/daily-tracker': (context) => const DailyTrackerPage(),
             '/quran-planner': (context) => const QuranPlannerPage(),
             '/zakat-calculator': (context) => const ZakatCalculatorPage(),
+            '/quran-topics': (context) => const QuranTopicsPage(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/quran-reader') {
@@ -126,6 +130,13 @@ class IslamicApp extends StatelessWidget {
                   surahNumber: surahNumber,
                   initialAyahNumber: initialAyahNumber,
                 ),
+              );
+            }
+
+            if (settings.name == '/topic-verses') {
+              final topic = settings.arguments as QuranTopic;
+              return MaterialPageRoute(
+                builder: (context) => TopicVersesPage(topic: topic),
               );
             }
             return null;
