@@ -221,6 +221,21 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
 
+              // Data & Storage section
+              _SettingsSection(
+                title: 'Data & Storage',
+                isTablet: isTablet,
+                children: [
+                  _SettingsTile(
+                    icon: Icons.refresh_rounded,
+                    title: 'Refresh Quran Data',
+                    subtitle: 'Clear cache and re-download with Tajweed',
+                    onTap: () => _refreshQuranData(context),
+                    isTablet: isTablet,
+                  ),
+                ],
+              ),
+
               // About section
               _SettingsSection(
                 title: 'About',
@@ -531,6 +546,65 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _refreshQuranData(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Refresh Quran Data'),
+        content: const Text(
+          'This will clear the cached Quran data and download fresh data with Tajweed colors from the server.\n\nThis may take a moment depending on your internet connection.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Refresh'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        // Clear the cache
+        await QuranDataService().clearCache();
+
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Quran data cache cleared. Fresh data with Tajweed will load when you open a surah.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error clearing cache: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   String _getBengaliTranslationName(int id) {
     final options = QuranDataService.getBengaliTranslationOptions();
     final option = options.firstWhere(
@@ -1092,9 +1166,17 @@ class _TajweedLegendTile extends StatelessWidget {
           Wrap(
             spacing: isTablet ? 20 : 16,
             runSpacing: isTablet ? 16 : 12,
-            children: TajweedRule.values
-                .where((rule) => rule != TajweedRule.normal)
-                .map((rule) => _TajweedColorItem(rule: rule, isTablet: isTablet))
+            // Show only main tajweed rules (not sub-variants)
+            children: const [
+              TajweedRule.ghunnah,
+              TajweedRule.ikhfa,
+              TajweedRule.qalqalah,
+              TajweedRule.idgham,
+              TajweedRule.iqlab,
+              TajweedRule.izhar,
+              TajweedRule.safir,
+              TajweedRule.madd,
+            ].map((rule) => _TajweedColorItem(rule: rule, isTablet: isTablet))
                 .toList(),
           ),
         ],

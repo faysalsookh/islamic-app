@@ -4,15 +4,18 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/ayah.dart';
 import '../data/shohoz_quran_transliterations.dart';
+import 'tajweed_service.dart';
 import 'transliteration_service.dart';
 
 /// Service for fetching and caching Quran data from APIs
 ///
-/// Primary API: Quran.com API v4 (authenticated, comprehensive)
-/// Fallback API: Al-Quran Cloud API
+/// Arabic Text: QuranEnc API (King Fahd Quran Complex - Most Authoritative)
+/// Bengali Translation: Quran.com API v4 (Taisirul Quran, Dr. Abu Bakr Zakaria)
+/// English Translation: QuranEnc API (Sahih International)
+/// Fallback: Al-Quran Cloud API
 ///
 /// Features:
-/// - Arabic text (Uthmani script)
+/// - Arabic text (Uthmani script from King Fahd Complex via QuranEnc)
 /// - Bengali translation (Taisirul Quran, Dr. Abu Bakr Zakaria)
 /// - English translation (Sahih International)
 /// - Bengali transliteration (সহজ কুরআন + API conversion)
@@ -52,12 +55,17 @@ class QuranDataService extends ChangeNotifier {
   static const int _tafsirFathulMajid = 381;     // Tafsir Fathul Majid (Bengali)
 
   // ============================================================
+  // API CONFIGURATION - QuranEnc (King Fahd Complex - Most Authoritative)
+  // ============================================================
+  static const String _quranEncBaseUrl = 'https://quranenc.com/api/v1';
+  static const String _quranEncEnglishKey = 'english_saheeh';  // Sahih International (Noor International)
+
+  // ============================================================
   // API CONFIGURATION - Al-Quran Cloud (Fallback)
   // ============================================================
   static const String _alQuranCloudBaseUrl = 'https://api.alquran.cloud/v1';
   static const String _bengaliTranslationEdition = 'bn.bengali';  // Muhiuddin Khan
-  static const String _englishTranslationEdition = 'en.sahih';    // Sahih International
-  static const String _arabicEdition = 'quran-uthmani';           // Uthmani script
+  static const String _arabicEdition = 'quran-uthmani';           // Uthmani script (fallback only)
 
   // Current settings
   int _currentBengaliTranslationId = 161; // Default to Taisirul Quran
@@ -68,7 +76,9 @@ class QuranDataService extends ChangeNotifier {
 
 
   // Cache version - increment when data structure changes
-  static const String _cacheVersion = 'v6';
+  // v7: Added QuranEnc API for Arabic text (King Fahd Complex)
+  // v8: Added Tajweed-annotated text from Quran.com API
+  static const String _cacheVersion = 'v8';
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -138,72 +148,102 @@ class QuranDataService extends ChangeNotifier {
     }
   }
 
-  /// Fetch from Quran.com API v4 - Primary API with comprehensive data
+  /// Fetch Quran data using hybrid approach:
+  /// - Arabic text: QuranEnc API (King Fahd Quran Complex - Most Authoritative)
+  /// - Bengali translation: Quran.com API v4
+  /// - English translation: QuranEnc API
   /// Returns null if API fails, allowing fallback to Al-Quran Cloud
   Future<List<Ayah>?> _fetchFromQuranComApi(int surahNumber) async {
     try {
-      // Fetch verses with translations
-      final versesUrl = Uri.parse(
-        '$_quranComBaseUrl/verses/by_chapter/$surahNumber'
-        '?language=bn'
-        '&words=false'
-        '&translations=$_currentBengaliTranslationId'
-        '&fields=text_uthmani,text_indopak,text_uthmani_simple,verse_key,juz_number,page_number,hizb_number'
-        '&per_page=300',
-      );
+      // Fetch in parallel for better performance:
+      // 1. QuranEnc for Arabic text + English translation
+      // 2. Quran.com for Bengali translation + metadata + Tajweed text
+      // 3. Al-Quran Cloud for transliteration
+      final futures = await Future.wait([
+        _fetchFromQuranEncApi(surahNumber, translationKey: _quranEncEnglishKey),
+        http.get(Uri.parse(
+          '$_quranComBaseUrl/verses/by_chapter/$surahNumber'
+          '?language=bn'
+          '&words=false'
+          '&translations=$_currentBengaliTranslationId'
+          '&fields=text_uthmani,text_uthmani_tajweed,text_indopak,text_uthmani_simple,verse_key,juz_number,page_number,hizb_number'
+          '&per_page=300',
+        )).timeout(const Duration(seconds: 20)),
+        _fetchAlQuranCloudEdition(surahNumber, 'en.transliteration'),
+      ]);
 
-      final versesResponse = await http.get(versesUrl).timeout(
-        const Duration(seconds: 20),
-      );
+      final quranEncData = futures[0] as List<Map<String, dynamic>>?;
+      final quranComResponse = futures[1] as http.Response;
+      final transliterationData = futures[2] as Map<String, dynamic>?;
 
-      if (versesResponse.statusCode != 200) {
-        debugPrint('Quran.com API failed: ${versesResponse.statusCode}');
-        return null;
+      // Parse Quran.com response for Bengali translation and metadata
+      Map<String, dynamic>? versesData;
+      List<dynamic>? verses;
+      if (quranComResponse.statusCode == 200) {
+        versesData = json.decode(quranComResponse.body);
+        verses = versesData?['verses'] as List?;
       }
 
-      final versesData = json.decode(versesResponse.body);
-      final verses = versesData['verses'] as List?;
-
-      if (verses == null || verses.isEmpty) {
+      // If neither API returned data, return null for fallback
+      if (quranEncData == null && (verses == null || verses.isEmpty)) {
+        debugPrint('Both QuranEnc and Quran.com APIs failed for surah $surahNumber');
         return null;
       }
-
-      // Fetch English translation from Al-Quran Cloud for comparison
-      final englishData = await _fetchAlQuranCloudEdition(surahNumber, _englishTranslationEdition);
-      final transliterationData = await _fetchAlQuranCloudEdition(surahNumber, 'en.transliteration');
 
       // Build ayah list
       final List<Ayah> ayahs = [];
+      final int totalAyahs = quranEncData?.length ?? verses?.length ?? 0;
 
-      for (int i = 0; i < verses.length; i++) {
-        final verse = verses[i];
-        final verseKey = verse['verse_key'] as String; // e.g., "1:1"
-        final parts = verseKey.split(':');
-        final ayahNumberInSurah = int.parse(parts[1]);
+      for (int i = 0; i < totalAyahs; i++) {
+        final ayahNumberInSurah = i + 1;
 
-        // Get Arabic text
-        final arabicText = verse['text_uthmani'] as String? ?? verse['text_uthmani_simple'] as String? ?? '';
-        final indopakText = verse['text_indopak'] as String? ?? arabicText;
-
-        // Get Bengali translation (prefer Taisirul Quran)
-        String? bengaliTranslation;
-        final translations = verse['translations'] as List?;
-        if (translations != null && translations.isNotEmpty) {
-          // Find selected translation
-          for (final t in translations) {
-            if (t['resource_id'] == _currentBengaliTranslationId) {
-              bengaliTranslation = _cleanHtmlText(t['text'] as String?);
-              break;
-            }
-          }
-          // Fallback to first available if specific ID not found (though api should return it)
-          bengaliTranslation ??= _cleanHtmlText(translations.first['text'] as String?);
+        // Get Arabic text from QuranEnc (King Fahd Complex - Most Authoritative)
+        String arabicText = '';
+        String? englishTranslation;
+        if (quranEncData != null && i < quranEncData.length) {
+          arabicText = quranEncData[i]['arabic_text'] as String? ?? '';
+          englishTranslation = quranEncData[i]['translation'] as String?;
         }
 
-        // Get English translation from fallback
-        String? englishTranslation;
-        if (englishData != null && i < (englishData['ayahs'] as List).length) {
-          englishTranslation = (englishData['ayahs'] as List)[i]['text'] as String?;
+        // Get metadata, Bengali translation, and Tajweed text from Quran.com
+        String? bengaliTranslation;
+        String? indopakText;
+        String? tajweedText; // Tajweed-annotated text from Quran.com API
+        int juz = 1, page = 1, hizbQuarter = 1;
+        int ayahId = surahNumber * 1000 + ayahNumberInSurah;
+
+        if (verses != null && i < verses.length) {
+          final verse = verses[i];
+          ayahId = verse['id'] as int? ?? ayahId;
+
+          // Fallback Arabic text from Quran.com if QuranEnc failed
+          if (arabicText.isEmpty) {
+            arabicText = verse['text_uthmani'] as String? ?? verse['text_uthmani_simple'] as String? ?? '';
+          }
+          indopakText = verse['text_indopak'] as String?;
+
+          // Get Tajweed-annotated text from Quran.com API
+          tajweedText = verse['text_uthmani_tajweed'] as String?;
+          if (i == 0) {
+            debugPrint('Tajweed text for ayah 1: ${tajweedText?.substring(0, (tajweedText?.length ?? 0) > 50 ? 50 : (tajweedText?.length ?? 0))}...');
+          }
+
+          // Get Bengali translation
+          final translations = verse['translations'] as List?;
+          if (translations != null && translations.isNotEmpty) {
+            for (final t in translations) {
+              if (t['resource_id'] == _currentBengaliTranslationId) {
+                bengaliTranslation = _cleanHtmlText(t['text'] as String?);
+                break;
+              }
+            }
+            bengaliTranslation ??= _cleanHtmlText(translations.first['text'] as String?);
+          }
+
+          // Get metadata
+          juz = verse['juz_number'] as int? ?? 1;
+          page = verse['page_number'] as int? ?? 1;
+          hizbQuarter = verse['hizb_number'] as int? ?? 1;
         }
 
         // Get English transliteration
@@ -223,66 +263,103 @@ class QuranDataService extends ChangeNotifier {
         }
 
         final ayah = Ayah(
-          number: verse['id'] as int? ?? (surahNumber * 1000 + ayahNumberInSurah),
+          number: ayahId,
           numberInSurah: ayahNumberInSurah,
           surahNumber: surahNumber,
           textArabic: arabicText,
-          textIndopak: indopakText,
-          textWithTajweed: _generateTajweedMarkup(arabicText),
+          textIndopak: indopakText ?? arabicText,
+          // Use API Tajweed text if available, otherwise fallback to generated markup
+          textWithTajweed: tajweedText ?? TajweedService().generateTajweedMarkup(arabicText),
           translationBengali: bengaliTranslation,
           translationEnglish: englishTranslation,
           transliterationBengali: bengaliTranslit,
           transliterationEnglish: englishTranslit ?? _getAccurateEnglishTransliteration(surahNumber, ayahNumberInSurah),
-          juz: verse['juz_number'] as int? ?? 1,
-          page: verse['page_number'] as int? ?? 1,
-          hizbQuarter: verse['hizb_number'] as int? ?? 1,
+          juz: juz,
+          page: page,
+          hizbQuarter: hizbQuarter,
         );
         ayahs.add(ayah);
       }
 
+      debugPrint('Built ${ayahs.length} ayahs with QuranEnc Arabic + Quran.com Tajweed for surah $surahNumber');
       return ayahs;
     } catch (e) {
-      debugPrint('Error fetching from Quran.com API: $e');
+      debugPrint('Error fetching from hybrid API: $e');
       return null;
     }
   }
 
   /// Fetch from Al-Quran Cloud API - Fallback API
+  /// Also tries QuranEnc for Arabic text (more authoritative)
   Future<List<Ayah>> _fetchFromAlQuranCloudApi(int surahNumber) async {
     // Fetch all editions in parallel for better performance
+    // Try QuranEnc for Arabic + English first (King Fahd Complex)
     final results = await Future.wait([
+      _fetchFromQuranEncApi(surahNumber, translationKey: _quranEncEnglishKey),
       _fetchAlQuranCloudEdition(surahNumber, _arabicEdition),
       _fetchAlQuranCloudEdition(surahNumber, _bengaliTranslationEdition),
-      _fetchAlQuranCloudEdition(surahNumber, _englishTranslationEdition),
       _fetchAlQuranCloudEdition(surahNumber, 'en.transliteration'),
     ]);
 
-    final arabicData = results[0];
-    final bengaliData = results[1];
-    final englishData = results[2];
-    final transliterationData = results[3];
+    final quranEncData = results[0] as List<Map<String, dynamic>>?;
+    final arabicData = results[1] as Map<String, dynamic>?;
+    final bengaliData = results[2] as Map<String, dynamic>?;
+    final transliterationData = results[3] as Map<String, dynamic>?;
 
-    if (arabicData == null) {
-      throw Exception('Failed to fetch Arabic text');
+    // Determine Arabic text source
+    final bool useQuranEnc = quranEncData != null && quranEncData.isNotEmpty;
+    if (!useQuranEnc && arabicData == null) {
+      throw Exception('Failed to fetch Arabic text from both QuranEnc and Al-Quran Cloud');
     }
 
     // Build ayah list combining all editions
     final List<Ayah> ayahs = [];
-    final arabicAyahs = arabicData['ayahs'] as List;
+    final int totalAyahs = useQuranEnc
+        ? quranEncData.length
+        : (arabicData!['ayahs'] as List).length;
 
-    for (int i = 0; i < arabicAyahs.length; i++) {
-      final arabicAyah = arabicAyahs[i];
+    for (int i = 0; i < totalAyahs; i++) {
+      // Get Arabic text - prefer QuranEnc (King Fahd Complex)
+      String arabicText;
+      String? englishTranslation;
+      int ayahNumber;
+      int ayahNumberInSurah;
+      int juz = 1, page = 1, hizbQuarter = 1;
+
+      if (useQuranEnc) {
+        arabicText = quranEncData[i]['arabic_text'] as String? ?? '';
+        englishTranslation = quranEncData[i]['translation'] as String?;
+        ayahNumberInSurah = int.parse(quranEncData[i]['aya'] as String? ?? '${i + 1}');
+        ayahNumber = surahNumber * 1000 + ayahNumberInSurah;
+
+        // Get metadata from Al-Quran Cloud if available
+        if (arabicData != null && i < (arabicData['ayahs'] as List).length) {
+          final arabicAyah = (arabicData['ayahs'] as List)[i];
+          ayahNumber = arabicAyah['number'] as int? ?? ayahNumber;
+          juz = arabicAyah['juz'] as int? ?? 1;
+          page = arabicAyah['page'] as int? ?? 1;
+          hizbQuarter = arabicAyah['hizbQuarter'] as int? ?? 1;
+        }
+      } else {
+        // arabicData is guaranteed non-null here since useQuranEnc is false
+        final arabicAyah = (arabicData!['ayahs'] as List)[i];
+        arabicText = arabicAyah['text'] as String;
+        ayahNumber = arabicAyah['number'] as int;
+        ayahNumberInSurah = arabicAyah['numberInSurah'] as int;
+        juz = arabicAyah['juz'] as int? ?? 1;
+        page = arabicAyah['page'] as int? ?? 1;
+        hizbQuarter = arabicAyah['hizbQuarter'] as int? ?? 1;
+      }
+
+      // Get Bengali translation
       final bengaliAyah = bengaliData != null && i < (bengaliData['ayahs'] as List).length
           ? (bengaliData['ayahs'] as List)[i]
           : null;
-      final englishAyah = englishData != null && i < (englishData['ayahs'] as List).length
-          ? (englishData['ayahs'] as List)[i]
-          : null;
+
+      // Get English transliteration
       final translitAyah = transliterationData != null && i < (transliterationData['ayahs'] as List).length
           ? (transliterationData['ayahs'] as List)[i]
           : null;
-
-      final ayahNumberInSurah = arabicAyah['numberInSurah'] as int;
 
       // Get Bengali transliteration with priority system
       String? bengaliTranslit = ShohozQuranTransliterations.getTransliteration(surahNumber, ayahNumberInSurah);
@@ -294,22 +371,23 @@ class QuranDataService extends ChangeNotifier {
       }
 
       final ayah = Ayah(
-        number: arabicAyah['number'] as int,
+        number: ayahNumber,
         numberInSurah: ayahNumberInSurah,
         surahNumber: surahNumber,
-        textArabic: arabicAyah['text'] as String,
-        textWithTajweed: _generateTajweedMarkup(arabicAyah['text'] as String),
+        textArabic: arabicText,
+        textWithTajweed: TajweedService().generateTajweedMarkup(arabicText),
         translationBengali: bengaliAyah?['text'] as String?,
-        translationEnglish: englishAyah?['text'] as String?,
+        translationEnglish: englishTranslation,
         transliterationBengali: bengaliTranslit,
         transliterationEnglish: englishTranslit ?? _getAccurateEnglishTransliteration(surahNumber, ayahNumberInSurah),
-        juz: arabicAyah['juz'] as int? ?? 1,
-        page: arabicAyah['page'] as int? ?? 1,
-        hizbQuarter: arabicAyah['hizbQuarter'] as int? ?? 1,
+        juz: juz,
+        page: page,
+        hizbQuarter: hizbQuarter,
       );
       ayahs.add(ayah);
     }
 
+    debugPrint('Fallback: Built ${ayahs.length} ayahs ${useQuranEnc ? "with QuranEnc" : "with Al-Quran Cloud"} for surah $surahNumber');
     return ayahs;
   }
 
@@ -778,6 +856,33 @@ class QuranDataService extends ChangeNotifier {
     return null;
   }
 
+  /// Fetch Arabic text and English translation from QuranEnc API (King Fahd Quran Complex)
+  /// Returns a list of ayah data with arabic_text, translation, and footnotes
+  Future<List<Map<String, dynamic>>?> _fetchFromQuranEncApi(int surahNumber, {String translationKey = 'english_saheeh'}) async {
+    try {
+      final url = '$_quranEncBaseUrl/translation/sura/$translationKey/$surahNumber';
+      debugPrint('Fetching from QuranEnc: $url');
+
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 20),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final result = data['result'] as List<dynamic>?;
+        if (result != null && result.isNotEmpty) {
+          debugPrint('QuranEnc: Fetched ${result.length} ayahs for surah $surahNumber');
+          return result.cast<Map<String, dynamic>>();
+        }
+      } else {
+        debugPrint('QuranEnc API failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching from QuranEnc API: $e');
+    }
+    return null;
+  }
+
   /// Load ayahs from local cache
   Future<List<Ayah>?> _loadFromLocalCache(int surahNumber) async {
     try {
@@ -837,61 +942,6 @@ class QuranDataService extends ChangeNotifier {
   /// Get audio URL for entire surah
   String getSurahAudioUrl(int surahNumber, {String reciter = 'ar.alafasy'}) {
     return 'https://cdn.islamic.network/quran/audio-surah/128/$reciter/$surahNumber.mp3';
-  }
-
-  /// Generate Tajweed markup for Arabic text
-  String _generateTajweedMarkup(String arabicText) {
-    String result = arabicText;
-
-    // Ghunnah - noon and meem with shaddah
-    result = result.replaceAllMapped(
-      RegExp(r'(نّ|مّ)'),
-      (m) => '<ghunnah>${m.group(0)}</ghunnah>',
-    );
-
-    // Qalqalah letters with sukoon (ق ط ب ج د)
-    result = result.replaceAllMapped(
-      RegExp(r'([قطبجد]ْ)'),
-      (m) => '<qalqalah>${m.group(0)}</qalqalah>',
-    );
-
-    // Madd - elongation
-    result = result.replaceAllMapped(
-      RegExp(r'(َا|ُو|ِي|آ|ٰ)'),
-      (m) => '<madd>${m.group(0)}</madd>',
-    );
-
-    // Ikhfa - noon sakinah before specific letters
-    result = result.replaceAllMapped(
-      RegExp(r'(نْ[تثجدذزسشصضطظفقك]|ً[تثجدذزسشصضطظفقك]|ٌ[تثجدذزسشصضطظفقك]|ٍ[تثجدذزسشصضطظفقك])'),
-      (m) => '<ikhfa>${m.group(0)}</ikhfa>',
-    );
-
-    // Iqlab - noon sakinah or tanween before ba
-    result = result.replaceAllMapped(
-      RegExp(r'(نْب|ًب|ٌب|ٍب)'),
-      (m) => '<iqlab>${m.group(0)}</iqlab>',
-    );
-
-    // Idgham - noon sakinah merging with ي ن م و ل ر
-    result = result.replaceAllMapped(
-      RegExp(r'(نْ[ينمولر]|ً[ينمولر]|ٌ[ينمولر]|ٍ[ينمولر])'),
-      (m) => '<idgham>${m.group(0)}</idgham>',
-    );
-
-    // Izhar - noon sakinah before throat letters
-    result = result.replaceAllMapped(
-      RegExp(r'(نْ[ءهعحغخ]|ً[ءهعحغخ]|ٌ[ءهعحغخ]|ٍ[ءهعحغخ])'),
-      (m) => '<izhar>${m.group(0)}</izhar>',
-    );
-
-    // Safir - whistling letters (ص ز س) with sukoon
-    result = result.replaceAllMapped(
-      RegExp(r'([صزس]ْ)'),
-      (m) => '<safir>${m.group(0)}</safir>',
-    );
-
-    return result;
   }
 
   /// Get accurate Bengali transliteration for a verse

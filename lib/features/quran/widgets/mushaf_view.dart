@@ -656,6 +656,11 @@ class _AyahsContent extends StatelessWidget {
     final tajweedService = TajweedService();
     final tajweedColors = TajweedColors.bengaliQuran;
 
+    // Check if using IndoPak font
+    final isIndoPak = fontFamily == 'Scheherazade New' ||
+                      fontFamily == 'Noorehuda' ||
+                      fontFamily == 'Lateef';
+
     return RichText(
       textDirection: TextDirection.rtl,
       textAlign: TextAlign.justify,
@@ -663,10 +668,26 @@ class _AyahsContent extends StatelessWidget {
         children: ayahs.expand((ayah) {
           final List<InlineSpan> spans = [];
 
+          // Determine which text to display based on font
+          final displayText = (isIndoPak && ayah.textIndopak != null)
+              ? ayah.textIndopak!
+              : ayah.textArabic;
+
+          // For IndoPak text, generate tajweed markup algorithmically
+          // For Uthmani text, use the pre-annotated tajweed from API
+          String? displayMarkup;
+          if (isIndoPak && ayah.textIndopak != null) {
+            // Generate tajweed markup for IndoPak text
+            displayMarkup = tajweedService.generateTajweedMarkup(ayah.textIndopak!);
+          } else {
+            // Use pre-annotated tajweed markup for Uthmani text
+            displayMarkup = ayah.textWithTajweed;
+          }
+
           // Add Tajweed colored text or plain text
-          if (showTajweedColors && ayah.textWithTajweed != null && ayah.textWithTajweed!.isNotEmpty) {
+          if (showTajweedColors && displayMarkup != null && displayMarkup.isNotEmpty) {
             // Parse Tajweed markup and create colored spans
-            final segments = tajweedService.parseMarkup(ayah.textWithTajweed);
+            final segments = tajweedService.parseMarkup(displayMarkup);
             for (final segment in segments) {
               final color = segment.rule == TajweedRule.normal
                   ? textColor
@@ -687,7 +708,7 @@ class _AyahsContent extends StatelessWidget {
             // Plain text without Tajweed colors
             spans.add(
               TextSpan(
-                text: ayah.textArabic,
+                text: displayText,
                 style: AppTypography.quranText(
                   fontSize: fontSize,
                   color: textColor,

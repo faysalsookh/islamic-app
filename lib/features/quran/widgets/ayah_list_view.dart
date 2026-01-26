@@ -7,6 +7,7 @@ import '../../../core/models/surah.dart';
 import '../../../core/models/ayah.dart';
 import '../../../core/models/tajweed.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/services/tajweed_service.dart';
 import '../../../core/widgets/ayah_number_badge.dart';
 import '../../../core/widgets/tajweed_text.dart';
 import '../../../core/widgets/tajweed_tooltip.dart';
@@ -608,6 +609,7 @@ class _AyahItem extends StatelessWidget {
 
   Widget _buildArabicText(bool isDark) {
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textArabic;
+    final tajweedService = TajweedService();
 
     final isIndoPak = fontFamily == 'Scheherazade New' ||
                       fontFamily == 'Noorehuda' ||
@@ -615,10 +617,17 @@ class _AyahItem extends StatelessWidget {
     final displayText = (isIndoPak && ayah.textIndopak != null)
        ? ayah.textIndopak
        : ayah.textArabic;
-    // Note: textWithTajweed currently marks up textArabic (Uthmani).
-    // If using IndoPak text, we disable tajweed colors temporarily or use plain text
-    // because markup indices would mismatch.
-    final displayMarkup = (isIndoPak) ? null : ayah.textWithTajweed;
+
+    // For IndoPak text, generate tajweed markup algorithmically
+    // For Uthmani text, use the pre-annotated tajweed from API
+    String? displayMarkup;
+    if (isIndoPak && ayah.textIndopak != null) {
+      // Generate tajweed markup for IndoPak text
+      displayMarkup = tajweedService.generateTajweedMarkup(ayah.textIndopak!);
+    } else {
+      // Use pre-annotated tajweed markup for Uthmani text
+      displayMarkup = ayah.textWithTajweed;
+    }
 
     // Use tappable text when word-by-word mode is enabled
     if (wordByWordEnabled) {
