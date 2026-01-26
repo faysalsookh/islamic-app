@@ -65,30 +65,29 @@ class FontSettingsSheet extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   // ... rest of header is same ...
-              Text(
-                'Quran Appearance',
-                style: AppTypography.heading2(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Customize',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
+                  Text(
+                    'Quran Appearance',
+                    style: AppTypography.heading2(
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
                   ),
-                ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Customize',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
           const SizedBox(height: 24),
 
           // Premium Live Preview Card
@@ -363,9 +362,84 @@ class FontSettingsSheet extends StatelessWidget {
               isDark: isDark,
               activeColor: theme.colorScheme.primary,
             ),
+            const SizedBox(height: 8),
+            _buildFeatureTile(
+              title: 'Word-by-Word Translation',
+              subtitle: 'Tap any Arabic word for meaning & grammar',
+              value: appState.wordByWordEnabled,
+              onChanged: (val) => appState.toggleWordByWord(),
+              isDark: isDark,
+              theme: theme,
+              icon: Icons.touch_app_rounded,
+            ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildFeatureTile({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Function(bool) onChanged,
+    required bool isDark,
+    required ThemeData theme,
+    required IconData icon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: value
+            ? theme.colorScheme.primary.withValues(alpha: 0.1)
+            : (isDark ? AppColors.darkSurface : Colors.white),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: value
+              ? theme.colorScheme.primary.withValues(alpha: 0.3)
+              : (isDark ? AppColors.dividerDark : AppColors.divider),
+        ),
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: value
+                ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                : (isDark ? AppColors.darkCard : AppColors.cream),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: value
+                ? theme.colorScheme.primary
+                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          ),
+        ),
+        trailing: Switch.adaptive(
+          value: value,
+          onChanged: onChanged,
+          activeColor: theme.colorScheme.primary,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () => onChanged(!value),
+      ),
     );
   }
 

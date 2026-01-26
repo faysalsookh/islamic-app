@@ -331,33 +331,39 @@ class _QuranReaderPageState extends State<QuranReaderPage>
   void _openMoreOptions() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final appState = context.read<AppStateProvider>();
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _OptionsSheet(
+      builder: (sheetContext) => _OptionsSheet(
         isDark: isDark,
         theme: theme,
         showTranslation: _showTranslation,
+        wordByWordEnabled: appState.wordByWordEnabled,
         onSurahInfo: () {
-          Navigator.pop(context);
+          Navigator.pop(sheetContext);
           _showSurahInfo();
         },
         onJumpToAyah: () {
-          Navigator.pop(context);
+          Navigator.pop(sheetContext);
           _showJumpToAyah();
         },
         onTajweedGuide: () {
-          Navigator.pop(context);
+          Navigator.pop(sheetContext);
           Navigator.pushNamed(context, '/tajweed-rules');
         },
         onToggleTranslation: () {
           _toggleTranslation();
-          Navigator.pop(context);
+          Navigator.pop(sheetContext);
+        },
+        onToggleWordByWord: () {
+          appState.toggleWordByWord();
+          Navigator.pop(sheetContext);
         },
         onShowTips: () {
-          Navigator.pop(context);
+          Navigator.pop(sheetContext);
           setState(() => _showQuickTips = true);
           _tipsAnimationController.forward();
         },
@@ -772,20 +778,24 @@ class _OptionsSheet extends StatelessWidget {
   final bool isDark;
   final ThemeData theme;
   final bool showTranslation;
+  final bool wordByWordEnabled;
   final VoidCallback onSurahInfo;
   final VoidCallback onJumpToAyah;
   final VoidCallback onTajweedGuide;
   final VoidCallback onToggleTranslation;
+  final VoidCallback onToggleWordByWord;
   final VoidCallback onShowTips;
 
   const _OptionsSheet({
     required this.isDark,
     required this.theme,
     required this.showTranslation,
+    required this.wordByWordEnabled,
     required this.onSurahInfo,
     required this.onJumpToAyah,
     required this.onTajweedGuide,
     required this.onToggleTranslation,
+    required this.onToggleWordByWord,
     required this.onShowTips,
   });
 
@@ -877,6 +887,17 @@ class _OptionsSheet extends StatelessWidget {
                     onTap: onToggleTranslation,
                   ),
                   _buildOptionTile(
+                    icon: wordByWordEnabled
+                        ? Icons.touch_app_rounded
+                        : Icons.touch_app_outlined,
+                    label: wordByWordEnabled
+                        ? 'Disable Word-by-Word'
+                        : 'Enable Word-by-Word',
+                    subtitle: 'Tap Arabic words for meaning & grammar',
+                    onTap: onToggleWordByWord,
+                    isHighlighted: wordByWordEnabled,
+                  ),
+                  _buildOptionTile(
                     icon: Icons.lightbulb_outline_rounded,
                     label: 'Show Quick Tips',
                     subtitle: 'View usage guide',
@@ -898,27 +919,44 @@ class _OptionsSheet extends StatelessWidget {
     required String label,
     required String subtitle,
     required VoidCallback onTap,
+    bool isHighlighted = false,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: isHighlighted
+                ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isHighlighted
+                ? Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  )
+                : null,
+          ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.cream,
+                  color: isHighlighted
+                      ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                      : (isDark ? AppColors.darkSurface : AppColors.cream),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
                   size: 22,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
+                  color: isHighlighted
+                      ? theme.colorScheme.primary
+                      : (isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary),
                 ),
               ),
               const SizedBox(width: 16),
@@ -931,9 +969,11 @@ class _OptionsSheet extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
+                        color: isHighlighted
+                            ? theme.colorScheme.primary
+                            : (isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -949,12 +989,29 @@ class _OptionsSheet extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.textTertiary,
-              ),
+              if (isHighlighted)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'ON',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textTertiary,
+                ),
             ],
           ),
         ),

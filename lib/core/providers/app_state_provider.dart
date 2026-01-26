@@ -139,6 +139,10 @@ class AppStateProvider extends ChangeNotifier {
   bool _tajweedLearningMode = true;
   bool get tajweedLearningMode => _tajweedLearningMode;
 
+  // ============== WORD BY WORD SETTINGS ==============
+  bool _wordByWordEnabled = false;
+  bool get wordByWordEnabled => _wordByWordEnabled;
+
   // ============== USER STATE ==============
   String _userName = '';
   String get userName => _userName;
@@ -216,6 +220,9 @@ class AppStateProvider extends ChangeNotifier {
     // Tajweed settings
     _showTajweedColors = prefs.getBool('show_tajweed_colors') ?? true;
     _tajweedLearningMode = prefs.getBool('tajweed_learning_mode') ?? true;
+
+    // Word by word settings
+    _wordByWordEnabled = prefs.getBool('word_by_word_enabled') ?? false;
 
     // Audio settings
     _selectedReciter = Reciter.values[prefs.getInt('selected_reciter') ?? 0];
@@ -359,6 +366,18 @@ class AppStateProvider extends ChangeNotifier {
 
   Future<void> toggleTajweedLearningMode() async {
     await setTajweedLearningMode(!_tajweedLearningMode);
+  }
+
+  // ============== WORD BY WORD METHODS ==============
+  Future<void> setWordByWordEnabled(bool value) async {
+    _wordByWordEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('word_by_word_enabled', value);
+    notifyListeners();
+  }
+
+  Future<void> toggleWordByWord() async {
+    await setWordByWordEnabled(!_wordByWordEnabled);
   }
 
   // ============== USER METHODS ==============

@@ -12,6 +12,7 @@ import '../../../core/widgets/tajweed_text.dart';
 import '../../../core/widgets/tajweed_tooltip.dart';
 import '../../../core/services/audio_service.dart';
 import 'tafsir_bottom_sheet.dart';
+import 'tappable_arabic_text.dart';
 
 /// Compact Tajweed color legend that shows at bottom of screen
 /// Matches the Bengali Quran color coding style shown in the image
@@ -360,6 +361,7 @@ class _AyahListViewState extends State<AyahListView> {
                   showTransliteration: appState.showTransliteration,
                   showTajweedColors: appState.showTajweedColors,
                   tajweedLearningMode: appState.tajweedLearningMode,
+                  wordByWordEnabled: appState.wordByWordEnabled,
                   translationLanguage: appState.translationLanguage,
                   transliterationLanguage: appState.transliterationLanguage,
                   fontSize: widget.quranFontSize,
@@ -433,6 +435,7 @@ class _AyahItem extends StatelessWidget {
   final bool showTransliteration;
   final bool showTajweedColors;
   final bool tajweedLearningMode;
+  final bool wordByWordEnabled;
   final TranslationLanguage translationLanguage;
   final TransliterationLanguage transliterationLanguage;
   final double fontSize;
@@ -454,6 +457,7 @@ class _AyahItem extends StatelessWidget {
     required this.showTransliteration,
     required this.showTajweedColors,
     required this.tajweedLearningMode,
+    required this.wordByWordEnabled,
     required this.translationLanguage,
     required this.transliterationLanguage,
     required this.fontSize,
@@ -605,16 +609,28 @@ class _AyahItem extends StatelessWidget {
   Widget _buildArabicText(bool isDark) {
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textArabic;
 
-    final isIndoPak = fontFamily == 'Scheherazade New' || 
-                      fontFamily == 'Noorehuda' || 
+    final isIndoPak = fontFamily == 'Scheherazade New' ||
+                      fontFamily == 'Noorehuda' ||
                       fontFamily == 'Lateef';
-    final displayText = (isIndoPak && ayah.textIndopak != null) 
-       ? ayah.textIndopak 
+    final displayText = (isIndoPak && ayah.textIndopak != null)
+       ? ayah.textIndopak
        : ayah.textArabic;
-    // Note: textWithTajweed currently marks up textArabic (Uthmani). 
-    // If using IndoPak text, we disable tajweed colors temporarily or use plain text 
+    // Note: textWithTajweed currently marks up textArabic (Uthmani).
+    // If using IndoPak text, we disable tajweed colors temporarily or use plain text
     // because markup indices would mismatch.
     final displayMarkup = (isIndoPak) ? null : ayah.textWithTajweed;
+
+    // Use tappable text when word-by-word mode is enabled
+    if (wordByWordEnabled) {
+      return TappableArabicTextLazy(
+        arabicText: displayText ?? ayah.textArabic,
+        surahNumber: surah.number,
+        ayahNumber: ayah.numberInSurah,
+        fontSize: fontSize,
+        textColor: textColor,
+        textAlign: TextAlign.right,
+      );
+    }
 
     return Align(
       alignment: Alignment.centerRight,
