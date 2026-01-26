@@ -157,26 +157,24 @@ class QuranDataService extends ChangeNotifier {
     try {
       // Fetch in parallel for better performance:
       // 1. QuranEnc for Arabic text + English translation
-      // 2. Quran.com for Bengali translation + metadata + Tajweed text
-      // 3. Al-Quran Cloud for transliteration
+      // 2. Quran.com for Bengali translation + metadata + Tajweed text + word-level transliteration
       final futures = await Future.wait([
         _fetchFromQuranEncApi(surahNumber, translationKey: _quranEncEnglishKey),
         http.get(Uri.parse(
           '$_quranComBaseUrl/verses/by_chapter/$surahNumber'
           '?language=bn'
-          '&words=false'
+          '&words=true'  // Enable word-level data for transliteration
+          '&word_fields=text_uthmani,transliteration'
           '&translations=$_currentBengaliTranslationId'
           '&fields=text_uthmani,text_uthmani_tajweed,text_indopak,text_uthmani_simple,verse_key,juz_number,page_number,hizb_number'
           '&per_page=300',
         )).timeout(const Duration(seconds: 20)),
-        _fetchAlQuranCloudEdition(surahNumber, 'en.transliteration'),
       ]);
 
       final quranEncData = futures[0] as List<Map<String, dynamic>>?;
       final quranComResponse = futures[1] as http.Response;
-      final transliterationData = futures[2] as Map<String, dynamic>?;
 
-      // Parse Quran.com response for Bengali translation and metadata
+      // Parse Quran.com response for Bengali translation, metadata, and word-level transliteration
       Map<String, dynamic>? versesData;
       List<dynamic>? verses;
       if (quranComResponse.statusCode == 200) {
@@ -224,8 +222,9 @@ class QuranDataService extends ChangeNotifier {
 
           // Get Tajweed-annotated text from Quran.com API
           tajweedText = verse['text_uthmani_tajweed'] as String?;
-          if (i == 0) {
-            debugPrint('Tajweed text for ayah 1: ${tajweedText?.substring(0, (tajweedText?.length ?? 0) > 50 ? 50 : (tajweedText?.length ?? 0))}...');
+          if (i == 0 && tajweedText != null) {
+            final previewLength = tajweedText.length > 50 ? 50 : tajweedText.length;
+            debugPrint('Tajweed text for ayah 1: ${tajweedText.substring(0, previewLength)}...');
           }
 
           // Get Bengali translation
@@ -246,10 +245,29 @@ class QuranDataService extends ChangeNotifier {
           hizbQuarter = verse['hizb_number'] as int? ?? 1;
         }
 
-        // Get English transliteration
+        // Get English transliteration from Quran.com word-level data
         String? englishTranslit;
-        if (transliterationData != null && i < (transliterationData['ayahs'] as List).length) {
-          englishTranslit = (transliterationData['ayahs'] as List)[i]['text'] as String?;
+        if (verses != null && i < verses.length) {
+          final verse = verses[i];
+          final words = verse['words'] as List?;
+          if (words != null && words.isNotEmpty) {
+            // Build transliteration by combining word-level transliterations
+            final translitParts = <String>[];
+            for (final word in words) {
+              final charType = word['char_type_name'] as String?;
+              // Skip verse end markers
+              if (charType == 'end') continue;
+
+              final transliteration = word['transliteration'] as Map<String, dynamic>?;
+              final translitText = transliteration?['text'] as String?;
+              if (translitText != null && translitText.isNotEmpty) {
+                translitParts.add(translitText);
+              }
+            }
+            if (translitParts.isNotEmpty) {
+              englishTranslit = translitParts.join(' ');
+            }
+          }
         }
 
         // Get Bengali transliteration:
@@ -291,20 +309,35 @@ class QuranDataService extends ChangeNotifier {
 
   /// Fetch from Al-Quran Cloud API - Fallback API
   /// Also tries QuranEnc for Arabic text (more authoritative)
+  /// Uses Quran.com API for word-level transliteration
   Future<List<Ayah>> _fetchFromAlQuranCloudApi(int surahNumber) async {
     // Fetch all editions in parallel for better performance
     // Try QuranEnc for Arabic + English first (King Fahd Complex)
+    // Use Quran.com for word-level transliteration (more accurate)
     final results = await Future.wait([
       _fetchFromQuranEncApi(surahNumber, translationKey: _quranEncEnglishKey),
       _fetchAlQuranCloudEdition(surahNumber, _arabicEdition),
       _fetchAlQuranCloudEdition(surahNumber, _bengaliTranslationEdition),
-      _fetchAlQuranCloudEdition(surahNumber, 'en.transliteration'),
+      // Fetch word-level transliteration from Quran.com API
+      http.get(Uri.parse(
+        '$_quranComBaseUrl/verses/by_chapter/$surahNumber'
+        '?words=true'
+        '&word_fields=transliteration'
+        '&per_page=300',
+      )).timeout(const Duration(seconds: 15)),
     ]);
 
     final quranEncData = results[0] as List<Map<String, dynamic>>?;
     final arabicData = results[1] as Map<String, dynamic>?;
     final bengaliData = results[2] as Map<String, dynamic>?;
-    final transliterationData = results[3] as Map<String, dynamic>?;
+    final translitResponse = results[3] as http.Response;
+
+    // Parse transliteration data from Quran.com
+    List<dynamic>? translitVerses;
+    if (translitResponse.statusCode == 200) {
+      final translitData = json.decode(translitResponse.body);
+      translitVerses = translitData['verses'] as List?;
+    }
 
     // Determine Arabic text source
     final bool useQuranEnc = quranEncData != null && quranEncData.isNotEmpty;
@@ -356,15 +389,34 @@ class QuranDataService extends ChangeNotifier {
           ? (bengaliData['ayahs'] as List)[i]
           : null;
 
-      // Get English transliteration
-      final translitAyah = transliterationData != null && i < (transliterationData['ayahs'] as List).length
-          ? (transliterationData['ayahs'] as List)[i]
-          : null;
+      // Get English transliteration from Quran.com word-level data
+      String? englishTranslit;
+      if (translitVerses != null && i < translitVerses.length) {
+        final verse = translitVerses[i];
+        final words = verse['words'] as List?;
+        if (words != null && words.isNotEmpty) {
+          // Build transliteration by combining word-level transliterations
+          final translitParts = <String>[];
+          for (final word in words) {
+            final charType = word['char_type_name'] as String?;
+            // Skip verse end markers
+            if (charType == 'end') continue;
+
+            final transliteration = word['transliteration'] as Map<String, dynamic>?;
+            final translitText = transliteration?['text'] as String?;
+            if (translitText != null && translitText.isNotEmpty) {
+              translitParts.add(translitText);
+            }
+          }
+          if (translitParts.isNotEmpty) {
+            englishTranslit = translitParts.join(' ');
+          }
+        }
+      }
 
       // Get Bengali transliteration with priority system
       String? bengaliTranslit = ShohozQuranTransliterations.getTransliteration(surahNumber, ayahNumberInSurah);
       bengaliTranslit ??= _getAccurateBengaliTransliteration(surahNumber, ayahNumberInSurah);
-      final englishTranslit = translitAyah?['text'] as String?;
 
       if (bengaliTranslit == null && englishTranslit != null) {
         bengaliTranslit = _transliterationService.convertToBengali(englishTranslit);
