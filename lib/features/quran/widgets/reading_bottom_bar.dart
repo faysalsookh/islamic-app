@@ -82,7 +82,7 @@ class ReadingBottomBar extends StatelessWidget {
 
             // Main controls
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
+              padding: const EdgeInsets.fromLTRB(10, 4, 10, 12),
               child: Row(
                 children: [
                   // Left side - View & Display controls
@@ -248,7 +248,7 @@ class ReadingBottomBar extends StatelessWidget {
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: isDark
             ? AppColors.darkCard.withValues(alpha: 0.5)
@@ -278,7 +278,7 @@ class ReadingBottomBar extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -309,7 +309,7 @@ class ReadingBottomBar extends StatelessWidget {
 
   Widget _buildPlaybackControls(ThemeData theme, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(28),
@@ -321,7 +321,7 @@ class ReadingBottomBar extends StatelessWidget {
           _buildCircleButton(
             icon: Icons.skip_previous_rounded,
             onTap: onPreviousAyah,
-            size: 40,
+            size: 36,
             iconSize: 22,
             color: theme.colorScheme.primary,
             backgroundColor: Colors.transparent,
@@ -331,7 +331,7 @@ class ReadingBottomBar extends StatelessWidget {
           _buildCircleButton(
             icon: isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
             onTap: onPlayPause,
-            size: 52,
+            size: 48,
             iconSize: 28,
             color: Colors.white,
             backgroundColor: theme.colorScheme.primary,
@@ -342,7 +342,7 @@ class ReadingBottomBar extends StatelessWidget {
           _buildCircleButton(
             icon: Icons.skip_next_rounded,
             onTap: onNextAyah,
-            size: 40,
+            size: 36,
             iconSize: 22,
             color: theme.colorScheme.primary,
             backgroundColor: Colors.transparent,
