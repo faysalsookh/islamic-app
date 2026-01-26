@@ -206,6 +206,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                   ),
 
+                  // Pilgrimage Section
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, 28, horizontalPadding, 0),
+                      child: _buildSectionHeader('Pilgrimage', isDark),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 0),
+                      child: _buildPilgrimageSection(theme, isDark),
+                    ),
+                  ),
+
                   // Bottom spacing
                   const SliverToBoxAdapter(
                     child: SizedBox(height: 120),
@@ -969,6 +983,91 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     ];
 
     return _buildFeatureGrid(items, isDark);
+  }
+
+  Widget _buildPilgrimageSection(ThemeData theme, bool isDark) {
+    // Single feature card with premium styling
+    return GestureDetector(
+      onTap: () {
+        HapticService().lightImpact();
+        Navigator.pushNamed(context, '/umrah-duas');
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF8B6914),
+              const Color(0xFFD4A853).withValues(alpha: 0.9),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B6914).withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.mosque_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Umrah Dua Cards',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '15 Essential duas for your pilgrimage',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildFeatureGrid(List<_FeatureItem> items, bool isDark) {

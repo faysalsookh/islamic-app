@@ -27,6 +27,7 @@ import 'package:islamic_app/features/ramadan/presentation/pages/zakat_calculator
 import 'package:islamic_app/core/providers/daily_tracker_provider.dart';
 import 'package:islamic_app/core/providers/quran_plan_provider.dart';
 import 'package:islamic_app/core/providers/zakat_provider.dart';
+import 'package:islamic_app/features/umrah/presentation/pages/umrah_duas_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -110,6 +111,7 @@ class IslamicApp extends StatelessWidget {
             '/quran-planner': (context) => const QuranPlannerPage(),
             '/zakat-calculator': (context) => const ZakatCalculatorPage(),
             '/quran-topics': (context) => const QuranTopicsPage(),
+            '/umrah-duas': (context) => const UmrahDuasPage(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/quran-reader') {
