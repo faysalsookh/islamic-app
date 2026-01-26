@@ -39,6 +39,25 @@ class QuranWord {
     );
   }
 
+  /// Factory constructor for creating a word with both English and Bengali translations from API
+  factory QuranWord.fromJsonWithBengali(
+    Map<String, dynamic> englishJson,
+    Map<String, dynamic>? bengaliJson,
+  ) {
+    return QuranWord(
+      id: englishJson['id'] as int? ?? 0,
+      position: englishJson['position'] as int? ?? 0,
+      textUthmani: englishJson['text_uthmani'] as String? ?? englishJson['text'] as String? ?? '',
+      textSimple: englishJson['text_imlaei'] as String? ?? englishJson['text'] as String? ?? '',
+      transliteration: _extractTransliteration(englishJson),
+      translationEn: _extractTranslation(englishJson),
+      translationBn: bengaliJson != null ? _extractTranslation(bengaliJson) : null,
+      charTypeName: englishJson['char_type_name'] as String?,
+      audioUrl: _extractAudioUrl(englishJson),
+      grammar: _extractGrammar(englishJson),
+    );
+  }
+
   /// Get full audio URL for word pronunciation
   String? get fullAudioUrl {
     if (audioUrl == null || audioUrl!.isEmpty) return null;
@@ -244,6 +263,32 @@ class VerseWordsResponse {
     final wordsJson = json['words'] as List<dynamic>? ?? [];
     return VerseWordsResponse(
       words: wordsJson.map((w) => QuranWord.fromJson(w as Map<String, dynamic>)).toList(),
+      verseKey: verseKey,
+    );
+  }
+
+  /// Factory for creating response with both English and Bengali translations from API
+  factory VerseWordsResponse.fromJsonWithDualLanguage(
+    List<dynamic> englishWords,
+    List<dynamic>? bengaliWords,
+    String verseKey,
+  ) {
+    final words = <QuranWord>[];
+
+    for (int i = 0; i < englishWords.length; i++) {
+      final englishWord = englishWords[i] as Map<String, dynamic>;
+      Map<String, dynamic>? bengaliWord;
+
+      // Match Bengali word by position if available
+      if (bengaliWords != null && i < bengaliWords.length) {
+        bengaliWord = bengaliWords[i] as Map<String, dynamic>;
+      }
+
+      words.add(QuranWord.fromJsonWithBengali(englishWord, bengaliWord));
+    }
+
+    return VerseWordsResponse(
+      words: words,
       verseKey: verseKey,
     );
   }

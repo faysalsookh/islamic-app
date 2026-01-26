@@ -15,7 +15,7 @@ class WordByWordService {
   factory WordByWordService() => _instance;
   WordByWordService._internal();
 
-  /// Get words for a specific verse
+  /// Get words for a specific verse with both English and Bengali translations
   /// [surahNumber] - Surah number (1-114)
   /// [ayahNumber] - Ayah number within the surah
   Future<VerseWordsResponse?> getWordsForVerse(int surahNumber, int ayahNumber) async {
@@ -27,28 +27,56 @@ class WordByWordService {
     }
 
     try {
-      // Fetch from Quran.com API with word translations
-      // word_fields: text_uthmani (Arabic text), text_imlaei (simple text)
-      // Include transliteration and translation
-      final url = Uri.parse(
+      // Fetch both English and Bengali translations in parallel
+      final englishUrl = Uri.parse(
         '$_baseUrl/verses/by_key/$verseKey?language=en&words=true&word_fields=text_uthmani,text_imlaei&word_translation_language=en',
       );
+      final bengaliUrl = Uri.parse(
+        '$_baseUrl/verses/by_key/$verseKey?language=bn&words=true&word_fields=text_uthmani,text_imlaei&word_translation_language=bn',
+      );
 
-      debugPrint('Fetching word-by-word: $url');
+      debugPrint('Fetching word-by-word (EN): $englishUrl');
+      debugPrint('Fetching word-by-word (BN): $bengaliUrl');
 
-      final response = await http.get(url, headers: {
-        'Accept': 'application/json',
-      });
+      // Fetch both in parallel for better performance
+      final responses = await Future.wait([
+        http.get(englishUrl, headers: {'Accept': 'application/json'}),
+        http.get(bengaliUrl, headers: {'Accept': 'application/json'}),
+      ]);
 
-      debugPrint('Response status: ${response.statusCode}');
+      final englishResponse = responses[0];
+      final bengaliResponse = responses[1];
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        final verse = data['verse'] as Map<String, dynamic>?;
+      debugPrint('English response status: ${englishResponse.statusCode}');
+      debugPrint('Bengali response status: ${bengaliResponse.statusCode}');
 
-        if (verse != null && verse['words'] != null) {
-          debugPrint('Words found: ${(verse['words'] as List).length}');
-          final wordsResponse = VerseWordsResponse.fromJson(verse, verseKey);
+      if (englishResponse.statusCode == 200) {
+        final englishData = json.decode(englishResponse.body) as Map<String, dynamic>;
+        final englishVerse = englishData['verse'] as Map<String, dynamic>?;
+
+        Map<String, dynamic>? bengaliVerse;
+        if (bengaliResponse.statusCode == 200) {
+          final bengaliData = json.decode(bengaliResponse.body) as Map<String, dynamic>;
+          bengaliVerse = bengaliData['verse'] as Map<String, dynamic>?;
+        }
+
+        if (englishVerse != null && englishVerse['words'] != null) {
+          final englishWords = englishVerse['words'] as List<dynamic>;
+          List<dynamic>? bengaliWords;
+
+          if (bengaliVerse != null && bengaliVerse['words'] != null) {
+            bengaliWords = bengaliVerse['words'] as List<dynamic>;
+          }
+
+          debugPrint('English words found: ${englishWords.length}');
+          debugPrint('Bengali words found: ${bengaliWords?.length ?? 0}');
+
+          // Merge English and Bengali translations
+          final wordsResponse = VerseWordsResponse.fromJsonWithDualLanguage(
+            englishWords,
+            bengaliWords,
+            verseKey,
+          );
           _cache[verseKey] = wordsResponse;
           return wordsResponse;
         }

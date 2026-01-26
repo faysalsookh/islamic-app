@@ -37,7 +37,7 @@ class _WordDetailsSheetState extends State<WordDetailsSheet> {
   @override
   void initState() {
     super.initState();
-    _loadBengaliTranslation();
+    _initBengaliTranslation();
     _audioPlayer.playerStateStream.listen((state) {
       if (mounted) {
         setState(() {
@@ -56,7 +56,18 @@ class _WordDetailsSheetState extends State<WordDetailsSheet> {
     super.dispose();
   }
 
-  Future<void> _loadBengaliTranslation() async {
+  /// Initialize Bengali translation - use API translation if available, fallback to local/online
+  Future<void> _initBengaliTranslation() async {
+    // First check if we already have Bengali translation from API
+    if (widget.word.translationBn != null && widget.word.translationBn!.isNotEmpty) {
+      setState(() {
+        _bengaliTranslation = widget.word.translationBn;
+        _isLoadingBengali = false;
+      });
+      return;
+    }
+
+    // Fallback: try local dictionary or online translation
     if (widget.word.translationEn == null) return;
 
     setState(() => _isLoadingBengali = true);
