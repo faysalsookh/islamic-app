@@ -108,6 +108,7 @@ flutter:
   assets:
     - assets/app_logo/
     - assets/images/
+    - assets/images/reciters/
     - assets/icons/
     - assets/patterns/
     - assets/fonts/

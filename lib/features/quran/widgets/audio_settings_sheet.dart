@@ -538,37 +538,21 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
         ),
         child: Row(
           children: [
-            // Avatar with initials
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                gradient: isSelected
-                    ? LinearGradient(
-                        colors: [
-                          theme.colorScheme.primary,
-                          theme.colorScheme.primary.withValues(alpha: 0.8),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: isSelected ? null : (isDark ? AppColors.darkSurface : AppColors.cream),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  _getReciterInitials(reciter),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Amiri',
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                  ),
-                ),
-              ),
+            // Reciter photo/avatar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: reciter.photoUrl != null
+                  ? Image.asset(
+                      reciter.photoUrl!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback to initial if photo not found
+                        return _buildReciterInitialAvatar(reciter, isSelected, isDark, theme);
+                      },
+                    )
+                  : _buildReciterInitialAvatar(reciter, isSelected, isDark, theme),
             ),
             const SizedBox(width: 14),
             // Reciter info
@@ -626,12 +610,61 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
         return 'س';
       case Reciter.maherAlMuaiqly:
         return 'ﻡ';
+      case Reciter.saadAlGhamdi:
+        return 'غ';
       case Reciter.abuBakrAlShatri:
         return 'أ';
+      case Reciter.muhammadSiddiqAlMinshawi:
+        return 'ش';
       case Reciter.haniArRifai:
         return 'ه';
+      case Reciter.hudhaify:
+        return 'ح';
+      case Reciter.ahmedAlAjmi:
+        return 'ج';
+      case Reciter.aliJaber:
+        return 'ج';
+      case Reciter.yasserAlDosari:
+        return 'ي';
+      case Reciter.nasserAlQatami:
+        return 'ن';
     }
   }
+
+  Widget _buildReciterInitialAvatar(Reciter reciter, bool isSelected, bool isDark, ThemeData theme) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: isSelected
+            ? LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withValues(alpha: 0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: isSelected ? null : (isDark ? AppColors.darkSurface : AppColors.cream),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Text(
+          _getReciterInitials(reciter),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Amiri',
+            color: isSelected
+                ? Colors.white
+                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildSpeedAndRepeatSection(bool isDark, ThemeData theme) {
     return Row(
