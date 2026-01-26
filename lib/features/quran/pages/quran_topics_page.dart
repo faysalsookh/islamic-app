@@ -22,6 +22,7 @@ class _QuranTopicsPageState extends State<QuranTopicsPage>
 
   String _searchQuery = '';
   bool _showScrollToTop = false;
+  int _currentTabIndex = 0;
 
   final List<String> _tabs = ['Topics', 'Sajdah', 'Word Stats'];
 
@@ -35,9 +36,18 @@ class _QuranTopicsPageState extends State<QuranTopicsPage>
       duration: const Duration(milliseconds: 300),
     );
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_handleTabSelection);
 
     _scrollController.addListener(_onScroll);
     _animationController.forward();
+  }
+
+  void _handleTabSelection() {
+    if (_tabController.indexIsChanging || _tabController.index != _currentTabIndex) {
+      setState(() {
+        _currentTabIndex = _tabController.index;
+      });
+    }
   }
 
   void _onScroll() {
@@ -312,8 +322,13 @@ class _QuranTopicsPageState extends State<QuranTopicsPage>
       ),
       child: TabBar(
         controller: _tabController,
+        indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(
-          color: theme.colorScheme.primary,
+          color: _currentTabIndex == 0
+              ? theme.colorScheme.primary
+              : _currentTabIndex == 1
+                  ? AppColors.forestGreen
+                  : AppColors.mutedTeal,
           borderRadius: BorderRadius.circular(12),
         ),
         indicatorPadding: const EdgeInsets.all(4),
