@@ -1042,7 +1042,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '15 Essential duas for your pilgrimage',
+                    '20 Essential duas for your pilgrimage',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.85),

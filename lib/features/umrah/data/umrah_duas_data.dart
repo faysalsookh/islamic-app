@@ -88,168 +88,244 @@ class UmrahDuasData {
       category: UmrahDuaCategory.tawaf,
     ),
 
-    // 06 - Starting Tawaf at Black Stone
+    // 06 - First Sight of the Kaaba
     UmrahDua(
       id: 6,
-      titleEnglish: 'At the Black Stone',
-      titleArabic: 'عند الحجر الأسود',
-      arabicText: 'بِسْمِ اللَّهِ، اللَّهُ أَكْبَرُ',
-      transliteration: 'Bismillāhi, Allāhu Akbar.',
-      translationEnglish: 'In the name of Allah, Allah is the Greatest.',
-      translationBengali: 'আল্লাহর নামে, আল্লাহ সবচেয়ে মহান।',
-      reference: 'Bukhari',
+      titleEnglish: 'First Sight of the Kaaba',
+      titleArabic: 'أول رؤية للكعبة',
+      arabicText:
+          'اَللَّهُمَّ أَنْتَ السَّلاَمُ وَمِنْكَ السَّلاَمُ، حَيِّنَا رَبَّنَا بِالسَّلاَمِ',
+      transliteration:
+          'Allāhumma Anta-s-Salāmu wa minka-s-salām, hayyinā Rabbanā bi-s-salām.',
+      translationEnglish:
+          'O Allah, You are Peace and from You is peace. Make us live, Lord, in peace.',
+      translationBengali:
+          'হে আল্লাহ, আপনিই শান্তি এবং আপনার কাছ থেকেই শান্তি আসে। হে আমাদের রব, আমাদের শান্তিতে বাঁচান।',
       category: UmrahDuaCategory.tawaf,
     ),
 
-    // 07 - Between Rukn Yamani and Black Stone
+    // 07 - Intention for Tawaf
     UmrahDua(
       id: 7,
-      titleEnglish: 'Between Rukn Yamani & Black Stone',
-      titleArabic: 'بين الركن اليماني والحجر الأسود',
+      titleEnglish: 'Intention for Tawaf',
+      titleArabic: 'نية الطواف',
       arabicText:
-          'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
+          'اللَّهُمَّ إِنِّي أُرِيدُ طَوَافَ بَيْتِكَ الْحَرَامِ فَيَسِّرْهُ لِي وَتَقَبَّلْهُ مِنِّي',
       transliteration:
-          "Rabbanā ātinā fi d-dunyā hasanatan wa fi l-ākhirati hasanatan wa qinā 'adhāba n-nār.",
+          'Allāhumma innī urīdu l-tawwafa baytika l-ḥarāmi fa yassirhu lī wa taqabbalhu minnī.',
       translationEnglish:
-          'Our Lord, give us good in this world and good in the Hereafter, and save us from the punishment of the Fire.',
+          'O Allah, I intend to perform Tawaf of your Sacred House, so make it easy for me and accept it from me.',
       translationBengali:
-          'হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন এবং আখিরাতেও কল্যাণ দিন এবং আমাদের জাহান্নামের আযাব থেকে রক্ষা করুন।',
-      reference: 'Quran 2:201',
+          'হে আল্লাহ, আমি আপনার পবিত্র ঘরের তাওয়াফ করতে চাই, তাই এটি আমার জন্য সহজ করুন এবং আমার কাছ থেকে কবুল করুন।',
       category: UmrahDuaCategory.tawaf,
     ),
 
-    // 08 - After Completing Tawaf
+    // 08 - At Hajar Al-Aswad (The Black Stone) Istilam
     UmrahDua(
       id: 8,
-      titleEnglish: 'After Completing Tawaf',
-      titleArabic: 'بعد إتمام الطواف',
-      arabicText:
-          'وَاتَّخِذُوا مِن مَّقَامِ إِبْرَاهِيمَ مُصَلًّى',
-      transliteration: "Wattakhidhū min maqāmi Ibrāhīma musallā.",
-      translationEnglish:
-          'And take the Station of Ibrahim as a place of prayer.',
-      translationBengali:
-          'এবং ইবরাহিমের দাঁড়ানোর স্থানকে সালাতের স্থান হিসেবে গ্রহণ করো।',
-      reference: 'Quran 2:125',
+      titleEnglish: 'At Hajar Al-Aswad (The Black Stone) Istilam',
+      titleArabic: 'عند الحجر الأسود - الاستلام',
+      arabicText: 'بِسْمِ اللَّهِ وَاللَّهُ أَكْبَرُ',
+      transliteration: "Bismillâh, wallâhu 'Akbar.",
+      translationEnglish: 'In the Name of Allah, Allah is most Great.',
+      translationBengali: 'আল্লাহর নামে, আল্লাহ সবচেয়ে মহান।',
       category: UmrahDuaCategory.tawaf,
     ),
 
-    // 09 - At Safa
+    // 09 - Between the Rukn Al-Yamani & Hajar Al-Aswad
     UmrahDua(
       id: 9,
-      titleEnglish: "Starting Sa'i at Safa",
-      titleArabic: 'بداية السعي عند الصفا',
+      titleEnglish: 'Between the Rukn Al-Yamani & Hajar Al-Aswad',
+      titleArabic: 'بين الركن اليماني والحجر الأسود',
       arabicText:
-          'إِنَّ الصَّفَا وَالْمَرْوَةَ مِن شَعَائِرِ اللَّهِ، أَبْدَأُ بِمَا بَدَأَ اللَّهُ بِهِ',
+          'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَّفِي الآخِرَةِ حَسَنَةً وَّقِنَا عَذَابَ النَّارِ',
       transliteration:
-          "Inna ṣ-ṣafā wa l-marwata min sha'ā'iri llāh. Abda'u bimā bada'a llāhu bih.",
+          "Rabbanā ātināfid-dunyā hasanatan wa fi l-ākhirati hasanatan wa qinā 'adhāba n-nār.",
       translationEnglish:
-          "Indeed, Safa and Marwah are among the symbols of Allah. I begin with what Allah began with.",
+          'O our Lord, give us good in this world and good in the next world and guard us against the torment of the Fire.',
       translationBengali:
-          'নিশ্চয়ই সাফা ও মারওয়া আল্লাহর নিদর্শনসমূহের অন্তর্ভুক্ত। আমি তা দিয়ে শুরু করছি যা দিয়ে আল্লাহ শুরু করেছেন।',
-      reference: 'Quran 2:158, Muslim',
-      category: UmrahDuaCategory.sai,
+          'হে আমাদের রব, আমাদের দুনিয়াতে কল্যাণ দিন এবং আখিরাতেও কল্যাণ দিন এবং আমাদের জাহান্নামের আযাব থেকে রক্ষা করুন।',
+      reference: 'Surah Al-Baqarah, 2:201',
+      category: UmrahDuaCategory.tawaf,
     ),
 
-    // 10 - Dua at Safa and Marwah
+    // 10 - Zamzam
     UmrahDua(
       id: 10,
-      titleEnglish: "Dua at Safa & Marwah",
-      titleArabic: 'الدعاء عند الصفا والمروة',
+      titleEnglish: 'Zamzam',
+      titleArabic: 'زمزم',
       arabicText:
-          'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ، أَنْجَزَ وَعْدَهُ، وَنَصَرَ عَبْدَهُ، وَهَزَمَ الْأَحْزَابَ وَحْدَهُ',
+          'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا وَرِزْقًا وَاسِعًا وَعَمَلًا مُتَقَبَّلًا وَشِفَاءً مِنْ كُلِّ دَاءٍ',
       transliteration:
-          "Lā ilāha illa llāhu waḥdahu lā sharīka lah, lahu l-mulku wa lahu l-ḥamdu wa huwa 'alā kulli shay'in qadīr. Lā ilāha illa llāhu waḥdah, anjaza wa'dah, wa naṣara 'abdah, wa hazama l-aḥzāba waḥdah.",
+          "Allahumma innī as'aluka 'ilman nāfi'an, wa rizqan wāsi'an, wa 'amalan mutaqabbalan, wa shifā'an min kulli dā'.",
       translationEnglish:
-          'There is no god but Allah alone, without partner. His is the dominion, His is the praise, and He is capable of all things. There is no god but Allah alone. He fulfilled His promise, granted victory to His servant, and defeated the confederates alone.',
+          'O Allah, I ask You for knowledge that is beneficial, provision that is abundant and a cure for every illness.',
       translationBengali:
-          'আল্লাহ ছাড়া কোনো ইলাহ নেই, তিনি একক, তাঁর কোনো শরীক নেই। রাজত্ব তাঁরই, প্রশংসা তাঁরই এবং তিনি সব কিছুর উপর ক্ষমতাবান। আল্লাহ ছাড়া কোনো ইলাহ নেই, তিনি একক। তিনি তাঁর প্রতিশ্রুতি পূর্ণ করেছেন, তাঁর বান্দাকে সাহায্য করেছেন এবং একাই সম্মিলিত বাহিনীকে পরাজিত করেছেন।',
-      reference: 'Muslim',
-      category: UmrahDuaCategory.sai,
-    ),
-
-    // 11 - Drinking Zamzam
-    UmrahDua(
-      id: 11,
-      titleEnglish: 'Drinking Zamzam',
-      titleArabic: 'شرب ماء زمزم',
-      arabicText:
-          'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا، وَرِزْقًا وَاسِعًا، وَشِفَاءً مِنْ كُلِّ دَاءٍ',
-      transliteration:
-          "Allāhumma innī as'aluka 'ilman nāfi'an, wa rizqan wāsi'an, wa shifā'an min kulli dā'.",
-      translationEnglish:
-          'O Allah, I ask You for beneficial knowledge, abundant provision, and healing from every disease.',
-      translationBengali:
-          'হে আল্লাহ, আমি আপনার কাছে উপকারী জ্ঞান, প্রশস্ত রিজিক এবং সকল রোগ থেকে আরোগ্য চাই।',
-      reference: 'Hakim, Daraqutni',
+          'হে আল্লাহ, আমি আপনার কাছে উপকারী জ্ঞান, প্রশস্ত রিজিক, কবুলযোগ্য আমল এবং সকল রোগ থেকে আরোগ্য চাই।',
       category: UmrahDuaCategory.zamzam,
     ),
 
-    // 12 - Exiting Masjid al-Haram
+    // 11 - Make Dua at Safa
+    UmrahDua(
+      id: 11,
+      titleEnglish: 'Make Dua at Safa',
+      titleArabic: 'الدعاء عند الصفا',
+      arabicText:
+          'اَللَّهُ أَكْبَرُ، اَللَّهُ أَكْبَرُ، اَللَّهُ أَكْبَرُ، وَلِلَّهِ الْحَمْدُ',
+      transliteration: 'Allāhu akbar, Allāhu akbar, Allāhu akbar, wa lillāhi l-hamd.',
+      translationEnglish:
+          'Allah is the greatest; Allah is the greatest; Allah is the greatest, and to Allah belongs all praise.',
+      translationBengali:
+          'আল্লাহ সবচেয়ে মহান; আল্লাহ সবচেয়ে মহান; আল্লাহ সবচেয়ে মহান, এবং সমস্ত প্রশংসা আল্লাহর জন্য।',
+      category: UmrahDuaCategory.sai,
+    ),
+
+    // 12 - At Maqaam-e-Ibrahim
     UmrahDua(
       id: 12,
-      titleEnglish: 'Exiting Masjid al-Haram',
-      titleArabic: 'الخروج من المسجد الحرام',
+      titleEnglish: 'At Maqaam-e-Ibrahim',
+      titleArabic: 'عند مقام إبراهيم',
       arabicText:
-          'بِسْمِ اللَّهِ وَالصَّلَاةُ وَالسَّلَامُ عَلَى رَسُولِ اللَّهِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ',
-      transliteration:
-          "Bismillāhi wa ṣ-ṣalātu wa s-salāmu 'alā rasūli llāh. Allāhumma innī as'aluka min faḍlik.",
+          'وَاتَّخِذُوا مِنْ مَقَامِ إِبْرَاهِيمَ مُصَلَّى',
+      transliteration: 'Wattakhidhu min maqāmi Ibrāhīma musalla.',
       translationEnglish:
-          'In the name of Allah, and peace and blessings be upon the Messenger of Allah. O Allah, I ask You of Your bounty.',
+          'And take, [O Believers], from the standing place of Abraham a place of prayer.',
       translationBengali:
-          'আল্লাহর নামে এবং আল্লাহর রাসূলের উপর সালাত ও সালাম। হে আল্লাহ, আমি আপনার অনুগ্রহ থেকে প্রার্থনা করছি।',
-      reference: 'Muslim, Ibn Majah',
-      category: UmrahDuaCategory.general,
+          'এবং [হে মুমিনগণ], ইবরাহিমের দাঁড়ানোর স্থানকে সালাতের স্থান হিসেবে গ্রহণ করো।',
+      category: UmrahDuaCategory.tawaf,
     ),
 
-    // 13 - General Dua during Umrah
+    // 13 - Sa'i between Safa and Marwah
     UmrahDua(
       id: 13,
-      titleEnglish: 'General Supplication',
-      titleArabic: 'دعاء عام',
+      titleEnglish: "Sa'i between Safa and Marwah",
+      titleArabic: 'السعي بين الصفا والمروة',
       arabicText:
-          'اللَّهُمَّ اغْفِرْ لِي وَارْحَمْنِي وَاهْدِنِي وَعَافِنِي وَارْزُقْنِي',
+          'إِنَّ الصَّفَا وَالْمَرْوَةَ مِن شَعَائِرِ اللَّهِ ۖ فَمَنْ حَجَّ الْبَيْتَ أَوِ اعْتَمَرَ فَلَا جُنَاحَ عَلَيْهِ أَن يَطَّوَّفَ بِهِمَا ۚ وَمَن تَطَوَّعَ خَيْرًا فَإِنَّ اللَّهَ شَاكِرٌ عَلِيمٌ',
       transliteration:
-          "Allāhumma-ghfir lī wa-rḥamnī wa-hdinī wa 'āfinī wa-rzuqnī.",
+          "Inna ṣ-ṣafā wa l-marwata min sha'ā'iri llāh. Faman ḥajja l-bayta awi 'tamara falā junāḥa 'alayhi an yaṭṭawwafa bihimā. Wa man taṭawwa'a khayran fa inna llāha shākirun 'alīm.",
       translationEnglish:
-          'O Allah, forgive me, have mercy on me, guide me, grant me well-being, and provide for me.',
+          "Indeed, Safa and Marwah are among the symbols of Allah. So whoever makes Hajj to the House or performs Umrah – there is no blame upon him for walking between them. And whoever volunteers good – then indeed, Allah is appreciative and Knowing.",
       translationBengali:
-          'হে আল্লাহ, আমাকে ক্ষমা করুন, আমার প্রতি রহম করুন, আমাকে হেদায়েত দিন, আমাকে সুস্থতা দিন এবং আমাকে রিজিক দিন।',
-      reference: 'Muslim',
-      category: UmrahDuaCategory.general,
+          'নিশ্চয়ই সাফা ও মারওয়া আল্লাহর নিদর্শনসমূহের অন্তর্ভুক্ত। সুতরাং যে ব্যক্তি বায়তুল্লাহর হজ্জ বা উমরাহ করে, তার জন্য এ দুটির মধ্যে তাওয়াফ করায় কোনো দোষ নেই। আর যে স্বেচ্ছায় কল্যাণ করে, নিশ্চয়ই আল্লাহ গুণগ্রাহী, সর্বজ্ঞ।',
+      reference: 'Surah Al-Baqarah, 2:158',
+      category: UmrahDuaCategory.sai,
     ),
 
-    // 14 - Dua for Acceptance
+    // 14 - Leave the Haram
     UmrahDua(
       id: 14,
-      titleEnglish: 'Dua for Acceptance',
-      titleArabic: 'دعاء القبول',
+      titleEnglish: 'Leave the Haram',
+      titleArabic: 'الخروج من الحرم',
       arabicText:
-          'رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنتَ السَّمِيعُ الْعَلِيمُ وَتُبْ عَلَيْنَا إِنَّكَ أَنتَ التَّوَّابُ الرَّحِيمُ',
+          'بِسْمِ اللَّهِ وَالصَّلَاةُ وَالسَّلَامُ عَلَى رَسُولِ اللَّهِ اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ',
       transliteration:
-          "Rabbanā taqabbal minnā innaka anta s-samī'u l-'alīm. Wa tub 'alaynā innaka anta t-tawwābu r-raḥīm.",
+          "Bismi llāhi, wa s-salātu wa s-salāmu 'ala rasūli llāh. Allāhumma innī as'aluka min fadlik.",
       translationEnglish:
-          'Our Lord, accept from us. Indeed, You are the All-Hearing, the All-Knowing. And turn to us in forgiveness. Indeed, You are the Accepting of repentance, the Merciful.',
+          'In the name of Allah, and peace and blessings be upon the Messenger of Allah. O Allah, I ask of you from Your bounty.',
       translationBengali:
-          'হে আমাদের রব, আমাদের থেকে কবুল করুন। নিশ্চয়ই আপনি সর্বশ্রোতা, সর্বজ্ঞ। এবং আমাদের তওবা কবুল করুন। নিশ্চয়ই আপনি তওবা কবুলকারী, পরম দয়ালু।',
-      reference: 'Quran 2:127-128',
+          'আল্লাহর নামে, এবং আল্লাহর রাসূলের উপর শান্তি ও রহমত বর্ষিত হোক। হে আল্লাহ, আমি আপনার অনুগ্রহ থেকে প্রার্থনা করছি।',
       category: UmrahDuaCategory.general,
     ),
 
-    // 15 - Returning Home Safely
+    // 15 - Du'a after Every Prayer
     UmrahDua(
       id: 15,
+      titleEnglish: "Du'a after Every Prayer",
+      titleArabic: 'دعاء بعد كل صلاة',
+      arabicText:
+          'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ، وَحُسْنِ عِبَادَتِكَ',
+      transliteration:
+          "Allāhumma a'innī 'alā dhikrika wa shukrika wa husni 'ibādatika.",
+      translationEnglish:
+          'O Allah! Help me to remember You and thank You and help me to the best manner of worshipping You.',
+      translationBengali:
+          'হে আল্লাহ! আমাকে আপনার যিকির করতে, আপনার শুকরিয়া আদায় করতে এবং সুন্দরভাবে আপনার ইবাদত করতে সাহায্য করুন।',
+      reference: 'Al-Adab Al-Mufrad',
+      category: UmrahDuaCategory.general,
+    ),
+
+    // 16 - Greeting other Pilgrims
+    UmrahDua(
+      id: 16,
+      titleEnglish: 'Greeting other Pilgrims',
+      titleArabic: 'تحية الحجاج الآخرين',
+      arabicText:
+          'قَبِلَ اللَّهُ حَجَّكَ وَكَفَّرَ ذَنْبَكَ وَأَخْلَفَ نَفَقَتَكَ',
+      transliteration:
+          'Qabila l-lāhu hajjaka wa kaffara dhambaka wa akhlafa nafaqata.',
+      translationEnglish:
+          'May Allah accept your Hajj, and erase your sins, and replenish your provisions.',
+      translationBengali:
+          'আল্লাহ আপনার হজ্জ কবুল করুন, আপনার গুনাহ মাফ করুন এবং আপনার ব্যয় পূরণ করে দিন।',
+      reference: 'Al-Tabarani',
+      category: UmrahDuaCategory.general,
+    ),
+
+    // 17 - Entering Madinah
+    UmrahDua(
+      id: 17,
+      titleEnglish: 'Entering Madinah',
+      titleArabic: 'دخول المدينة المنورة',
+      arabicText:
+          'اَللّٰهُمَّ هٰذَا حَرَمُ نَبِيِّكَ فَاجْعَلْهُ وِقَايَةً لِيْ مِنَ النَّارِ وَآمِنًّا مِنْ الْعَذَابِ وَسُوْءِ الْحِسَابِ',
+      transliteration:
+          "Allāhumma hādhā haramu nabiyyika fa j-'alhu wiqāyatan lī mina n-nāri wa āminnā mina l-'adhābi wa sū'i l-hisābi.",
+      translationEnglish:
+          'O Allah! This is the Sacred Precinct of Your Prophet, so make it a protection for me from the Fire and a security from punishment and a bad reckoning.',
+      translationBengali:
+          'হে আল্লাহ! এটি আপনার নবীর পবিত্র হারাম, তাই এটিকে আমার জন্য জাহান্নামের আগুন থেকে রক্ষাকবচ বানিয়ে দিন এবং শাস্তি ও খারাপ হিসাব থেকে নিরাপত্তা দিন।',
+      reference: 'Al-Ikhtiyar',
+      category: UmrahDuaCategory.madinah,
+    ),
+
+    // 18 - Shaving Head/Trimming
+    UmrahDua(
+      id: 18,
+      titleEnglish: 'Shaving Head/Trimming',
+      titleArabic: 'حلق الرأس / التقصير',
+      arabicText:
+          'اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ',
+      transliteration:
+          "Allahumma innee 'as'aluka min fadhlika.",
+      translationEnglish:
+          'O Allah, send prayers and peace upon Muhammad. O Allah, verily I ask You from Your Favor.',
+      translationBengali:
+          'হে আল্লাহ, মুহাম্মদের উপর দরূদ ও সালাম বর্ষণ করুন। হে আল্লাহ, আমি আপনার অনুগ্রহ থেকে প্রার্থনা করছি।',
+      category: UmrahDuaCategory.completion,
+    ),
+
+    // 19 - Third Kalima
+    UmrahDua(
+      id: 19,
+      titleEnglish: 'Third Kalima',
+      titleArabic: 'الكلمة الثالثة - التمجيد',
+      arabicText:
+          'سُبْحَان اللّٰهِ وَالْحَمْدُلِلّٰهِ الْعَظِيْم وَلَا إِلٰهَ إِلَّااللّٰهُ وَاللّٰهُ أَكْبَرُ وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللّٰهِ الْعَلِيِّ الْعَظِيْمِ',
+      transliteration:
+          'Subhanallahe Wal Hamdulillahe Wa Laa ilaha illal Laho Wallahooakbar. Wala Haola Wala Quwwata illa billahil AliYil Azeem.',
+      translationEnglish:
+          'Glory (is for) Allah. And all praises for Allah. And (there is) none worthy of worship except Allah. And Allah is the Greatest. And (there is) no power and no strength except from Allah, the Most High, the Most Great.',
+      translationBengali:
+          'আল্লাহর মহিমা। এবং সমস্ত প্রশংসা আল্লাহর জন্য। এবং আল্লাহ ছাড়া কোনো উপাস্য নেই। এবং আল্লাহ সবচেয়ে মহান। এবং কোনো শক্তি ও ক্ষমতা নেই আল্লাহ ছাড়া, যিনি সর্বোচ্চ, সর্বমহান।',
+      category: UmrahDuaCategory.general,
+    ),
+
+    // 20 - Returning Home
+    UmrahDua(
+      id: 20,
       titleEnglish: 'Returning Home',
       titleArabic: 'العودة إلى الوطن',
       arabicText:
           'آيِبُونَ تَائِبُونَ عَابِدُونَ لِرَبِّنَا حَامِدُونَ',
-      transliteration: "Āyibūna tā'ibūna 'ābidūna li-rabbinā ḥāmidūn.",
+      transliteration:
+          "Āyibūna tā'ibūna 'ābidūna li rabbinā hāmidūna.",
       translationEnglish:
-          'We return, repenting, worshipping, and praising our Lord.',
+          '(We are those) who return, who repent, who worship our Lord, who praise.',
       translationBengali:
-          'আমরা ফিরে আসছি তওবাকারী, ইবাদতকারী এবং আমাদের রবের প্রশংসাকারী হয়ে।',
-      reference: 'Bukhari, Muslim',
-      category: UmrahDuaCategory.journey,
+          '(আমরা তারা) যারা ফিরে এসেছি, যারা তওবা করছি, যারা আমাদের রবের ইবাদত করছি, যারা প্রশংসা করছি।',
+      reference: 'Muslim',
+      category: UmrahDuaCategory.completion,
     ),
   ];
 

@@ -31,5 +31,7 @@ class UmrahDuaCategory {
   static const String tawaf = 'Tawaf';
   static const String sai = "Sa'i";
   static const String zamzam = 'Zamzam';
+  static const String madinah = 'Madinah';
+  static const String completion = 'Completion';
   static const String general = 'General';
 }
