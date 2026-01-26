@@ -83,40 +83,42 @@ class _UmrahDuasPageState extends State<UmrahDuasPage>
       backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF5EDE4),
       extendBodyBehindAppBar: true,
       appBar: _buildAppBar(isDark),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          children: [
-            // Cards PageView
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                physics: const BouncingScrollPhysics(),
-                itemCount: _totalPages,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    // Cover card
-                    return UmrahCoverCard(
-                      totalDuas: UmrahDuasData.duas.length,
-                      onStart: () => _goToPage(1),
-                    );
-                  } else {
-                    // Dua cards
-                    final dua = UmrahDuasData.duas[index - 1];
-                    return UmrahDuaCard(
-                      dua: dua,
-                      totalCards: UmrahDuasData.duas.length,
-                      showBengali: _showBengali,
-                    );
-                  }
-                },
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Column(
+            children: [
+              // Cards PageView
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: _onPageChanged,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _totalPages,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      // Cover card
+                      return UmrahCoverCard(
+                        totalDuas: UmrahDuasData.duas.length,
+                        onStart: () => _goToPage(1),
+                      );
+                    } else {
+                      // Dua cards
+                      final dua = UmrahDuasData.duas[index - 1];
+                      return UmrahDuaCard(
+                        dua: dua,
+                        totalCards: UmrahDuasData.duas.length,
+                        showBengali: _showBengali,
+                      );
+                    }
+                  },
+                ),
               ),
-            ),
 
-            // Page indicator and controls
-            _buildBottomSection(isDark, theme),
-          ],
+              // Page indicator and controls
+              _buildBottomSection(isDark, theme),
+            ],
+          ),
         ),
       ),
     );
