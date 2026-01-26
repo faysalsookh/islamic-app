@@ -91,7 +91,7 @@ class UmrahCoverCard extends StatelessWidget {
                       SizedBox(
                         height: kaabaHeight,
                         width: kaabaHeight * 1.4,
-                        child: Image.asset("assets/images/kaaba.png")
+                        child: Image.asset("assets/images/meccan.png")
                       ),
 
                       // Dua count
