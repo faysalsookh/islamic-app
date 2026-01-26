@@ -12,43 +12,60 @@ class FontSettingsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 30,
-            offset: const Offset(0, -10),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Handle
-          Center(
-            child: Container(
-              width: 48,
-              height: 5,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkTextSecondary.withValues(alpha: 0.2)
-                    : AppColors.textTertiary.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2.5),
-              ),
+    // Use a constrained width on tablets for a cleaner, dialog-like look
+    final bool isTablet = screenWidth > 600;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: isTablet ? 600 : double.infinity,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkCard : Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: const Radius.circular(32),
+              bottom: isTablet ? const Radius.circular(32) : Radius.zero,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, -10),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Handle (only show on mobile or if draggable)
+              if (!isTablet) ...[
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.darkTextSecondary.withValues(alpha: 0.2)
+                          : AppColors.textTertiary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ] else
+                const SizedBox(height: 32), // More spacing on tablet top
+
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   // ... rest of header is same ...
               Text(
                 'Quran Appearance',
                 style: AppTypography.heading2(
@@ -107,10 +124,12 @@ class FontSettingsSheet extends StatelessWidget {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSectionTitle(String title, bool isDark) {
     return Text(
@@ -151,8 +170,12 @@ class FontSettingsSheet extends StatelessWidget {
           ),
           child: Column(
             children: [
+              // Dynamic Text based on chosen style
               Text(
-                'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                (appState.arabicFontStyle == ArabicFontStyle.indopak || 
+                 appState.arabicFontStyle.fontFamily == 'Lateef') 
+                    ? 'بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ' // IndoPak Script Bismillah (Note: Allah written with dagger alif, etc)
+                    : 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ', // Uthmani Script
                 textAlign: TextAlign.center,
                 style: AppTypography.quranText(
                   fontSize: appState.quranFontSize,
@@ -185,69 +208,84 @@ class FontSettingsSheet extends StatelessWidget {
   Widget _buildFontSelector(BuildContext context, ThemeData theme, bool isDark) {
     return Consumer<AppStateProvider>(
       builder: (context, appState, child) {
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: ArabicFontStyle.values.map((style) {
-            final isSelected = appState.arabicFontStyle == style;
-            return GestureDetector(
-              onTap: () => appState.setArabicFontStyle(style),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: (MediaQuery.of(context).size.width - 60) / 2,
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : (isDark ? AppColors.darkSurface : AppColors.cream),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : Colors.transparent,
-                    width: isSelected ? 0 : 1,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Determine column count based on available width
+            final double width = constraints.maxWidth;
+            int crossAxisCount = 2;
+            if (width > 600) crossAxisCount = 4;
+            else if (width > 400) crossAxisCount = 3;
+
+            final double spacing = 12;
+            final double itemWidth = (width - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: ArabicFontStyle.values.map((style) {
+                final isSelected = appState.arabicFontStyle == style;
+                return GestureDetector(
+                  onTap: () => appState.setArabicFontStyle(style),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: itemWidth,
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : (isDark ? AppColors.darkSurface : AppColors.cream),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : Colors.transparent,
+                        width: isSelected ? 0 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      children: [
+                        // Demo Text in the Real Font
+                        Text(
+                          'القرآن',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.quranText(
+                            fontSize: 22,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? AppColors.darkTextPrimary : AppColors.textArabic),
+                            fontFamily: style.fontFamily,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        // Font Name
+                        Text(
+                          style.displayName,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                            color: isSelected
+                                ? Colors.white.withValues(alpha: 0.9)
+                                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          )
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  children: [
-                    // Demo Text in the Real Font
-                    Text(
-                      'القرآن',
-                      style: AppTypography.quranText(
-                        fontSize: 22,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? AppColors.darkTextPrimary : AppColors.textArabic),
-                        fontFamily: style.fontFamily,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    // Font Name
-                    Text(
-                      style.displayName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.9)
-                            : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                );
+              }).toList(),
             );
-          }).toList(),
+          },
         );
       },
     );
