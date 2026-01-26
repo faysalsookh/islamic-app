@@ -178,23 +178,20 @@ extension BengaliTranslatorExtension on BengaliTranslator {
 enum Reciter {
   // Most Popular & Recommended
   misharyRashidAlafasy,
-  abdulBasitAbdulSamad,
   abdulRahmanAlSudais,
-  
+
   // Haramain Reciters (Makkah & Madinah)
   maherAlMuaiqly,
   saadAlGhamdi,
-  
+
   // Classical & Traditional
   abuBakrAlShatri,
-  muhammadSiddiqAlMinshawi,
-  
+
   // Clear & Educational
   haniArRifai,
   hudhaify,
-  
+
   // Additional Renowned Reciters
-  ahmedAlAjmi,
   aliJaber,
   yasserAlDosari,
   nasserAlQatami,
@@ -217,8 +214,6 @@ extension ReciterExtension on Reciter {
     switch (this) {
       case Reciter.misharyRashidAlafasy:
         return 'Mishary Rashid Alafasy';
-      case Reciter.abdulBasitAbdulSamad:
-        return 'Abdul Basit Abdul Samad';
       case Reciter.abdulRahmanAlSudais:
         return 'Abdul Rahman Al-Sudais';
       case Reciter.maherAlMuaiqly:
@@ -227,14 +222,10 @@ extension ReciterExtension on Reciter {
         return 'Saad Al-Ghamdi';
       case Reciter.abuBakrAlShatri:
         return 'Abu Bakr Al-Shatri';
-      case Reciter.muhammadSiddiqAlMinshawi:
-        return 'Muhammad Siddiq Al-Minshawi';
       case Reciter.haniArRifai:
         return 'Hani Ar-Rifai';
       case Reciter.hudhaify:
         return 'Ali Al-Hudhaify';
-      case Reciter.ahmedAlAjmi:
-        return 'Ahmed Al-Ajmi';
       case Reciter.aliJaber:
         return 'Ali Jaber';
       case Reciter.yasserAlDosari:
@@ -248,8 +239,6 @@ extension ReciterExtension on Reciter {
     switch (this) {
       case Reciter.misharyRashidAlafasy:
         return 'مشاري راشد العفاسي';
-      case Reciter.abdulBasitAbdulSamad:
-        return 'عبد الباسط عبد الصمد';
       case Reciter.abdulRahmanAlSudais:
         return 'عبد الرحمن السديس';
       case Reciter.maherAlMuaiqly:
@@ -258,14 +247,10 @@ extension ReciterExtension on Reciter {
         return 'سعد الغامدي';
       case Reciter.abuBakrAlShatri:
         return 'أبو بكر الشاطري';
-      case Reciter.muhammadSiddiqAlMinshawi:
-        return 'محمد صديق المنشاوي';
       case Reciter.haniArRifai:
         return 'هاني الرفاعي';
       case Reciter.hudhaify:
         return 'علي الحذيفي';
-      case Reciter.ahmedAlAjmi:
-        return 'أحمد العجمي';
       case Reciter.aliJaber:
         return 'علي جابر';
       case Reciter.yasserAlDosari:
@@ -284,13 +269,9 @@ extension ReciterExtension on Reciter {
       case Reciter.hudhaify:
       case Reciter.nasserAlQatami:
         return RecitationStyle.murattal;
-      case Reciter.abdulBasitAbdulSamad:
-      case Reciter.muhammadSiddiqAlMinshawi:
-        return RecitationStyle.mujawwad;
       case Reciter.abdulRahmanAlSudais:
       case Reciter.maherAlMuaiqly:
       case Reciter.haniArRifai:
-      case Reciter.ahmedAlAjmi:
       case Reciter.aliJaber:
       case Reciter.yasserAlDosari:
         return RecitationStyle.hadr;
@@ -302,8 +283,6 @@ extension ReciterExtension on Reciter {
     switch (this) {
       case Reciter.misharyRashidAlafasy:
         return 'Popular Kuwaiti reciter, known for clear Murattal style';
-      case Reciter.abdulBasitAbdulSamad:
-        return 'Legendary Egyptian reciter, master of Mujawwad style';
       case Reciter.abdulRahmanAlSudais:
         return 'Imam of Masjid al-Haram (Makkah), melodious voice';
       case Reciter.maherAlMuaiqly:
@@ -312,14 +291,10 @@ extension ReciterExtension on Reciter {
         return 'Saudi reciter, clear and emotional Murattal';
       case Reciter.abuBakrAlShatri:
         return 'Saudi reciter, excellent for memorization';
-      case Reciter.muhammadSiddiqAlMinshawi:
-        return 'Classic Egyptian reciter, legendary Mujawwad';
       case Reciter.haniArRifai:
         return 'Syrian reciter, clear pronunciation';
       case Reciter.hudhaify:
         return 'Former Imam of Masjid an-Nabawi (Madinah)';
-      case Reciter.ahmedAlAjmi:
-        return 'Saudi reciter, emotional and powerful';
       case Reciter.aliJaber:
         return 'Former Imam of Masjid al-Haram (Makkah)';
       case Reciter.yasserAlDosari:
@@ -332,17 +307,14 @@ extension ReciterExtension on Reciter {
   /// Audio quality (bitrate)
   String get audioQuality {
     switch (this) {
-      case Reciter.abdulBasitAbdulSamad:
       case Reciter.abdulRahmanAlSudais:
       case Reciter.haniArRifai:
       case Reciter.saadAlGhamdi:
-      case Reciter.muhammadSiddiqAlMinshawi:
       case Reciter.hudhaify:
         return '192 kbps (High Quality)';
       case Reciter.misharyRashidAlafasy:
       case Reciter.maherAlMuaiqly:
       case Reciter.abuBakrAlShatri:
-      case Reciter.ahmedAlAjmi:
       case Reciter.aliJaber:
       case Reciter.yasserAlDosari:
       case Reciter.nasserAlQatami:
@@ -356,8 +328,6 @@ extension ReciterExtension on Reciter {
     switch (this) {
       case Reciter.misharyRashidAlafasy:
         return 'https://everyayah.com/data/Alafasy_128kbps';
-      case Reciter.abdulBasitAbdulSamad:
-        return 'https://everyayah.com/data/Abdul_Basit_Murattal_192kbps';
       case Reciter.abdulRahmanAlSudais:
         return 'https://everyayah.com/data/Abdurrahmaan_As-Sudais_192kbps';
       case Reciter.maherAlMuaiqly:
@@ -366,14 +336,10 @@ extension ReciterExtension on Reciter {
         return 'https://everyayah.com/data/Ghamadi_40kbps';
       case Reciter.abuBakrAlShatri:
         return 'https://everyayah.com/data/Abu_Bakr_Ash-Shaatree_128kbps';
-      case Reciter.muhammadSiddiqAlMinshawi:
-        return 'https://everyayah.com/data/Minshawy_Mujawwad_192kbps';
       case Reciter.haniArRifai:
         return 'https://everyayah.com/data/Hani_Rifai_192kbps';
       case Reciter.hudhaify:
         return 'https://everyayah.com/data/Hudhaify_128kbps';
-      case Reciter.ahmedAlAjmi:
-        return 'https://everyayah.com/data/Ahmed_ibn_Ali_al-Ajamy_128kbps-1';
       case Reciter.aliJaber:
         return 'https://everyayah.com/data/Ali_Jaber_64kbps';
       case Reciter.yasserAlDosari:
@@ -407,8 +373,6 @@ extension ReciterExtension on Reciter {
     switch (this) {
       case Reciter.misharyRashidAlafasy:
         return 'assets/images/reciters/mishary_alafasy.jpg';
-      case Reciter.abdulBasitAbdulSamad:
-        return 'assets/images/reciters/abdul_basit.jpg';
       case Reciter.abdulRahmanAlSudais:
         return 'assets/images/reciters/sudais.jpg';
       case Reciter.maherAlMuaiqly:
@@ -417,14 +381,10 @@ extension ReciterExtension on Reciter {
         return 'assets/images/reciters/saad_ghamdi.jpg';
       case Reciter.abuBakrAlShatri:
         return 'assets/images/reciters/shatri.jpg';
-      case Reciter.muhammadSiddiqAlMinshawi:
-        return 'assets/images/reciters/minshawi.jpg';
       case Reciter.haniArRifai:
         return 'assets/images/reciters/hani_rifai.jpg';
       case Reciter.hudhaify:
         return 'assets/images/reciters/hudhaify.jpg';
-      case Reciter.ahmedAlAjmi:
-        return 'assets/images/reciters/ahmed_ajmi.jpg';
       case Reciter.aliJaber:
         return 'assets/images/reciters/ali_jaber.jpg';
       case Reciter.yasserAlDosari:
@@ -695,8 +655,6 @@ class AudioService extends ChangeNotifier {
     switch (reciter) {
       case Reciter.misharyRashidAlafasy:
         return ReciterSources.misharyAlafasy;
-      case Reciter.abdulBasitAbdulSamad:
-        return ReciterSources.abdulBasit;
       case Reciter.abdulRahmanAlSudais:
         return ReciterSources.alSudais;
       case Reciter.maherAlMuaiqly:
@@ -705,14 +663,10 @@ class AudioService extends ChangeNotifier {
         return ReciterSources.saadAlGhamdi;
       case Reciter.abuBakrAlShatri:
         return ReciterSources.abuBakrAlShatri;
-      case Reciter.muhammadSiddiqAlMinshawi:
-        return ReciterSources.minshawi;
       case Reciter.haniArRifai:
         return ReciterSources.haniArRifai;
       case Reciter.hudhaify:
         return ReciterSources.hudhaify;
-      case Reciter.ahmedAlAjmi:
-        return ReciterSources.ahmedAlAjmi;
       case Reciter.aliJaber:
         return ReciterSources.aliJaber;
       case Reciter.yasserAlDosari:

@@ -604,8 +604,6 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
     switch (reciter) {
       case Reciter.misharyRashidAlafasy:
         return 'م';
-      case Reciter.abdulBasitAbdulSamad:
-        return 'ع';
       case Reciter.abdulRahmanAlSudais:
         return 'س';
       case Reciter.maherAlMuaiqly:
@@ -614,14 +612,10 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
         return 'غ';
       case Reciter.abuBakrAlShatri:
         return 'أ';
-      case Reciter.muhammadSiddiqAlMinshawi:
-        return 'ش';
       case Reciter.haniArRifai:
         return 'ه';
       case Reciter.hudhaify:
         return 'ح';
-      case Reciter.ahmedAlAjmi:
-        return 'ج';
       case Reciter.aliJaber:
         return 'ج';
       case Reciter.yasserAlDosari:

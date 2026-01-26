@@ -87,7 +87,7 @@ class UmrahCoverCard extends StatelessWidget {
                         ],
                       ),
 
-                      // Kaaba illustration
+                      //Kaaba illustration
                       SizedBox(
                         height: kaabaHeight,
                         width: kaabaHeight * 1.4,
