@@ -36,113 +36,108 @@ class UmrahCoverCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            // Background decorative elements
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _CoverBackgroundPainter(),
-              ),
-            ),
+
 
             // Main content
             Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Spacer(flex: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calculate responsive sizes based on available height
+                  final availableHeight = constraints.maxHeight;
+                  final kaabaHeight = (availableHeight * 0.28).clamp(120.0, 180.0);
+                  final titleFontSize = (availableHeight * 0.07).clamp(32.0, 48.0);
+                  final subtitleFontSize = (availableHeight * 0.05).clamp(24.0, 36.0);
 
-                  // Bismillah
-                  Text(
-                    'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
-                    style: GoogleFonts.amiri(
-                      fontSize: 24,
-                      color: _goldAccent,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Title
-                  Text(
-                    'UMRAH',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w700,
-                      color: _primaryBrown,
-                      letterSpacing: 8,
-                    ),
-                  ),
-
-                  Text(
-                    'Dua Card',
-                    style: GoogleFonts.dancingScript(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w600,
-                      color: _primaryBrown.withValues(alpha: 0.8),
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // Kaaba illustration
-                  SizedBox(
-                    height: 200,
-                    width: 280,
-                    child: CustomPaint(
-                      painter: _KaabaIllustrationPainter(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Dua count
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _primaryBrown.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      '$totalDuas Essential Duas',
-                      style: GoogleFonts.nunito(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _primaryBrown,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-
-                  const Spacer(flex: 1),
-
-                  // Swipe instruction
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Icon(
-                        Icons.swipe_rounded,
-                        size: 20,
-                        color: _primaryBrown.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(width: 8),
+                      // Bismillah
                       Text(
-                        'Swipe to begin',
-                        style: GoogleFonts.nunito(
-                          fontSize: 14,
-                          color: _primaryBrown.withValues(alpha: 0.5),
+                        'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                        style: GoogleFonts.amiri(
+                          fontSize: 20,
+                          color: _goldAccent,
                           fontWeight: FontWeight.w500,
                         ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      // Title section
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'UMRAH',
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: titleFontSize,
+                              fontWeight: FontWeight.w700,
+                              color: _primaryBrown,
+                              letterSpacing: 6,
+                            ),
+                          ),
+                          Text(
+                            'Dua Card',
+                            style: GoogleFonts.dancingScript(
+                              fontSize: subtitleFontSize,
+                              fontWeight: FontWeight.w600,
+                              color: _primaryBrown.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Kaaba illustration
+                      SizedBox(
+                        height: kaabaHeight,
+                        width: kaabaHeight * 1.4,
+                        child: Image.asset("assets/images/kaaba.png")
+                      ),
+
+                      // Dua count
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _primaryBrown.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Text(
+                          '$totalDuas Essential Duas',
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _primaryBrown,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+
+                      // Swipe instruction
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.swipe_rounded,
+                            size: 18,
+                            color: _primaryBrown.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Swipe to begin',
+                            style: GoogleFonts.nunito(
+                              fontSize: 13,
+                              color: _primaryBrown.withValues(alpha: 0.5),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-
-                  const SizedBox(height: 16),
-                ],
+                  );
+                },
               ),
             ),
           ],
