@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/models/tajweed_rules_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/providers/app_state_provider.dart';
 
 /// A card widget displaying a single Tajweed rule with expandable details
 class TajweedRuleCard extends StatefulWidget {
@@ -62,10 +64,13 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final fontFamily = context.select<AppStateProvider, String>(
+        (s) => s.arabicFontStyle.fontFamily);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -156,7 +161,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
             // Expandable content
             AnimatedCrossFade(
               firstChild: const SizedBox.shrink(),
-              secondChild: _buildExpandedContent(isDark),
+              secondChild: _buildExpandedContent(isDark, fontFamily),
               crossFadeState: _isExpanded
                   ? CrossFadeState.showSecond
                   : CrossFadeState.showFirst,
@@ -168,7 +173,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
     );
   }
 
-  Widget _buildExpandedContent(bool isDark) {
+  Widget _buildExpandedContent(bool isDark, String? fontFamily) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -238,6 +243,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: widget.rule.color,
+                      fontFamily: fontFamily ?? 'Amiri', // Default or dynamic
                     ),
                   ),
                 );
@@ -272,6 +278,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
                   color: isDark
                       ? AppColors.darkTextPrimary
                       : AppColors.textArabic,
+                  fontFamily: fontFamily,
                 ),
               ),
             ),

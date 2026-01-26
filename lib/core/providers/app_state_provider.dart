@@ -37,13 +37,13 @@ extension ArabicFontStyleExtension on ArabicFontStyle {
       case ArabicFontStyle.amiri:
         return 'Amiri';
       case ArabicFontStyle.scheherazade:
-        return 'Scheherazade';
+        return 'Scheherazade New';
       case ArabicFontStyle.lateef:
         return 'Lateef';
       case ArabicFontStyle.uthmani:
         return 'Amiri'; // Fallback to Amiri for now
       case ArabicFontStyle.indopak:
-        return 'Scheherazade'; // Fallback for now
+        return 'Scheherazade New'; // Fallback for now
     }
   }
 }

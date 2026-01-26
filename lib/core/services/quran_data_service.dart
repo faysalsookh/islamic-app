@@ -68,7 +68,7 @@ class QuranDataService extends ChangeNotifier {
 
 
   // Cache version - increment when data structure changes
-  static const String _cacheVersion = 'v5';
+  static const String _cacheVersion = 'v6';
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -148,7 +148,7 @@ class QuranDataService extends ChangeNotifier {
         '?language=bn'
         '&words=false'
         '&translations=$_currentBengaliTranslationId'
-        '&fields=text_uthmani,text_uthmani_simple,verse_key,juz_number,page_number,hizb_number'
+        '&fields=text_uthmani,text_indopak,text_uthmani_simple,verse_key,juz_number,page_number,hizb_number'
         '&per_page=300',
       );
 
@@ -183,6 +183,7 @@ class QuranDataService extends ChangeNotifier {
 
         // Get Arabic text
         final arabicText = verse['text_uthmani'] as String? ?? verse['text_uthmani_simple'] as String? ?? '';
+        final indopakText = verse['text_indopak'] as String? ?? arabicText;
 
         // Get Bengali translation (prefer Taisirul Quran)
         String? bengaliTranslation;
@@ -226,6 +227,7 @@ class QuranDataService extends ChangeNotifier {
           numberInSurah: ayahNumberInSurah,
           surahNumber: surahNumber,
           textArabic: arabicText,
+          textIndopak: indopakText,
           textWithTajweed: _generateTajweedMarkup(arabicText),
           translationBengali: bengaliTranslation,
           translationEnglish: englishTranslation,

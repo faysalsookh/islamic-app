@@ -4,6 +4,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/services/haptic_service.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/app_state_provider.dart';
 
 class SurahListPage extends StatefulWidget {
   const SurahListPage({super.key});
@@ -90,6 +92,8 @@ class _SurahListPageState extends State<SurahListPage>
     final isTablet = Responsive.isTabletOrLarger(context);
     final horizontalPadding = Responsive.horizontalPadding(context);
     final filteredSurahs = _filteredSurahs;
+    final fontFamily = context.select<AppStateProvider, String>(
+        (s) => s.arabicFontStyle.fontFamily);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.cream,
@@ -151,6 +155,7 @@ class _SurahListPageState extends State<SurahListPage>
                                 theme,
                                 isDark,
                                 index,
+                                fontFamily,
                               ),
                             );
                           },
@@ -501,7 +506,7 @@ class _SurahListPageState extends State<SurahListPage>
     );
   }
 
-  Widget _buildPremiumSurahTile(Surah surah, ThemeData theme, bool isDark, int index) {
+  Widget _buildPremiumSurahTile(Surah surah, ThemeData theme, bool isDark, int index, String? fontFamily) {
     final isMeccan = surah.revelationType == 'Meccan';
 
     return GestureDetector(
@@ -609,15 +614,15 @@ class _SurahListPageState extends State<SurahListPage>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  surah.nameArabic,
-                  textDirection: TextDirection.rtl,
-                  style: TextStyle(
-                    fontFamily: 'Amiri',
-                    fontSize: 24,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  Text(
+                    surah.nameArabic,
+                    textDirection: TextDirection.rtl,
+                    style: AppTypography.surahNameArabic(
+                      fontSize: 24,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      fontFamily: fontFamily,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 4),
                 Icon(
                   Icons.arrow_forward_ios_rounded,

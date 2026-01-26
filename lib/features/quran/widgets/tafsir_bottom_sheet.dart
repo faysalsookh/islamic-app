@@ -6,6 +6,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/services/tafsir_service.dart';
 import '../../../core/services/haptic_service.dart';
+import '../../../core/providers/app_state_provider.dart';
+
+import 'package:provider/provider.dart';
 
 /// Premium bottom sheet showing Tafsir (interpretation) and Shani Nuzul (context of revelation)
 class TafsirBottomSheet extends StatefulWidget {
@@ -88,6 +91,8 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final fontFamily = context.select<AppStateProvider, String>(
+        (s) => s.arabicFontStyle.fontFamily);
 
     return Container(
       decoration: BoxDecoration(
@@ -116,7 +121,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
           ),
 
           // Premium Header
-          _buildPremiumHeader(isDark, theme),
+          _buildPremiumHeader(isDark, theme, fontFamily),
 
           // Tab bar
           _buildPremiumTabBar(isDark, theme),
@@ -136,7 +141,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
     );
   }
 
-  Widget _buildPremiumHeader(bool isDark, ThemeData theme) {
+  Widget _buildPremiumHeader(bool isDark, ThemeData theme, String? fontFamily) {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Column(
@@ -215,7 +220,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
                     Text(
                       '${widget.surah.nameTransliteration} • Ayah ${widget.ayah.numberInSurah}',
                       style: TextStyle(
-                        fontSize: 13,
+                      fontSize: 13,
                         color: isDark
                             ? AppColors.darkTextSecondary
                             : AppColors.textSecondary,
@@ -245,7 +250,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
           const SizedBox(height: 16),
 
           // Arabic ayah text in ornamental card
-          _buildArabicAyahCard(isDark, theme),
+          _buildArabicAyahCard(isDark, theme, fontFamily),
         ],
       ),
     );
@@ -288,7 +293,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
     );
   }
 
-  Widget _buildArabicAyahCard(bool isDark, ThemeData theme) {
+  Widget _buildArabicAyahCard(bool isDark, ThemeData theme, String? fontFamily) {
     final ornamentColor = isDark
         ? const Color(0xFFD4AF37).withValues(alpha: 0.4)
         : const Color(0xFFB8860B).withValues(alpha: 0.3);
@@ -337,6 +342,7 @@ class _TafsirBottomSheetState extends State<TafsirBottomSheet>
               color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1A1A1A),
               fontSize: 26,
               height: 2.0,
+              fontFamily: fontFamily,
             ),
           ),
           const SizedBox(height: 12),

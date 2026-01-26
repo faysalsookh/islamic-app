@@ -4,6 +4,7 @@ class Ayah {
   final int numberInSurah;
   final int surahNumber;
   final String textArabic;
+  final String? textIndopak; // IndoPak script
   final String? textWithTajweed; // Arabic text with Tajweed markup
   final String? translationEnglish;
   final String? translationBengali;
@@ -23,6 +24,7 @@ class Ayah {
     required this.numberInSurah,
     required this.surahNumber,
     required this.textArabic,
+    this.textIndopak,
     this.textWithTajweed,
     this.translationEnglish,
     this.translationBengali,
@@ -44,6 +46,7 @@ class Ayah {
       numberInSurah: json['number_in_surah'] as int,
       surahNumber: json['surah_number'] as int,
       textArabic: json['text_arabic'] as String,
+      textIndopak: json['text_indopak'] as String?,
       textWithTajweed: json['text_with_tajweed'] as String?,
       translationEnglish: json['translation_english'] as String?,
       translationBengali: json['translation_bengali'] as String?,
@@ -66,6 +69,7 @@ class Ayah {
       'number_in_surah': numberInSurah,
       'surah_number': surahNumber,
       'text_arabic': textArabic,
+      'text_indopak': textIndopak,
       'text_with_tajweed': textWithTajweed,
       'translation_english': translationEnglish,
       'translation_bengali': translationBengali,
@@ -88,6 +92,7 @@ class Ayah {
     int? numberInSurah,
     int? surahNumber,
     String? textArabic,
+    String? textIndopak,
     String? textWithTajweed,
     String? translationEnglish,
     String? translationBengali,
@@ -107,6 +112,7 @@ class Ayah {
       numberInSurah: numberInSurah ?? this.numberInSurah,
       surahNumber: surahNumber ?? this.surahNumber,
       textArabic: textArabic ?? this.textArabic,
+      textIndopak: textIndopak ?? this.textIndopak,
       textWithTajweed: textWithTajweed ?? this.textWithTajweed,
       translationEnglish: translationEnglish ?? this.translationEnglish,
       translationBengali: translationBengali ?? this.translationBengali,

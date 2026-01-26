@@ -373,6 +373,7 @@ class _AyahListViewState extends State<AyahListView> {
                   onTafsirTap: () => _handleTafsirTap(context, ayah),
                   onTajweedTap: (rule, text) =>
                       _handleTajweedTap(context, rule, text),
+                  fontFamily: appState.arabicFontStyle.fontFamily,
                 );
               },
             );
@@ -440,7 +441,9 @@ class _AyahItem extends StatelessWidget {
   final VoidCallback onPlayTap;
   final VoidCallback onBookmarkTap;
   final VoidCallback onTafsirTap;
+
   final void Function(TajweedRule rule, String text) onTajweedTap;
+  final String? fontFamily;
 
   const _AyahItem({
     required this.ayah,
@@ -460,6 +463,7 @@ class _AyahItem extends StatelessWidget {
     required this.onBookmarkTap,
     required this.onTafsirTap,
     required this.onTajweedTap,
+    required this.fontFamily,
   });
 
   @override
@@ -601,17 +605,29 @@ class _AyahItem extends StatelessWidget {
   Widget _buildArabicText(bool isDark) {
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textArabic;
 
+    final isIndoPak = fontFamily == 'Scheherazade New' || 
+                      fontFamily == 'Noorehuda' || 
+                      fontFamily == 'Lateef';
+    final displayText = (isIndoPak && ayah.textIndopak != null) 
+       ? ayah.textIndopak 
+       : ayah.textArabic;
+    // Note: textWithTajweed currently marks up textArabic (Uthmani). 
+    // If using IndoPak text, we disable tajweed colors temporarily or use plain text 
+    // because markup indices would mismatch.
+    final displayMarkup = (isIndoPak) ? null : ayah.textWithTajweed;
+
     return Align(
       alignment: Alignment.centerRight,
       child: TajweedText(
-        textWithMarkup: ayah.textWithTajweed,
-        plainText: ayah.textArabic,
+        textWithMarkup: displayMarkup,
+        plainText: displayText,
         showTajweedColors: showTajweedColors,
         learningModeEnabled: tajweedLearningMode,
         onTajweedTap: onTajweedTap,
         textStyle: AppTypography.quranText(
           fontSize: fontSize,
           color: textColor,
+          fontFamily: fontFamily,
         ),
         normalTextColor: textColor,
         textAlign: TextAlign.right,

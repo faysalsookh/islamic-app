@@ -105,6 +105,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final isDark = theme.brightness == Brightness.dark;
     final isTablet = Responsive.isTabletOrLarger(context);
     final horizontalPadding = Responsive.horizontalPadding(context);
+    final fontFamily = context.select<AppStateProvider, String>(
+        (s) => s.arabicFontStyle.fontFamily);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.cream,
@@ -136,7 +138,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                      child: _buildFeaturedCard(theme, isDark),
+                      child: _buildFeaturedCard(theme, isDark, fontFamily),
                     ),
                   ),
 
@@ -222,6 +224,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Consumer<AppStateProvider>(
       builder: (context, appState, child) {
         final userName = appState.userName.isNotEmpty ? appState.userName : 'Dear Reader';
+        final fontFamily = appState.arabicFontStyle.fontFamily;
 
         return Container(
           margin: EdgeInsets.fromLTRB(padding, 8, padding, 20),
@@ -286,10 +289,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   children: [
                     Text(
                       _getArabicGreeting(),
-                      style: TextStyle(
-                        fontFamily: 'Amiri',
-                        fontSize: 16,
+                      style: AppTypography.arabicGreeting(
                         color: theme.colorScheme.primary,
+                        fontSize: 16,
+                        fontFamily: fontFamily,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -437,7 +440,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFeaturedCard(ThemeData theme, bool isDark) {
+  Widget _buildFeaturedCard(ThemeData theme, bool isDark, String? fontFamily) {
     if (_isLoadingVerse && _verseOfTheDay == null) {
       // Loading state
       return _buildFeaturedCardLoading(theme, isDark);
@@ -522,11 +525,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           const SizedBox(height: 20),
           Text(
             arabicText,
-            style: const TextStyle(
-              fontFamily: 'Amiri',
+            style: AppTypography.quranText(
               fontSize: 28,
               color: Colors.white,
               height: 1.8,
+              fontFamily: fontFamily,
             ),
             textAlign: TextAlign.center,
           ),

@@ -17,7 +17,62 @@ class AppTypography {
     double height = 2.0,
     double letterSpacing = 0,
     double wordSpacing = 3,
+    String? fontFamily,
   }) {
+    if (fontFamily != null) {
+      if (fontFamily == 'Scheherazade New') {
+         return GoogleFonts.scheherazadeNew(
+            fontSize: fontSize,
+            color: color,
+            height: height,
+            letterSpacing: letterSpacing,
+            wordSpacing: wordSpacing,
+            fontWeight: FontWeight.w400,
+         );
+      } else if (fontFamily == 'Lateef') {
+         return GoogleFonts.lateef(
+            fontSize: fontSize,
+            color: color,
+            height: height,
+            letterSpacing: letterSpacing,
+            wordSpacing: wordSpacing,
+            fontWeight: FontWeight.w400,
+         );
+      } else if (fontFamily == 'Reem Kufi') {
+         return GoogleFonts.reemKufi(
+            fontSize: fontSize,
+            color: color,
+            height: height,
+            letterSpacing: letterSpacing,
+            wordSpacing: wordSpacing,
+            fontWeight: FontWeight.w400,
+         );
+      } else if (fontFamily == 'Noto Sans Arabic') {
+         return GoogleFonts.notoSansArabic(
+            fontSize: fontSize,
+            color: color,
+            height: height,
+            letterSpacing: letterSpacing,
+            wordSpacing: wordSpacing,
+            fontWeight: FontWeight.w400,
+         );
+      }
+
+      try {
+        return GoogleFonts.getFont(
+          fontFamily,
+          fontSize: fontSize,
+          color: color,
+          height: height,
+          letterSpacing: letterSpacing,
+          wordSpacing: wordSpacing,
+          fontWeight: FontWeight.w400,
+        );
+      } catch (e) {
+        debugPrint('Error loading font $fontFamily: $e');
+      }
+    }
+    
     return GoogleFonts.amiri(
       fontSize: fontSize,
       color: color,
@@ -186,7 +241,29 @@ class AppTypography {
   static TextStyle arabicGreeting({
     Color color = AppColors.textPrimary,
     double fontSize = 20,
+    String? fontFamily,
   }) {
+    if (fontFamily != null) {
+      if (fontFamily == 'Scheherazade New') {
+        return GoogleFonts.scheherazadeNew(fontSize: fontSize, fontWeight: FontWeight.w400, color: color);
+      } else if (fontFamily == 'Lateef') {
+        return GoogleFonts.lateef(fontSize: fontSize, fontWeight: FontWeight.w400, color: color);
+      } else if (fontFamily == 'Reem Kufi') {
+        return GoogleFonts.reemKufi(fontSize: fontSize, fontWeight: FontWeight.w400, color: color);
+      } else if (fontFamily == 'Noto Sans Arabic') {
+        return GoogleFonts.notoSansArabic(fontSize: fontSize, fontWeight: FontWeight.w400, color: color);
+      }
+      try {
+        return GoogleFonts.getFont(
+          fontFamily,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w400,
+          color: color,
+        );
+      } catch (e) {
+        debugPrint('Error loading font $fontFamily: $e');
+      }
+    }
     return GoogleFonts.amiri(
       fontSize: fontSize,
       fontWeight: FontWeight.w400,
@@ -198,7 +275,29 @@ class AppTypography {
   static TextStyle surahNameArabic({
     Color color = AppColors.textPrimary,
     double fontSize = 24,
+    String? fontFamily,
   }) {
+    if (fontFamily != null) {
+      if (fontFamily == 'Scheherazade New') {
+        return GoogleFonts.scheherazadeNew(fontSize: fontSize, fontWeight: FontWeight.w700, color: color);
+      } else if (fontFamily == 'Lateef') {
+        return GoogleFonts.lateef(fontSize: fontSize, fontWeight: FontWeight.w700, color: color);
+      } else if (fontFamily == 'Reem Kufi') {
+        return GoogleFonts.reemKufi(fontSize: fontSize, fontWeight: FontWeight.w700, color: color);
+      } else if (fontFamily == 'Noto Sans Arabic') {
+        return GoogleFonts.notoSansArabic(fontSize: fontSize, fontWeight: FontWeight.w700, color: color);
+      }
+      try {
+        return GoogleFonts.getFont(
+          fontFamily,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w700,
+          color: color,
+        );
+      } catch (e) {
+        debugPrint('Error loading font $fontFamily: $e');
+      }
+    }
     return GoogleFonts.amiri(
       fontSize: fontSize,
       fontWeight: FontWeight.w700,

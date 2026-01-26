@@ -69,6 +69,7 @@ class _MushafViewState extends State<MushafView> {
                   isDark: isDark,
                   theme: theme,
                   onAyahTap: _onAyahTap,
+                  fontFamily: appState.arabicFontStyle.fontFamily,
                 ),
                 const SizedBox(height: 100),
               ],
@@ -88,6 +89,7 @@ class _MushafPage extends StatelessWidget {
   final bool isDark;
   final ThemeData theme;
   final Function(Ayah) onAyahTap;
+  final String? fontFamily;
 
   const _MushafPage({
     required this.surah,
@@ -96,6 +98,7 @@ class _MushafPage extends StatelessWidget {
     required this.isDark,
     required this.theme,
     required this.onAyahTap,
+    required this.fontFamily,
   });
 
   @override
@@ -196,6 +199,7 @@ class _MushafPage extends StatelessWidget {
                                 isDark: isDark,
                                 showTajweedColors: appState.showTajweedColors,
                                 onAyahTap: onAyahTap,
+                                fontFamily: fontFamily,
                               ),
                             );
                           },
@@ -628,6 +632,7 @@ class _AyahsContent extends StatelessWidget {
   final bool isDark;
   final bool showTajweedColors;
   final Function(Ayah) onAyahTap;
+  final String? fontFamily;
 
   const _AyahsContent({
     required this.ayahs,
@@ -636,6 +641,7 @@ class _AyahsContent extends StatelessWidget {
     required this.isDark,
     required this.showTajweedColors,
     required this.onAyahTap,
+    required this.fontFamily,
   });
 
   @override
@@ -672,6 +678,7 @@ class _AyahsContent extends StatelessWidget {
                     fontSize: fontSize,
                     color: color,
                     height: 2.4,
+                    fontFamily: fontFamily,
                   ),
                 ),
               );
@@ -685,6 +692,7 @@ class _AyahsContent extends StatelessWidget {
                   fontSize: fontSize,
                   color: textColor,
                   height: 2.4,
+                  fontFamily: fontFamily,
                 ),
               ),
             );
