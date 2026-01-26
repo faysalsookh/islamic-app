@@ -380,16 +380,14 @@ class _SurahListPageState extends State<SurahListPage>
                   children: [
                     if (filter != 'All')
                       Container(
-                        width: 8,
-                        height: 8,
+                        width: 20,
+                        height: 20,
                         margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSelected
-                              ? Colors.white
-                              : (filter == 'Meccan'
-                                  ? AppColors.forestGreen
-                                  : AppColors.mutedTeal),
+                        child: Image.asset(
+                          filter == 'Meccan'
+                              ? 'assets/images/meccan.png'
+                              : 'assets/images/Madina.png',
+                          color: isSelected ? Colors.white : null,
                         ),
                       ),
                     Text(
@@ -433,22 +431,18 @@ class _SurahListPageState extends State<SurahListPage>
             isDark,
           ),
           _buildStatDivider(isDark),
-          _buildStatItem(
+          _buildStatItemWithImage(
             '$meccanCount',
             'Meccan',
-            Icons.circle,
+            'assets/images/meccan.png',
             isDark,
-            iconColor: AppColors.forestGreen,
-            iconSize: 10,
           ),
           _buildStatDivider(isDark),
-          _buildStatItem(
+          _buildStatItemWithImage(
             '$medinanCount',
             'Medinan',
-            Icons.circle,
+            'assets/images/Madina.png',
             isDark,
-            iconColor: AppColors.mutedTeal,
-            iconSize: 10,
           ),
           _buildStatDivider(isDark),
           _buildStatItem(
@@ -503,6 +497,41 @@ class _SurahListPageState extends State<SurahListPage>
       width: 1,
       height: 30,
       color: isDark ? AppColors.dividerDark : AppColors.divider,
+    );
+  }
+
+  Widget _buildStatItemWithImage(String value, String label, String imagePath, bool isDark) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          imagePath,
+          width: 18,
+          height: 18,
+        ),
+        const SizedBox(width: 6),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -592,8 +621,9 @@ class _SurahListPageState extends State<SurahListPage>
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      _buildInfoChip(
+                      _buildRevelationChip(
                         isMeccan ? 'Meccan' : 'Medinan',
+                        isMeccan ? 'assets/images/meccan.png' : 'assets/images/Madina.png',
                         isMeccan ? AppColors.forestGreen : AppColors.mutedTeal,
                         isDark,
                       ),
@@ -659,6 +689,35 @@ class _SurahListPageState extends State<SurahListPage>
               ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
               : color,
         ),
+      ),
+    );
+  }
+
+  Widget _buildRevelationChip(String text, String imagePath, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            imagePath,
+            width: 14,
+            height: 14,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
