@@ -117,7 +117,7 @@ class AppStateProvider extends ChangeNotifier {
   TransliterationLanguage _transliterationLanguage = TransliterationLanguage.bengali;
   TransliterationLanguage get transliterationLanguage => _transliterationLanguage;
 
-  int _selectedBengaliTranslationId = 161; // Default to Taisirul Quran
+  int _selectedBengaliTranslationId = 9999; // Default to Muhiuddin Khan (Islamic Foundation)
   int get selectedBengaliTranslationId => _selectedBengaliTranslationId;
 
   int _selectedEnglishTranslationId = 131; // Default to Sahih International
@@ -235,7 +235,7 @@ class AppStateProvider extends ChangeNotifier {
     _defaultRepeatMode = AudioRepeatMode.values[prefs.getInt('default_repeat_mode') ?? 0];
 
     // Translation settings
-    _selectedBengaliTranslationId = prefs.getInt('selected_bengali_translation_id') ?? 161; // Default to Taisirul
+    _selectedBengaliTranslationId = prefs.getInt('selected_bengali_translation_id') ?? 9999; // Default to Muhiuddin Khan (Islamic Foundation)
     _selectedEnglishTranslationId = prefs.getInt('selected_english_translation_id') ?? 131; // Default to Sahih International
 
     // Sync external services
