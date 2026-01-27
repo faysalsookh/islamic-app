@@ -78,10 +78,27 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
 
                     const SizedBox(height: 20),
 
-                    // Reciter Section
-                    _buildReciterSection(isDark, theme),
-
-                    const SizedBox(height: 20),
+                    // Reciter Section - Only show when Arabic is selected
+                    ListenableBuilder(
+                      listenable: _audioService,
+                      builder: (context, child) {
+                        // Show reciter when Arabic is included in playback content
+                        final showReciter = _audioService.playbackContent == AudioPlaybackContent.arabicOnly ||
+                            _audioService.playbackContent == AudioPlaybackContent.arabicThenBengali ||
+                            _audioService.playbackContent == AudioPlaybackContent.arabicThenEnglish;
+                        
+                        if (!showReciter) {
+                          return const SizedBox.shrink();
+                        }
+                        
+                        return Column(
+                          children: [
+                            _buildReciterSection(isDark, theme),
+                            const SizedBox(height: 20),
+                          ],
+                        );
+                      },
+                    ),
 
                     // Speed & Repeat Row
                     _buildSpeedAndRepeatSection(isDark, theme),
