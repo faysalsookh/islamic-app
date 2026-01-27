@@ -414,6 +414,16 @@ class _QuranReaderPageState extends State<QuranReaderPage>
                                             surah: _currentSurah,
                                             ayahs: _ayahs,
                                             quranFontSize: appState.quranFontSize,
+                                            currentAyahIndex: _currentAyahIndex,
+                                            initialScrollIndex:
+                                                widget.initialAyahNumber != null
+                                                    ? _currentAyahIndex
+                                                    : null,
+                                            onAyahSelected: (index) {
+                                              setState(() {
+                                                _currentAyahIndex = index;
+                                              });
+                                            },
                                           )
                                         : AyahListView(
                                             surah: _currentSurah,

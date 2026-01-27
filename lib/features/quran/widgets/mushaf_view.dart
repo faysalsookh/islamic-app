@@ -16,12 +16,18 @@ class MushafView extends StatefulWidget {
   final Surah surah;
   final List<Ayah> ayahs;
   final double quranFontSize;
+  final int currentAyahIndex;
+  final int? initialScrollIndex;
+  final ValueChanged<int>? onAyahSelected;
 
   const MushafView({
     super.key,
     required this.surah,
     required this.ayahs,
     required this.quranFontSize,
+    this.currentAyahIndex = 0,
+    this.initialScrollIndex,
+    this.onAyahSelected,
   });
 
   @override
@@ -31,16 +37,99 @@ class MushafView extends StatefulWidget {
 class _MushafViewState extends State<MushafView> {
   final ScrollController _scrollController = ScrollController();
   final AudioService _audioService = AudioService();
+  int? _lastScrolledAyah;
+
+  /// Map of ayah number -> GlobalKey for scroll targeting
+  final Map<int, GlobalKey> _ayahKeys = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _audioService.addListener(_onAudioStateChanged);
+    _initAyahKeys();
+
+    if (widget.initialScrollIndex != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToAyahIndex(widget.initialScrollIndex!);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant MushafView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ayahs.length != widget.ayahs.length) {
+      _initAyahKeys();
+    }
+    // Scroll when currentAyahIndex changes from parent (e.g. navigation)
+    if (oldWidget.currentAyahIndex != widget.currentAyahIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToAyahIndex(widget.currentAyahIndex);
+      });
+    }
+  }
+
+  void _initAyahKeys() {
+    _ayahKeys.clear();
+    for (int i = 0; i < widget.ayahs.length; i++) {
+      _ayahKeys[widget.ayahs[i].numberInSurah] = GlobalKey();
+    }
+  }
 
   @override
   void dispose() {
+    _audioService.removeListener(_onAudioStateChanged);
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _onAudioStateChanged() {
+    if (_audioService.currentSurah == widget.surah.number &&
+        _audioService.currentAyah != null &&
+        _audioService.isPlaying) {
+      final playingAyahNumber = _audioService.currentAyah!;
+
+      if (_lastScrolledAyah != playingAyahNumber) {
+        _lastScrolledAyah = playingAyahNumber;
+        final index = widget.ayahs
+            .indexWhere((a) => a.numberInSurah == playingAyahNumber);
+        if (index != -1) {
+          _scrollToAyahNumber(playingAyahNumber);
+        }
+      }
+    }
+  }
+
+  void _scrollToAyahIndex(int index) {
+    if (index < 0 || index >= widget.ayahs.length) return;
+    final ayahNumber = widget.ayahs[index].numberInSurah;
+    _scrollToAyahNumber(ayahNumber);
+  }
+
+  void _scrollToAyahNumber(int ayahNumber) {
+    final key = _ayahKeys[ayahNumber];
+    if (key == null || key.currentContext == null) return;
+
+    Scrollable.ensureVisible(
+      key.currentContext!,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+      alignment: 0.3,
+    );
+  }
+
   void _onAyahTap(Ayah ayah) {
     HapticService().selectionClick();
-    if (_audioService.isAyahPlaying(widget.surah.number, ayah.numberInSurah)) {
+
+    // Notify parent of selection
+    final index =
+        widget.ayahs.indexWhere((a) => a.numberInSurah == ayah.numberInSurah);
+    if (index != -1) {
+      widget.onAyahSelected?.call(index);
+    }
+
+    if (_audioService.isAyahPlaying(
+        widget.surah.number, ayah.numberInSurah)) {
       _audioService.pause();
     } else {
       _audioService.playAyah(widget.surah.number, ayah.numberInSurah);
@@ -70,6 +159,11 @@ class _MushafViewState extends State<MushafView> {
                   theme: theme,
                   onAyahTap: _onAyahTap,
                   fontFamily: appState.arabicFontStyle.fontFamily,
+                  ayahKeys: _ayahKeys,
+                  currentAyahNumber: widget.ayahs.isNotEmpty &&
+                          widget.currentAyahIndex < widget.ayahs.length
+                      ? widget.ayahs[widget.currentAyahIndex].numberInSurah
+                      : null,
                 ),
                 const SizedBox(height: 100),
               ],
@@ -90,6 +184,8 @@ class _MushafPage extends StatelessWidget {
   final ThemeData theme;
   final Function(Ayah) onAyahTap;
   final String? fontFamily;
+  final Map<int, GlobalKey> ayahKeys;
+  final int? currentAyahNumber;
 
   const _MushafPage({
     required this.surah,
@@ -99,6 +195,8 @@ class _MushafPage extends StatelessWidget {
     required this.theme,
     required this.onAyahTap,
     required this.fontFamily,
+    required this.ayahKeys,
+    this.currentAyahNumber,
   });
 
   @override
@@ -200,6 +298,8 @@ class _MushafPage extends StatelessWidget {
                                 showTajweedColors: appState.showTajweedColors,
                                 onAyahTap: onAyahTap,
                                 fontFamily: fontFamily,
+                                ayahKeys: ayahKeys,
+                                currentAyahNumber: currentAyahNumber,
                               ),
                             );
                           },
@@ -633,6 +733,8 @@ class _AyahsContent extends StatelessWidget {
   final bool showTajweedColors;
   final Function(Ayah) onAyahTap;
   final String? fontFamily;
+  final Map<int, GlobalKey> ayahKeys;
+  final int? currentAyahNumber;
 
   const _AyahsContent({
     required this.ayahs,
@@ -642,6 +744,8 @@ class _AyahsContent extends StatelessWidget {
     required this.showTajweedColors,
     required this.onAyahTap,
     required this.fontFamily,
+    required this.ayahKeys,
+    this.currentAyahNumber,
   });
 
   @override
@@ -661,12 +765,21 @@ class _AyahsContent extends StatelessWidget {
                       fontFamily == 'Noorehuda' ||
                       fontFamily == 'Lateef';
 
+    // Highlight color for the currently active ayah
+    final highlightBg = isDark
+        ? const Color(0xFF2E7D32).withValues(alpha: 0.18)
+        : const Color(0xFF2E7D32).withValues(alpha: 0.10);
+    final highlightTextColor = isDark
+        ? const Color(0xFF81C784)
+        : const Color(0xFF1B5E20);
+
     return RichText(
       textDirection: TextDirection.rtl,
       textAlign: TextAlign.justify,
       text: TextSpan(
         children: ayahs.expand((ayah) {
           final List<InlineSpan> spans = [];
+          final isCurrentAyah = ayah.numberInSurah == currentAyahNumber;
 
           // Determine which text to display based on font
           final displayText = (isIndoPak && ayah.textIndopak != null)
@@ -677,21 +790,20 @@ class _AyahsContent extends StatelessWidget {
           // For Uthmani text, use the pre-annotated tajweed from API
           String? displayMarkup;
           if (isIndoPak && ayah.textIndopak != null) {
-            // Generate tajweed markup for IndoPak text
             displayMarkup = tajweedService.generateTajweedMarkup(ayah.textIndopak!);
           } else {
-            // Use pre-annotated tajweed markup for Uthmani text
             displayMarkup = ayah.textWithTajweed;
           }
 
           // Add Tajweed colored text or plain text
           if (showTajweedColors && displayMarkup != null && displayMarkup.isNotEmpty) {
-            // Parse Tajweed markup and create colored spans
             final segments = tajweedService.parseMarkup(displayMarkup);
             for (final segment in segments) {
-              final color = segment.rule == TajweedRule.normal
-                  ? textColor
-                  : tajweedColors.colorForRule(segment.rule);
+              final color = isCurrentAyah
+                  ? highlightTextColor
+                  : (segment.rule == TajweedRule.normal
+                      ? textColor
+                      : tajweedColors.colorForRule(segment.rule));
               spans.add(
                 TextSpan(
                   text: segment.text,
@@ -700,37 +812,48 @@ class _AyahsContent extends StatelessWidget {
                     color: color,
                     height: 2.4,
                     fontFamily: fontFamily,
+                  ).copyWith(
+                    backgroundColor: isCurrentAyah ? highlightBg : null,
                   ),
                 ),
               );
             }
           } else {
-            // Plain text without Tajweed colors
             spans.add(
               TextSpan(
                 text: displayText,
                 style: AppTypography.quranText(
                   fontSize: fontSize,
-                  color: textColor,
+                  color: isCurrentAyah ? highlightTextColor : textColor,
                   height: 2.4,
                   fontFamily: fontFamily,
+                ).copyWith(
+                  backgroundColor: isCurrentAyah ? highlightBg : null,
                 ),
               ),
             );
           }
 
-          // Add ayah end marker
+          // Add ayah end marker with GlobalKey for scroll targeting
+          final key = ayahKeys[ayah.numberInSurah];
+
           spans.add(
             WidgetSpan(
               alignment: PlaceholderAlignment.middle,
               child: GestureDetector(
+                key: key,
                 onTap: () => onAyahTap(ayah),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: _AyahEndMarker(
                     number: ayah.numberInSurah,
                     fontSize: fontSize,
-                    color: ayahMarkerColor,
+                    color: isCurrentAyah
+                        ? (isDark
+                            ? const Color(0xFF4CAF50)
+                            : const Color(0xFF2E7D32))
+                        : ayahMarkerColor,
+                    isHighlighted: isCurrentAyah,
                   ),
                 ),
               ),
@@ -752,11 +875,13 @@ class _AyahEndMarker extends StatelessWidget {
   final int number;
   final double fontSize;
   final Color color;
+  final bool isHighlighted;
 
   const _AyahEndMarker({
     required this.number,
     required this.fontSize,
     required this.color,
+    this.isHighlighted = false,
   });
 
   @override
@@ -770,8 +895,9 @@ class _AyahEndMarker extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(
           color: color,
-          width: 1.5,
+          width: isHighlighted ? 2.5 : 1.5,
         ),
+        color: isHighlighted ? color.withValues(alpha: 0.15) : null,
       ),
       child: Center(
         child: Text(
