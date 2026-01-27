@@ -495,19 +495,108 @@ class SettingsPage extends StatelessWidget {
   void _showReciterDialog(BuildContext context, AppStateProvider appState) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => _SelectionSheet(
-        title: 'Select Reciter',
-        options: Reciter.values.map((reciter) => _SelectionOption(
-          title: reciter.displayName,
-          subtitle: reciter.displayNameArabic,
-          isSelected: appState.selectedReciter == reciter,
-          onTap: () {
-            appState.setSelectedReciter(reciter);
-            Navigator.pop(context);
-          },
-        )).toList(),
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        
+        return _SelectionSheet(
+          title: 'Select Reciter',
+          options: Reciter.values.map((reciter) => _SelectionOption(
+            title: reciter.displayName,
+            subtitle: reciter.displayNameArabic,
+            isSelected: appState.selectedReciter == reciter,
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: reciter.photoUrl != null
+                  ? Image.asset(
+                      reciter.photoUrl!,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback to initial avatar if photo not found
+                        return _buildReciterInitialAvatar(
+                          reciter, 
+                          appState.selectedReciter == reciter, 
+                          isDark, 
+                          theme,
+                        );
+                      },
+                    )
+                  : _buildReciterInitialAvatar(
+                      reciter, 
+                      appState.selectedReciter == reciter, 
+                      isDark, 
+                      theme,
+                    ),
+            ),
+            onTap: () {
+              appState.setSelectedReciter(reciter);
+              Navigator.pop(context);
+            },
+          )).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildReciterInitialAvatar(Reciter reciter, bool isSelected, bool isDark, ThemeData theme) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: isSelected
+            ? LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withValues(alpha: 0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: isSelected ? null : (isDark ? AppColors.darkSurface : AppColors.cream),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          _getReciterInitials(reciter),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Amiri',
+            color: isSelected
+                ? Colors.white
+                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+          ),
+        ),
       ),
     );
+  }
+
+  String _getReciterInitials(Reciter reciter) {
+    switch (reciter) {
+      case Reciter.misharyRashidAlafasy:
+        return 'م';
+      case Reciter.abdulRahmanAlSudais:
+        return 'س';
+      case Reciter.maherAlMuaiqly:
+        return 'ﻡ';
+      case Reciter.saadAlGhamdi:
+        return 'غ';
+      case Reciter.abuBakrAlShatri:
+        return 'أ';
+      case Reciter.haniArRifai:
+        return 'ه';
+      case Reciter.hudhaify:
+        return 'ح';
+      case Reciter.aliJaber:
+        return 'ج';
+      case Reciter.yasserAlDosari:
+        return 'ي';
+      case Reciter.nasserAlQatami:
+        return 'ن';
+    }
   }
 
   void _showBengaliAudioSourceDialog(BuildContext context, AppStateProvider appState) {
@@ -1126,12 +1215,14 @@ class _SelectionOption extends StatelessWidget {
   final String? subtitle;
   final bool isSelected;
   final VoidCallback onTap;
+  final Widget? leading;
 
   const _SelectionOption({
     required this.title,
     this.subtitle,
     required this.isSelected,
     required this.onTap,
+    this.leading,
   });
 
   @override
@@ -1142,6 +1233,7 @@ class _SelectionOption extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
+      leading: leading,
       title: Text(
         title,
         style: AppTypography.bodyLarge(
