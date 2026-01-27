@@ -520,7 +520,6 @@ class QuranDataService extends ChangeNotifier {
       {'id': _bengaliTaisirul, 'name': 'তাইসীরুল কুরআন', 'nameEn': 'Taisirul Quran'},
       {'id': _bengaliMuhiuddin, 'name': 'মুহিউদ্দীন খান (ইসলামিক ফাউন্ডেশন)', 'nameEn': 'Muhiuddin Khan (Islamic Foundation)'},
       {'id': _bengaliAbuBakr, 'name': 'ড. আবু বকর জাকারিয়া', 'nameEn': 'Dr. Abu Bakr Zakaria'},
-      {'id': _bengaliMujibur, 'name': 'শেখ মুজিবুর রহমান', 'nameEn': 'Sheikh Mujibur Rahman'},
       {'id': _bengaliRawai, 'name': 'রওয়াই আল-বায়ান', 'nameEn': 'Rawai Al-bayan'},
     ];
   }
