@@ -39,6 +39,7 @@ class _QuranReaderPageState extends State<QuranReaderPage>
   bool _showTranslation = true;
   bool _legendExpanded = false;
   bool _isLoading = true;
+  bool _isSwitchingView = false;
   int? _lastLoadedTranslationId;
   bool _showQuickTips = false;
 
@@ -180,6 +181,16 @@ class _QuranReaderPageState extends State<QuranReaderPage>
     if (widget.surahNumber == 1) return AyahData.alFatihah;
     if (widget.surahNumber == 112) return AyahData.alIkhlas;
     return AyahData.alFatihah;
+  }
+
+  void _switchView(AppStateProvider appState) {
+    setState(() => _isSwitchingView = true);
+    appState.setMushafView(!appState.isMushafView);
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() => _isSwitchingView = false);
+      }
+    });
   }
 
   void _toggleTranslation() {
@@ -406,59 +417,80 @@ class _QuranReaderPageState extends State<QuranReaderPage>
                           ? _buildLoadingState(isDark)
                           : _ayahs.isEmpty
                               ? _buildErrorState(isDark)
-                              : Stack(
-                                  children: [
-                                    // Quran content
-                                    appState.isMushafView
-                                        ? MushafView(
-                                            surah: _currentSurah,
-                                            ayahs: _ayahs,
-                                            quranFontSize: appState.quranFontSize,
-                                            currentAyahIndex: _currentAyahIndex,
-                                            initialScrollIndex:
-                                                widget.initialAyahNumber != null
-                                                    ? _currentAyahIndex
-                                                    : null,
-                                            onAyahSelected: (index) {
-                                              setState(() {
-                                                _currentAyahIndex = index;
-                                              });
-                                            },
-                                          )
-                                        : AyahListView(
-                                            surah: _currentSurah,
-                                            ayahs: _ayahs,
-                                            currentAyahIndex: _currentAyahIndex,
-                                            showTranslation: _showTranslation &&
-                                                appState.showTranslation,
-                                            quranFontSize: appState.quranFontSize,
-                                            initialScrollIndex:
-                                                widget.initialAyahNumber != null
-                                                    ? _currentAyahIndex
-                                                    : null,
-                                            onAyahSelected: (index) {
-                                              setState(() {
-                                                _currentAyahIndex = index;
-                                              });
-                                            },
-                                          ),
+                              : AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  switchInCurve: Curves.easeOut,
+                                  switchOutCurve: Curves.easeIn,
+                                  child: _isSwitchingView
+                                      ? _buildViewSwitchIndicator(
+                                          isDark, appState.isMushafView)
+                                      : Stack(
+                                          key: ValueKey(
+                                              appState.isMushafView),
+                                          children: [
+                                            // Quran content
+                                            appState.isMushafView
+                                                ? MushafView(
+                                                    surah: _currentSurah,
+                                                    ayahs: _ayahs,
+                                                    quranFontSize:
+                                                        appState.quranFontSize,
+                                                    currentAyahIndex:
+                                                        _currentAyahIndex,
+                                                    initialScrollIndex: widget
+                                                                .initialAyahNumber !=
+                                                            null
+                                                        ? _currentAyahIndex
+                                                        : null,
+                                                    onAyahSelected: (index) {
+                                                      setState(() {
+                                                        _currentAyahIndex =
+                                                            index;
+                                                      });
+                                                    },
+                                                  )
+                                                : AyahListView(
+                                                    surah: _currentSurah,
+                                                    ayahs: _ayahs,
+                                                    currentAyahIndex:
+                                                        _currentAyahIndex,
+                                                    showTranslation:
+                                                        _showTranslation &&
+                                                            appState
+                                                                .showTranslation,
+                                                    quranFontSize:
+                                                        appState.quranFontSize,
+                                                    initialScrollIndex: widget
+                                                                .initialAyahNumber !=
+                                                            null
+                                                        ? _currentAyahIndex
+                                                        : null,
+                                                    onAyahSelected: (index) {
+                                                      setState(() {
+                                                        _currentAyahIndex =
+                                                            index;
+                                                      });
+                                                    },
+                                                  ),
 
-                                    // Tajweed Color Legend
-                                    if (appState.showTajweedColors)
-                                      Positioned(
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 8,
-                                        child: TajweedColorLegend(
-                                          isExpanded: _legendExpanded,
-                                          onToggle: () {
-                                            setState(() {
-                                              _legendExpanded = !_legendExpanded;
-                                            });
-                                          },
+                                            // Tajweed Color Legend
+                                            if (appState.showTajweedColors)
+                                              Positioned(
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 8,
+                                                child: TajweedColorLegend(
+                                                  isExpanded: _legendExpanded,
+                                                  onToggle: () {
+                                                    setState(() {
+                                                      _legendExpanded =
+                                                          !_legendExpanded;
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                          ],
                                         ),
-                                      ),
-                                  ],
                                 ),
                     ),
 
@@ -486,9 +518,7 @@ class _QuranReaderPageState extends State<QuranReaderPage>
                           onBookmark: _addBookmark,
                           onSettings: _openFontSettings,
                           isMushafView: appState.isMushafView,
-                          onToggleView: () {
-                            appState.setMushafView(!appState.isMushafView);
-                          },
+                          onToggleView: () => _switchView(appState),
                           isLeftHanded: appState.isLeftHanded,
                         );
                       },
@@ -511,6 +541,66 @@ class _QuranReaderPageState extends State<QuranReaderPage>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildViewSwitchIndicator(bool isDark, bool isMushafView) {
+    final label = isMushafView ? 'Mushaf View' : 'List View';
+    final icon = isMushafView
+        ? Icons.auto_stories_rounded
+        : Icons.view_list_rounded;
+
+    return Center(
+      key: const ValueKey('view_switch'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.darkCard
+                  : AppColors.mutedTeal.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 52,
+                  height: 52,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    strokeCap: StrokeCap.round,
+                    color: isDark
+                        ? AppColors.mutedTealLight
+                        : AppColors.mutedTeal,
+                  ),
+                ),
+                Icon(
+                  icon,
+                  size: 24,
+                  color: isDark
+                      ? AppColors.mutedTealLight
+                      : AppColors.mutedTeal,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Switching to $label',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
