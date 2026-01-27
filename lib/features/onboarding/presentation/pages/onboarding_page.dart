@@ -7,6 +7,7 @@ import '../widgets/onboarding_page_content.dart';
 import '../widgets/theme_selection_page.dart';
 import '../widgets/font_size_selection_page.dart';
 import '../widgets/name_input_page.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -115,8 +116,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               },
                               child: Text(
                                 'Skip',
-                                style: TextStyle(
-                                  fontSize: isTablet ? 18 : 16,
+                                style: AppTypography.button(
                                   color: primaryColor,
                                 ),
                               ),
@@ -196,8 +196,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                             SizedBox(width: isTablet ? 6 : 4),
                                             Text(
                                               'Back',
-                                              style: TextStyle(
-                                                fontSize: isTablet ? 18 : 16,
+                                              style: AppTypography.button(
                                                 color: primaryColor,
                                               ),
                                             ),
@@ -231,11 +230,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                     children: [
                                       Text(
                                         _currentPage < 3 ? 'Next' : 'Continue',
-                                        style: TextStyle(
-                                          fontSize: isTablet ? 18 : 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
+                                          style: AppTypography.button(
+                                            color: Colors.white,
+                                          ),
                                       ),
                                       SizedBox(width: isTablet ? 10 : 8),
                                       Icon(

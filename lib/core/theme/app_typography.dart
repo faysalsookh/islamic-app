@@ -119,7 +119,7 @@ class AppTypography {
     Color color = AppColors.textTranslation,
     double height = 1.6,
   }) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: fontSize,
       color: color,
       height: height,
@@ -131,7 +131,7 @@ class AppTypography {
 
   /// App title - large and prominent
   static TextStyle appTitle({Color color = AppColors.textPrimary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 28,
       fontWeight: FontWeight.w700,
       color: color,
@@ -141,7 +141,7 @@ class AppTypography {
 
   /// Screen/Section titles
   static TextStyle heading1({Color color = AppColors.textPrimary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 24,
       fontWeight: FontWeight.w700,
       color: color,
@@ -151,7 +151,7 @@ class AppTypography {
 
   /// Subsection titles
   static TextStyle heading2({Color color = AppColors.textPrimary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 20,
       fontWeight: FontWeight.w600,
       color: color,
@@ -160,7 +160,7 @@ class AppTypography {
 
   /// Card titles
   static TextStyle heading3({Color color = AppColors.textPrimary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 18,
       fontWeight: FontWeight.w600,
       color: color,
@@ -169,7 +169,7 @@ class AppTypography {
 
   /// Small headings
   static TextStyle heading4({Color color = AppColors.textPrimary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 16,
       fontWeight: FontWeight.w600,
       color: color,
@@ -178,7 +178,7 @@ class AppTypography {
 
   /// Body text - primary
   static TextStyle bodyLarge({Color color = AppColors.textPrimary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 16,
       fontWeight: FontWeight.w400,
       color: color,
@@ -188,7 +188,7 @@ class AppTypography {
 
   /// Body text - secondary
   static TextStyle bodyMedium({Color color = AppColors.textSecondary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 14,
       fontWeight: FontWeight.w400,
       color: color,
@@ -198,7 +198,7 @@ class AppTypography {
 
   /// Body text - small
   static TextStyle bodySmall({Color color = AppColors.textTertiary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 12,
       fontWeight: FontWeight.w400,
       color: color,
@@ -208,7 +208,7 @@ class AppTypography {
 
   /// Button text
   static TextStyle button({Color color = AppColors.textOnDark}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 16,
       fontWeight: FontWeight.w600,
       color: color,
@@ -218,7 +218,7 @@ class AppTypography {
 
   /// Label text
   static TextStyle label({Color color = AppColors.textSecondary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 12,
       fontWeight: FontWeight.w500,
       color: color,
@@ -228,7 +228,7 @@ class AppTypography {
 
   /// Caption text
   static TextStyle caption({Color color = AppColors.textTertiary}) {
-    return GoogleFonts.nunito(
+    return GoogleFonts.outfit(
       fontSize: 11,
       fontWeight: FontWeight.w400,
       color: color,

@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
-
+import '../../../../core/widgets/app_logo.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/providers/app_state_provider.dart';
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -94,6 +96,19 @@ class _SplashPageState extends State<SplashPage>
     );
 
     _mainController.forward();
+    
+    Future.delayed(const Duration(milliseconds: 3000), () {
+        _navigateToNextScreen();
+    });
+  }
+
+  void _navigateToNextScreen() {
+    if (!mounted) return;
+    
+    final appState = context.read<AppStateProvider>();
+    final routeName = appState.hasCompletedOnboarding ? '/home' : '/onboarding';
+    
+    Navigator.of(context).pushReplacementNamed(routeName);
   }
 
   @override
@@ -250,11 +265,9 @@ class _SplashPageState extends State<SplashPage>
     // Responsive sizing for tablets
     final isTablet = Responsive.isTabletOrLarger(context);
     final scale = isTablet ? 1.4 : 1.0;
-    final outerRingSize = 180.0 * scale;
-    final middleRingSize = 160.0 * scale;
-    final innerCircleSize = 140.0 * scale;
-    final iconContainerSize = 100.0 * scale;
-    final iconSize = 50.0 * scale;
+    
+    // Simplified sizing for minimal logo
+    final logoSize = 120.0 * scale;
 
     return AnimatedBuilder(
       animation: Listenable.merge([_mainController, _pulseController]),
@@ -266,77 +279,28 @@ class _SplashPageState extends State<SplashPage>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Outer pulsing ring
+                // Single subtle pulse ring for "Light" emanation
                 Transform.scale(
                   scale: 1.0 + (_pulseController.value * 0.1),
                   child: Container(
-                    width: outerRingSize,
-                    height: outerRingSize,
+                    width: logoSize * 1.5,
+                    height: logoSize * 1.5,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.softRose
-                            .withValues(alpha: 0.2 - (_pulseController.value * 0.1)),
-                        width: 2,
+                        color: Colors.white.withValues(alpha: 0.1 - (_pulseController.value * 0.05)),
+                        width: 1.5,
                       ),
                     ),
                   ),
                 ),
 
-                // Middle ring
-                Container(
-                  width: middleRingSize,
-                  height: middleRingSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.softRose.withValues(alpha: 0.15),
-                      width: 1,
-                    ),
-                  ),
-                ),
-
-                // Inner gradient circle
-                Container(
-                  width: innerCircleSize,
-                  height: innerCircleSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.softRose.withValues(alpha: 0.2),
-                        AppColors.mutedTeal.withValues(alpha: 0.1),
-                      ],
-                    ),
-                    border: Border.all(
-                      color: AppColors.softRose.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.softRose.withValues(alpha: 0.2),
-                        blurRadius: 30,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Quran icon
-                Container(
-                  width: iconContainerSize,
-                  height: iconContainerSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                  child: Icon(
-                    Icons.menu_book_rounded,
-                    size: iconSize,
-                    color: Colors.white,
-                  ),
+                // The Logo
+                AppLogo(
+                  width: logoSize,
+                  height: logoSize,
+                  color: Colors.white,
+                  isLightMode: false,
                 ),
               ],
             ),
@@ -349,9 +313,9 @@ class _SplashPageState extends State<SplashPage>
   Widget _buildAppName() {
     // Responsive font sizes for tablets
     final isTablet = Responsive.isTabletOrLarger(context);
-    final arabicFontSize = isTablet ? 48.0 : 36.0;
-    final englishFontSize = isTablet ? 24.0 : 18.0;
-    final letterSpacing = isTablet ? 12.0 : 8.0;
+    final arabicFontSize = isTablet ? 48.0 : 42.0;
+    final englishFontSize = isTablet ? 28.0 : 24.0;
+    final letterSpacing = isTablet ? 8.0 : 6.0;
 
     return AnimatedBuilder(
       animation: _mainController,
@@ -377,26 +341,26 @@ class _SplashPageState extends State<SplashPage>
             },
             child: Column(
               children: [
-                // Arabic name
+                // Arabic name: Rushd
                 Text(
-                  'القرآن الكريم',
+                  'رُشْد',
                   textDirection: TextDirection.rtl,
                   style: TextStyle(
                     fontFamily: 'Amiri',
                     fontSize: arabicFontSize,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
-                    letterSpacing: 2,
+                    letterSpacing: 0,
                   ),
                 ),
                 const SizedBox(height: 8),
                 // English name
                 Text(
-                  'QURAN READER',
+                  'RUSHD',
                   style: TextStyle(
                     fontSize: englishFontSize,
-                    fontWeight: FontWeight.w300,
-                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withValues(alpha: 0.95),
                     letterSpacing: letterSpacing,
                   ),
                 ),
@@ -411,8 +375,8 @@ class _SplashPageState extends State<SplashPage>
   Widget _buildTagline() {
     // Responsive sizing for tablets
     final isTablet = Responsive.isTabletOrLarger(context);
-    final fontSize = isTablet ? 18.0 : 14.0;
-    final letterSpacing = isTablet ? 5.0 : 3.0;
+    final fontSize = isTablet ? 18.0 : 15.0;
+    final letterSpacing = isTablet ? 2.0 : 1.5;
     final horizontalPadding = isTablet ? 32.0 : 20.0;
 
     return AnimatedBuilder(
@@ -422,24 +386,12 @@ class _SplashPageState extends State<SplashPage>
           opacity: _taglineOpacity.value,
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: AppColors.softRose.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-                bottom: BorderSide(
-                  color: AppColors.softRose.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-            ),
             child: Text(
-              'Read • Reflect • Remember',
+              'Clear guidance for everyday life',
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w300,
-                color: AppColors.softRoseLight.withValues(alpha: 0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 letterSpacing: letterSpacing,
               ),
             ),
@@ -466,21 +418,21 @@ class _SplashPageState extends State<SplashPage>
               SizedBox(
                 width: loaderWidth,
                 child: LinearProgressIndicator(
-                  backgroundColor: AppColors.softRose.withValues(alpha: 0.1),
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.softRose.withValues(alpha: 0.5),
+                    Colors.white.withValues(alpha: 0.4),
                   ),
                   minHeight: 2,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Designed for Muslim Women',
+                'Quran, Tafsir & Daily Guidance',
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: FontWeight.w300,
-                  color: Colors.white.withValues(alpha: 0.5),
-                  letterSpacing: 1,
+                  color: Colors.white.withValues(alpha: 0.6),
+                  letterSpacing: 0.5,
                 ),
               ),
             ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Available theme modes in the app
 enum AppThemeMode {
@@ -19,6 +20,7 @@ class AppTheme {
   static ThemeData lightTheme() {
     return ThemeData(
       useMaterial3: true,
+      textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
       brightness: Brightness.light,
       primaryColor: AppColors.mutedTeal,
       scaffoldBackgroundColor: AppColors.tealThemeBackground,
@@ -224,6 +226,7 @@ class AppTheme {
   static ThemeData darkTheme() {
     return ThemeData(
       useMaterial3: true,
+      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
       brightness: Brightness.dark,
       primaryColor: AppColors.darkTealAccent,
       scaffoldBackgroundColor: AppColors.darkBackground,

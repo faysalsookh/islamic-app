@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:islamic_app/core/theme/app_theme.dart';
 import 'package:islamic_app/core/providers/app_state_provider.dart';
 import 'package:islamic_app/core/providers/ramadan_provider.dart';
+import 'package:islamic_app/features/splash/presentation/page/splash_page.dart';
 import 'package:islamic_app/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:islamic_app/features/home/presentation/pages/home_page.dart';
 import 'package:islamic_app/features/quran/pages/quran_reader_page.dart';
@@ -79,7 +80,7 @@ class IslamicApp extends StatelessWidget {
     return Consumer<AppStateProvider>(
       builder: (context, appState, child) {
         return MaterialApp(
-          title: 'Noble Quran',
+          title: 'Rushd',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme(),
           darkTheme: AppTheme.darkTheme(),
@@ -92,8 +93,9 @@ class IslamicApp extends StatelessWidget {
                child: child!,
              );
           },
-          initialRoute: appState.hasCompletedOnboarding ? '/home' : '/onboarding',
+          initialRoute: '/',
           routes: {
+            '/': (context) => const SplashPage(),
             '/onboarding': (context) => const OnboardingPage(),
             '/home': (context) => const HomePage(),
             '/surah-list': (context) => const SurahListPage(),

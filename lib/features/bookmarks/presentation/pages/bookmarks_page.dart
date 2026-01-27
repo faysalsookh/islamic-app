@@ -337,7 +337,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
     final text =
         '📖 ${bookmark.surahNameEnglish} (${bookmark.surahNameArabic})\n\n'
         'Ayah ${bookmark.ayahNumber}:\n${bookmark.ayahSnippet}\n\n'
-        '— Noble Quran App';
+        '— Rushd App';
     Clipboard.setData(ClipboardData(text: text));
 
     ScaffoldMessenger.of(context).showSnackBar(
