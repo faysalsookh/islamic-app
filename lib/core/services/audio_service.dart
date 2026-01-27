@@ -478,7 +478,7 @@ extension ReciterExtension on Reciter {
       case Reciter.abuBakrAlShatri:
         return 'assets/images/reciters/shatri.jpg';
       case Reciter.haniArRifai:
-        return 'assets/images/reciters/hani_rifai.jpg';
+        return 'assets/images/reciters/hani_rifai.jpeg';
       case Reciter.hudhaify:
         return 'assets/images/reciters/hudhaify.jpg';
       case Reciter.aliJaber:
