@@ -14,6 +14,7 @@ class ReadingBottomBar extends StatelessWidget {
   final VoidCallback onSettings;
   final bool isMushafView;
   final VoidCallback onToggleView;
+  final bool isLeftHanded;
 
   const ReadingBottomBar({
     super.key,
@@ -25,6 +26,7 @@ class ReadingBottomBar extends StatelessWidget {
     required this.onSettings,
     required this.isMushafView,
     required this.onToggleView,
+    this.isLeftHanded = false,
   });
 
   void _openAudioSettings(BuildContext context) {
@@ -85,54 +87,94 @@ class ReadingBottomBar extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(10, 4, 10, 12),
               child: Row(
                 children: [
-                  // Left side - View & Display controls
+                  // Left side controls (swapped in left-handed mode)
                   _buildControlGroup(
-                    children: [
-                      _buildControlButton(
-                        icon: isMushafView
-                            ? Icons.view_list_rounded
-                            : Icons.auto_stories_rounded,
-                        label: isMushafView ? 'List' : 'Mushaf',
-                        onTap: onToggleView,
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      _buildControlButton(
-                        icon: Icons.text_fields_rounded,
-                        label: 'Font',
-                        onTap: onSettings,
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                    ],
+                    children: isLeftHanded
+                        ? [
+                            // In left-handed mode: Save & Audio on left for easier access
+                            _buildControlButton(
+                              icon: Icons.bookmark_border_rounded,
+                              label: 'Save',
+                              onTap: onBookmark,
+                              isDark: isDark,
+                              theme: theme,
+                            ),
+                            _buildControlButton(
+                              icon: Icons.headphones_rounded,
+                              label: 'Audio',
+                              onTap: () => _openAudioSettings(context),
+                              isDark: isDark,
+                              theme: theme,
+                            ),
+                          ]
+                        : [
+                            // Normal mode: View & Font on left
+                            _buildControlButton(
+                              icon: isMushafView
+                                  ? Icons.view_list_rounded
+                                  : Icons.auto_stories_rounded,
+                              label: isMushafView ? 'List' : 'Mushaf',
+                              onTap: onToggleView,
+                              isDark: isDark,
+                              theme: theme,
+                            ),
+                            _buildControlButton(
+                              icon: Icons.text_fields_rounded,
+                              label: 'Font',
+                              onTap: onSettings,
+                              isDark: isDark,
+                              theme: theme,
+                            ),
+                          ],
                     isDark: isDark,
                   ),
 
                   const Spacer(),
 
-                  // Center - Playback controls
+                  // Center - Playback controls (always in center)
                   _buildPlaybackControls(theme, isDark),
 
                   const Spacer(),
 
-                  // Right side - Bookmark & Audio
+                  // Right side controls (swapped in left-handed mode)
                   _buildControlGroup(
-                    children: [
-                      _buildControlButton(
-                        icon: Icons.bookmark_border_rounded,
-                        label: 'Save',
-                        onTap: onBookmark,
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      _buildControlButton(
-                        icon: Icons.headphones_rounded,
-                        label: 'Audio',
-                        onTap: () => _openAudioSettings(context),
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                    ],
+                    children: isLeftHanded
+                        ? [
+                            // In left-handed mode: View & Font on right
+                            _buildControlButton(
+                              icon: isMushafView
+                                  ? Icons.view_list_rounded
+                                  : Icons.auto_stories_rounded,
+                              label: isMushafView ? 'List' : 'Mushaf',
+                              onTap: onToggleView,
+                              isDark: isDark,
+                              theme: theme,
+                            ),
+                            _buildControlButton(
+                              icon: Icons.text_fields_rounded,
+                              label: 'Font',
+                              onTap: onSettings,
+                              isDark: isDark,
+                              theme: theme,
+                            ),
+                          ]
+                        : [
+                            // Normal mode: Save & Audio on right
+                            _buildControlButton(
+                              icon: Icons.bookmark_border_rounded,
+                              label: 'Save',
+                              onTap: onBookmark,
+                              isDark: isDark,
+                              theme: theme,
+                            ),
+                            _buildControlButton(
+                              icon: Icons.headphones_rounded,
+                              label: 'Audio',
+                              onTap: () => _openAudioSettings(context),
+                              isDark: isDark,
+                              theme: theme,
+                            ),
+                          ],
                     isDark: isDark,
                   ),
                 ],

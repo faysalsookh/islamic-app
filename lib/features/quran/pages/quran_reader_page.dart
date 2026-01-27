@@ -479,6 +479,7 @@ class _QuranReaderPageState extends State<QuranReaderPage>
                           onToggleView: () {
                             appState.setMushafView(!appState.isMushafView);
                           },
+                          isLeftHanded: appState.isLeftHanded,
                         );
                       },
                     ),
