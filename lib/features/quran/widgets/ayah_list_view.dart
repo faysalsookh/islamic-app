@@ -273,15 +273,47 @@ class _AyahListViewState extends State<AyahListView> {
       ItemPositionsListener.create();
   final AudioService _audioService = AudioService();
   bool _hasScrolledToInitial = false;
+  int? _lastScrolledAyah;
 
   @override
   void initState() {
     super.initState();
+    // Listen to audio service for auto-scroll
+    _audioService.addListener(_onAudioStateChanged);
+
     // Schedule initial scroll animation after first frame
     if (widget.initialScrollIndex != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToInitialWithAnimation();
       });
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioService.removeListener(_onAudioStateChanged);
+    super.dispose();
+  }
+
+  void _onAudioStateChanged() {
+    // Auto-scroll to currently playing ayah
+    if (_audioService.currentSurah == widget.surah.number &&
+        _audioService.currentAyah != null &&
+        _audioService.isPlaying) {
+      final playingAyahNumber = _audioService.currentAyah!;
+
+      // Only scroll if the ayah changed
+      if (_lastScrolledAyah != playingAyahNumber) {
+        _lastScrolledAyah = playingAyahNumber;
+
+        final index = widget.ayahs.indexWhere(
+          (a) => a.numberInSurah == playingAyahNumber,
+        );
+
+        if (index != -1) {
+          _scrollToIndex(index);
+        }
+      }
     }
   }
 

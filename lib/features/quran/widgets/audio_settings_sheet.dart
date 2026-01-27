@@ -462,6 +462,20 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
   }
 
   Widget _buildBengaliSourceInfo(bool isDark) {
+    // For Arabic+Bengali mode, always use TTS for verse-by-verse tracking
+    final isArabicPlusBengali =
+        _audioService.playbackContent == AudioPlaybackContent.arabicThenBengali;
+    final displayText = isArabicPlusBengali
+        ? 'Bengali: TTS (verse-by-verse for ayah tracking)'
+        : (_audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
+            ? 'Bengali: Human voice narration (full surah)'
+            : 'Bengali: AI-generated voice');
+    final displayIcon = isArabicPlusBengali
+        ? Icons.format_list_numbered_rounded
+        : (_audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
+            ? Icons.record_voice_over_rounded
+            : Icons.smart_toy_rounded);
+
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -472,18 +486,14 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
       child: Row(
         children: [
           Icon(
-            _audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
-                ? Icons.record_voice_over_rounded
-                : Icons.smart_toy_rounded,
+            displayIcon,
             size: 16,
             color: AppColors.forestGreen,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _audioService.bengaliAudioSource == BengaliAudioSource.humanVoice
-                  ? 'Bengali: Human voice narration (BIF)'
-                  : 'Bengali: AI-generated voice',
+              displayText,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,

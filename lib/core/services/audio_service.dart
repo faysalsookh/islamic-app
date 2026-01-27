@@ -654,6 +654,9 @@ class AudioService extends ChangeNotifier {
     _isPlayingEnglishPart = false;
     _isPlayingFullSurahBengali = false;
 
+    // Notify listeners immediately so UI can scroll to current ayah
+    notifyListeners();
+
     switch (_playbackContent) {
       case AudioPlaybackContent.arabicOnly:
         await _playArabicAyah(surahNumber, ayahNumber);
@@ -667,14 +670,11 @@ class AudioService extends ChangeNotifier {
         }
         break;
       case AudioPlaybackContent.arabicThenBengali:
-        // If source is Human Voice, play the full mixed file (Arabic+Bengali)
-        if (_bengaliAudioSource == BengaliAudioSource.humanVoice) {
-          await _playMixedHumanVoice(surahNumber);
-        } else {
-          // Default: Play Arabic (Ayah), then Bengali (TTS/Device)
-          _isPlayingBengaliPart = false;
-          await _playArabicAyah(surahNumber, ayahNumber);
-        }
+        // Always use verse-by-verse for Arabic+Bengali mode
+        // This ensures proper ayah tracking and auto-scroll
+        // Human Voice (full surah) is only used for "Bengali Only" mode
+        _isPlayingBengaliPart = false;
+        await _playArabicAyah(surahNumber, ayahNumber);
         break;
       case AudioPlaybackContent.englishOnly:
         // Play only English translation audio
@@ -846,42 +846,6 @@ class AudioService extends ChangeNotifier {
     _preloadedAyah = null;
     _bengaliAudioPreloaded = false;
     notifyListeners();
-  }
-
-  /// Play Mixed (Arabic + Bengali) using Human Voice (full surah)
-  Future<void> _playMixedHumanVoice(int surahNumber) async {
-    try {
-      _isLoading = true;
-      _currentContentLabel = 'Arabic + Bengali (Human)';
-      _errorMessage = null;
-      _isPlayingFullSurahBengali = true; // Treating it as full surah mode
-      notifyListeners();
-
-      final url = BengaliAudioUrls.getSurahAudioUrl(surahNumber);
-      if (url == null) {
-        _errorMessage = 'Audio not found for surah $surahNumber';
-        _isLoading = false;
-        _isPlayingFullSurahBengali = false;
-        notifyListeners();
-        return;
-      }
-
-      debugPrint('Playing Mixed Human Voice for Surah $surahNumber: $url');
-
-      await _player.setUrl(url);
-      await _player.setSpeed(_playbackSpeed);
-      await _player.play();
-
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _isPlayingFullSurahBengali = false;
-      _errorMessage = 'Error playing audio: $e';
-      debugPrint('Error playing Mixed Human Voice: $e');
-      _isPlaying = false;
-      notifyListeners();
-    }
   }
 
   /// Preload Bengali audio in background for faster playback
@@ -1210,6 +1174,9 @@ class AudioService extends ChangeNotifier {
 
     // Reset Bengali state
     _isPlayingBengaliPart = false;
+
+    // Notify listeners before moving to next ayah
+    notifyListeners();
 
     // Move to next ayah based on repeat mode
     _moveToNextAyahBasedOnRepeatMode();
