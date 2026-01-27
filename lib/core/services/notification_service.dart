@@ -269,4 +269,5 @@ class NotificationIds {
   static const int taraweehReminder = 3;
   static const int duaReminder = 4;
   static const int quranReadingReminder = 5;
+  static const int dailyGuidanceReminder = 6;
 }

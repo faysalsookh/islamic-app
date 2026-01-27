@@ -7,6 +7,9 @@ import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/models/bookmark.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/services/haptic_service.dart';
+import '../../../../core/providers/daily_guidance_provider.dart';
+import '../../../daily_guidance/data/daily_guidance_model.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BookmarksPage extends StatefulWidget {
   const BookmarksPage({super.key});
@@ -15,14 +18,23 @@ class BookmarksPage extends StatefulWidget {
   State<BookmarksPage> createState() => _BookmarksPageState();
 }
 
-class _BookmarksPageState extends State<BookmarksPage> {
+class _BookmarksPageState extends State<BookmarksPage>
+    with SingleTickerProviderStateMixin {
   String? _selectedLabel;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchFocused = false;
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -511,8 +523,32 @@ class _BookmarksPageState extends State<BookmarksPage> {
             ),
           ],
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: isDark ? Colors.white : AppColors.textPrimary,
+          unselectedLabelColor:
+              isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
+          indicatorColor: theme.colorScheme.primary,
+          indicatorWeight: 3,
+          labelStyle: GoogleFonts.outfit(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: GoogleFonts.outfit(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          tabs: const [
+            Tab(text: 'Ayah Bookmarks'),
+            Tab(text: 'Saved Guidance'),
+          ],
+        ),
       ),
-      body: Consumer<AppStateProvider>(
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Tab 1: Ayah Bookmarks
+          Consumer<AppStateProvider>(
         builder: (context, appState, child) {
           final filteredBookmarks = _getFilteredBookmarks(appState.bookmarks);
           final labelCounts = _getLabelCounts(appState.bookmarks);
@@ -695,6 +731,98 @@ class _BookmarksPageState extends State<BookmarksPage> {
           );
         },
       ),
+          // Tab 2: Saved Guidance
+          _buildSavedGuidanceTab(isDark, horizontalPadding),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSavedGuidanceTab(bool isDark, double horizontalPadding) {
+    final theme = Theme.of(context);
+    return Consumer<DailyGuidanceProvider>(
+      builder: (context, provider, _) {
+        final savedItems = provider.bookmarks;
+
+        if (savedItems.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary.withValues(alpha: 0.15),
+                          theme.colorScheme.primary.withValues(alpha: 0.05),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 48,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'No saved guidance yet',
+                    style: AppTypography.heading2(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Save your favorite daily guidance items and access them anytime',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodyMedium(
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 16,
+          ),
+          itemCount: savedItems.length,
+          itemBuilder: (context, index) {
+            final item = savedItems[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _SavedGuidanceCard(
+                item: item,
+                isDark: isDark,
+                theme: theme,
+                onRemove: () {
+                  HapticService().lightImpact();
+                  provider.toggleBookmark(item);
+                },
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -1369,6 +1497,184 @@ class _PremiumEmptyState extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Saved Guidance Card
+class _SavedGuidanceCard extends StatelessWidget {
+  final DailyGuidanceItem item;
+  final bool isDark;
+  final ThemeData theme;
+  final VoidCallback onRemove;
+
+  const _SavedGuidanceCard({
+    required this.item,
+    required this.isDark,
+    required this.theme,
+    required this.onRemove,
+  });
+
+  IconData _getTypeIcon(DailyGuidanceType type) {
+    switch (type) {
+      case DailyGuidanceType.ayah:
+        return Icons.menu_book_rounded;
+      case DailyGuidanceType.hadith:
+        return Icons.format_quote_rounded;
+      case DailyGuidanceType.dua:
+        return Icons.front_hand_rounded;
+      case DailyGuidanceType.dhikr:
+        return Icons.favorite_rounded;
+      case DailyGuidanceType.reflection:
+        return Icons.lightbulb_rounded;
+      case DailyGuidanceType.dailyDeed:
+        return Icons.volunteer_activism_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Top gradient accent
+          Container(
+            height: 3,
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withValues(alpha: 0.5),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header row
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withValues(alpha: 0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _getTypeIcon(item.type),
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.type.label,
+                      style: AppTypography.heading3(
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      item.reference,
+                      style: AppTypography.bodySmall(
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: onRemove,
+                icon: Icon(
+                  Icons.bookmark_remove_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                tooltip: 'Remove from saved',
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Arabic text
+          if (item.arabicText.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkBackground.withValues(alpha: 0.5)
+                    : AppColors.cream.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                item.arabicText,
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.right,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.quranText(
+                  fontSize: 18,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+
+          // Translation
+          Text(
+            item.translation,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.bodyMedium(
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

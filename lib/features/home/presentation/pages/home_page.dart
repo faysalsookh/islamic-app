@@ -9,6 +9,7 @@ import '../../../../core/services/haptic_service.dart';
 import '../../../../core/services/quran_data_service.dart';
 import '../../../../core/models/ayah.dart';
 import '../../../../core/models/surah.dart';
+import '../../../../core/providers/daily_guidance_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -161,6 +162,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 0),
                       child: _buildQuickActions(theme, isDark),
+                    ),
+                  ),
+
+                  // Daily Guidance Section
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, 28, horizontalPadding, 0),
+                      child: _buildDailyGuidanceCard(theme, isDark),
                     ),
                   ),
 
@@ -752,6 +761,135 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDailyGuidanceCard(ThemeData theme, bool isDark) {
+    return Consumer<DailyGuidanceProvider>(
+      builder: (context, provider, _) {
+        return GestureDetector(
+          onTap: () {
+            HapticService().lightImpact();
+            Navigator.pushNamed(context, '/daily-guidance');
+          },
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF0D6B4F),
+                  const Color(0xFF2D7A7A).withValues(alpha: 0.9),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0D6B4F).withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'Daily Guidance',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          if (provider.currentStreak > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.local_fire_department_rounded,
+                                    color: Color(0xFFFF9800),
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    '${provider.currentStreak}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        provider.hasViewedToday
+                            ? 'Tap to revisit today\'s guidance'
+                            : 'Ayah, Hadith, Dua, Dhikr & more',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    provider.hasViewedToday
+                        ? Icons.replay_rounded
+                        : Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -29,6 +29,8 @@ import 'package:islamic_app/core/providers/daily_tracker_provider.dart';
 import 'package:islamic_app/core/providers/quran_plan_provider.dart';
 import 'package:islamic_app/core/providers/zakat_provider.dart';
 import 'package:islamic_app/features/umrah/presentation/pages/umrah_duas_page.dart';
+import 'package:islamic_app/features/daily_guidance/presentation/pages/daily_guidance_page.dart';
+import 'package:islamic_app/core/providers/daily_guidance_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +55,9 @@ void main() async {
 
   final zakatProvider = ZakatProvider();
   await zakatProvider.initialize();
+
+  final dailyGuidanceProvider = DailyGuidanceProvider();
+  await dailyGuidanceProvider.initialize();
   
   // Set Ramadan start date (2026 Ramadan starts around February 17)
   // TODO: Make this configurable in settings
@@ -66,6 +71,7 @@ void main() async {
         ChangeNotifierProvider.value(value: dailyTrackerProvider),
         ChangeNotifierProvider.value(value: quranPlanProvider),
         ChangeNotifierProvider.value(value: zakatProvider),
+        ChangeNotifierProvider.value(value: dailyGuidanceProvider),
       ],
       child: const IslamicApp(),
     ),
@@ -114,6 +120,7 @@ class IslamicApp extends StatelessWidget {
             '/zakat-calculator': (context) => const ZakatCalculatorPage(),
             '/quran-topics': (context) => const QuranTopicsPage(),
             '/umrah-duas': (context) => const UmrahDuasPage(),
+            '/daily-guidance': (context) => const DailyGuidancePage(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/quran-reader') {
