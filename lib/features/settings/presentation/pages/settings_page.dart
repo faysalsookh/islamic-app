@@ -495,48 +495,190 @@ class SettingsPage extends StatelessWidget {
   void _showReciterDialog(BuildContext context, AppStateProvider appState) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
         
-        return _SelectionSheet(
-          title: 'Select Reciter',
-          options: Reciter.values.map((reciter) => _SelectionOption(
-            title: reciter.displayName,
-            subtitle: reciter.displayNameArabic,
-            isSelected: appState.selectedReciter == reciter,
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  // Handle bar
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    decoration: BoxDecoration(
+                      color: (isDark ? AppColors.darkTextSecondary : AppColors.textTertiary)
+                          .withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Select Reciter',
+                            style: AppTypography.heading2(
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Reciter list
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      itemCount: Reciter.values.length,
+                      itemBuilder: (context, index) {
+                        final reciter = Reciter.values[index];
+                        final isSelected = appState.selectedReciter == reciter;
+                        
+                        return _buildReciterListItem(
+                          context: context,
+                          reciter: reciter,
+                          isSelected: isSelected,
+                          isDark: isDark,
+                          theme: theme,
+                          onTap: () {
+                            appState.setSelectedReciter(reciter);
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildReciterListItem({
+    required BuildContext context,
+    required Reciter reciter,
+    required bool isSelected,
+    required bool isDark,
+    required ThemeData theme,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withValues(alpha: 0.08)
+              : (isDark ? AppColors.darkSurface : AppColors.cream.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Reciter photo
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
               child: reciter.photoUrl != null
                   ? Image.asset(
                       reciter.photoUrl!,
-                      width: 48,
-                      height: 48,
+                      width: 56,
+                      height: 56,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        // Fallback to initial avatar if photo not found
-                        return _buildReciterInitialAvatar(
-                          reciter, 
-                          appState.selectedReciter == reciter, 
-                          isDark, 
-                          theme,
-                        );
+                        return _buildReciterInitialAvatar(reciter, isSelected, isDark, theme);
                       },
                     )
-                  : _buildReciterInitialAvatar(
-                      reciter, 
-                      appState.selectedReciter == reciter, 
-                      isDark, 
-                      theme,
-                    ),
+                  : _buildReciterInitialAvatar(reciter, isSelected, isDark, theme),
             ),
-            onTap: () {
-              appState.setSelectedReciter(reciter);
-              Navigator.pop(context);
-            },
-          )).toList(),
-        );
-      },
+            const SizedBox(width: 14),
+            // Reciter info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    reciter.displayName,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    reciter.displayNameArabic,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Amiri',
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    reciter.description,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: (isDark ? AppColors.darkTextSecondary : AppColors.textTertiary)
+                          .withValues(alpha: 0.8),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            // Selection indicator
+            if (isSelected)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
