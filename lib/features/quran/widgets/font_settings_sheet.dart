@@ -90,10 +90,6 @@ class FontSettingsSheet extends StatelessWidget {
               ),
           const SizedBox(height: 24),
 
-          // Premium Live Preview Card
-          _buildLivePreview(context, theme, isDark),
-          const SizedBox(height: 32),
-
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(bottom: 20),
@@ -139,68 +135,6 @@ class FontSettingsSheet extends StatelessWidget {
         letterSpacing: 0.5,
         color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
       ),
-    );
-  }
-
-  Widget _buildLivePreview(BuildContext context, ThemeData theme, bool isDark) {
-    return Consumer<AppStateProvider>(
-      builder: (context, appState, child) {
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-          decoration: BoxDecoration(
-            color: isDark 
-                ? const Color(0xFF222B32) 
-                : const Color(0xFFFFFDF5),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark 
-                  ? AppColors.warning.withValues(alpha: 0.2) 
-                  : AppColors.warning.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // Dynamic Text based on chosen style
-              Text(
-                (appState.arabicFontStyle == ArabicFontStyle.indopak || 
-                 appState.arabicFontStyle.fontFamily == 'Lateef') 
-                    ? 'بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ' // IndoPak Script Bismillah (Note: Allah written with dagger alif, etc)
-                    : 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ', // Uthmani Script
-                textAlign: TextAlign.center,
-                style: AppTypography.quranText(
-                  fontSize: appState.quranFontSize,
-                  color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1A1A1A),
-                  fontFamily: appState.arabicFontStyle.fontFamily,
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 12),
-              AnimatedOpacity(
-                opacity: appState.showTranslation ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Text(
-                  'In the name of Allah, the Most Gracious, the Most Merciful',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
