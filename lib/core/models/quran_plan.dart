@@ -1,25 +1,27 @@
-import 'package:intl/intl.dart';
-
-/// Model for Quran reading plan
+/// Model for Quran reading plan - tracks by Juz (30 parts)
 class QuranPlan {
   final int targetDays; // 15, 20, or 30 days
   final DateTime startDate;
-  final int completeQuranPages; // Standard Madani Mushaf is 604 pages
-  final int startPage; // Usually 1
-  final int currentPage; // Current progress
+  final int totalJuz; // Always 30
+  final List<int> completedJuz; // List of completed Juz numbers (1-30)
   final bool isCompleted;
 
   QuranPlan({
     required this.targetDays,
     required this.startDate,
-    this.completeQuranPages = 604,
-    this.startPage = 1,
-    this.currentPage = 0,
+    this.totalJuz = 30,
+    this.completedJuz = const [],
     this.isCompleted = false,
   });
 
-  /// Calculate pages to read per day
-  int get pagesPerDay => (completeQuranPages / targetDays).ceil();
+  /// Number of completed Juz
+  int get completedCount => completedJuz.length;
+
+  /// Progress percentage (0.0 to 100.0)
+  double get progressPercentage => (completedCount / totalJuz * 100).clamp(0.0, 100.0);
+
+  /// Calculate Juz to read per day
+  double get juzPerDay => totalJuz / targetDays;
 
   /// Calculate days elapsed since start
   int get daysElapsed {
@@ -28,14 +30,14 @@ class QuranPlan {
     return difference < 0 ? 0 : difference + 1;
   }
 
-  /// Calculate expected progress (page number) for today
-  int get expectedPage {
-    final expected = daysElapsed * pagesPerDay;
-    return expected > completeQuranPages ? completeQuranPages : expected;
+  /// Calculate expected completed Juz for today
+  int get expectedJuz {
+    final expected = (daysElapsed * juzPerDay).ceil();
+    return expected > totalJuz ? totalJuz : expected;
   }
 
-  /// Calculate remaining pages
-  int get remainingPages => completeQuranPages - currentPage;
+  /// Calculate remaining Juz
+  int get remainingJuz => totalJuz - completedCount;
 
   /// Calculate remaining days based on target date
   int get remainingDays {
@@ -44,26 +46,30 @@ class QuranPlan {
     return difference < 0 ? 0 : difference;
   }
 
-  /// Calculate adjusted pages per day based on remaining progress and days
-  int get adjustedPagesPerDay {
-    if (remainingDays <= 0) return remainingPages;
-    return (remainingPages / remainingDays).ceil();
+  /// Calculate adjusted Juz per day based on remaining progress and days
+  double get adjustedJuzPerDay {
+    if (remainingDays <= 0) return remainingJuz.toDouble();
+    return remainingJuz / remainingDays;
   }
 
   /// Check if user is on track
-  bool get isOnTrack => currentPage >= expectedPage;
+  bool get isOnTrack => completedCount >= expectedJuz;
+
+  /// Check if a specific Juz is completed
+  bool isJuzCompleted(int juzNumber) => completedJuz.contains(juzNumber);
 
   /// Get status message
   String get statusMessage {
-    if (isCompleted) return 'Khatam Completed! Alhamdulillah!';
-    if (remainingPages <= 0) return 'Completed! MashaAllah!';
-    
-    final diff = currentPage - expectedPage;
+    if (isCompleted || completedCount >= totalJuz) {
+      return 'Khatam Completed! Alhamdulillah!';
+    }
+
+    final diff = completedCount - expectedJuz;
     if (diff >= 0) {
-      if (diff == 0) return 'You are on track!';
-      return 'You are $diff pages ahead! MashaAllah!';
+      if (diff == 0) return 'You are on track! Keep going!';
+      return 'You are $diff Juz ahead! MashaAllah!';
     } else {
-      return 'You are ${diff.abs()} pages behind. Try to catch up!';
+      return 'You are ${diff.abs()} Juz behind. Try to catch up!';
     }
   }
 
@@ -71,17 +77,15 @@ class QuranPlan {
   QuranPlan copyWith({
     int? targetDays,
     DateTime? startDate,
-    int? completeQuranPages,
-    int? startPage,
-    int? currentPage,
+    int? totalJuz,
+    List<int>? completedJuz,
     bool? isCompleted,
   }) {
     return QuranPlan(
       targetDays: targetDays ?? this.targetDays,
       startDate: startDate ?? this.startDate,
-      completeQuranPages: completeQuranPages ?? this.completeQuranPages,
-      startPage: startPage ?? this.startPage,
-      currentPage: currentPage ?? this.currentPage,
+      totalJuz: totalJuz ?? this.totalJuz,
+      completedJuz: completedJuz ?? this.completedJuz,
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }
@@ -91,9 +95,8 @@ class QuranPlan {
     return {
       'targetDays': targetDays,
       'startDate': startDate.toIso8601String(),
-      'completeQuranPages': completeQuranPages,
-      'startPage': startPage,
-      'currentPage': currentPage,
+      'totalJuz': totalJuz,
+      'completedJuz': completedJuz,
       'isCompleted': isCompleted,
     };
   }
@@ -103,9 +106,11 @@ class QuranPlan {
     return QuranPlan(
       targetDays: json['targetDays'] as int,
       startDate: DateTime.parse(json['startDate'] as String),
-      completeQuranPages: json['completeQuranPages'] as int? ?? 604,
-      startPage: json['startPage'] as int? ?? 1,
-      currentPage: json['currentPage'] as int? ?? 0,
+      totalJuz: json['totalJuz'] as int? ?? 30,
+      completedJuz: (json['completedJuz'] as List<dynamic>?)
+              ?.map((e) => e as int)
+              .toList() ??
+          [],
       isCompleted: json['isCompleted'] as bool? ?? false,
     );
   }

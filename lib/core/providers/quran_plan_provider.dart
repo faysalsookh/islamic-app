@@ -2,12 +2,11 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/quran_plan.dart';
-import '../models/ramadan_settings.dart';
 
-/// Provider for managing Quran reading plan
+/// Provider for managing Quran reading plan (Juz-based tracking)
 class QuranPlanProvider with ChangeNotifier {
   static const String _storageKey = 'quran_reading_plan';
-  
+
   QuranPlan? _plan;
   bool _isLoading = false;
 
@@ -33,22 +32,64 @@ class QuranPlanProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Update current page progress
-  Future<void> updateProgress(int page) async {
+  /// Toggle a Juz as completed or not completed
+  Future<void> toggleJuz(int juzNumber) async {
     if (_plan == null) return;
-    
-    // Ensure page is valid
-    int newPage = page;
-    if (newPage < 0) newPage = 0;
-    if (newPage > _plan!.completeQuranPages) newPage = _plan!.completeQuranPages;
-    
-    final isCompleted = newPage >= _plan!.completeQuranPages;
-    
+    if (juzNumber < 1 || juzNumber > 30) return;
+
+    final currentCompleted = List<int>.from(_plan!.completedJuz);
+
+    if (currentCompleted.contains(juzNumber)) {
+      currentCompleted.remove(juzNumber);
+    } else {
+      currentCompleted.add(juzNumber);
+      currentCompleted.sort();
+    }
+
+    final isCompleted = currentCompleted.length >= _plan!.totalJuz;
+
     _plan = _plan!.copyWith(
-      currentPage: newPage,
+      completedJuz: currentCompleted,
       isCompleted: isCompleted,
     );
-    
+
+    await _savePlan();
+    notifyListeners();
+  }
+
+  /// Mark a specific Juz as completed
+  Future<void> markJuzComplete(int juzNumber) async {
+    if (_plan == null) return;
+    if (_plan!.isJuzCompleted(juzNumber)) return;
+
+    final currentCompleted = List<int>.from(_plan!.completedJuz)
+      ..add(juzNumber)
+      ..sort();
+
+    final isCompleted = currentCompleted.length >= _plan!.totalJuz;
+
+    _plan = _plan!.copyWith(
+      completedJuz: currentCompleted,
+      isCompleted: isCompleted,
+    );
+
+    await _savePlan();
+    notifyListeners();
+  }
+
+  /// Mark a specific Juz as incomplete
+  Future<void> markJuzIncomplete(int juzNumber) async {
+    if (_plan == null) return;
+    if (!_plan!.isJuzCompleted(juzNumber)) return;
+
+    final currentCompleted = List<int>.from(_plan!.completedJuz)
+      ..remove(juzNumber);
+
+    _plan = _plan!.copyWith(
+      completedJuz: currentCompleted,
+      isCompleted: false,
+    );
+
     await _savePlan();
     notifyListeners();
   }
@@ -59,12 +100,12 @@ class QuranPlanProvider with ChangeNotifier {
     DateTime? startDate,
   }) async {
     if (_plan == null) return;
-    
+
     _plan = _plan!.copyWith(
       targetDays: targetDays,
       startDate: startDate,
     );
-    
+
     await _savePlan();
     notifyListeners();
   }
@@ -101,7 +142,7 @@ class QuranPlanProvider with ChangeNotifier {
   /// Save plan to SharedPreferences
   Future<void> _savePlan() async {
     if (_plan == null) return;
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_storageKey, json.encode(_plan!.toJson()));

@@ -76,37 +76,60 @@ void main() {
     // 2️⃣ QURAN PLANNER TESTS
     // --------------------------------------------------------------------------
     group('📖 Quran Planner Logic', () {
-      test('Should calculate pages per day correctly', () {
+      test('Should calculate juz per day correctly', () {
         final plan = QuranPlan(
           targetDays: 30,
           startDate: DateTime.now(),
-          completeQuranPages: 600, // Round number for easy test
         );
 
-        // 600 / 30 = 20
-        expect(plan.pagesPerDay, 20);
+        // 30 juz / 30 days = 1.0
+        expect(plan.juzPerDay, 1.0);
       });
 
       test('Should track progress and status', () {
         final plan = QuranPlan(
-          targetDays: 10,
+          targetDays: 30,
           startDate: DateTime.now(),
-          completeQuranPages: 100,
         );
 
-        // Day 1 expected: 10 pages
-        expect(plan.daysElapsed, 1); 
-        expect(plan.expectedPage, 10);
-        
-        // User reads 5 pages -> Behind
-        var updatedPlan = plan.copyWith(currentPage: 5);
-        expect(updatedPlan.isOnTrack, false);
-        expect(updatedPlan.statusMessage.contains('behind'), true);
+        // Day 1 expected: 1 juz
+        expect(plan.daysElapsed, 1);
+        expect(plan.expectedJuz, 1);
 
-        // User reads 15 pages -> Ahead
-        updatedPlan = plan.copyWith(currentPage: 15);
+        // User completes 0 juz -> Behind
+        expect(plan.isOnTrack, false);
+        expect(plan.statusMessage.contains('behind'), true);
+
+        // User completes 2 juz -> Ahead
+        var updatedPlan = plan.copyWith(completedJuz: [1, 2]);
         expect(updatedPlan.isOnTrack, true);
         expect(updatedPlan.statusMessage.contains('ahead'), true);
+      });
+
+      test('Should track juz completion correctly', () {
+        var plan = QuranPlan(
+          targetDays: 30,
+          startDate: DateTime.now(),
+          completedJuz: [1, 5, 10],
+        );
+
+        expect(plan.completedCount, 3);
+        expect(plan.isJuzCompleted(1), true);
+        expect(plan.isJuzCompleted(2), false);
+        expect(plan.remainingJuz, 27);
+      });
+
+      test('Should detect khatam completion', () {
+        final allJuz = List.generate(30, (i) => i + 1);
+        final plan = QuranPlan(
+          targetDays: 30,
+          startDate: DateTime.now(),
+          completedJuz: allJuz,
+          isCompleted: true,
+        );
+
+        expect(plan.progressPercentage, 100.0);
+        expect(plan.statusMessage, 'Khatam Completed! Alhamdulillah!');
       });
     });
 

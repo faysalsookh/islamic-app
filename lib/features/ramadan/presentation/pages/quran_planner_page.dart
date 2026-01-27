@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/quran_plan_provider.dart';
 import '../../../../core/providers/ramadan_provider.dart';
 import '../../../../core/models/quran_plan.dart';
+import '../../../../core/models/juz.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/elegant_card.dart';
 
-/// Khatam-ul-Quran Planner page
+/// Khatam-ul-Quran Planner page with Juz-based tracking
 class QuranPlannerPage extends StatefulWidget {
   const QuranPlannerPage({super.key});
 
@@ -16,9 +18,31 @@ class QuranPlannerPage extends StatefulWidget {
   State<QuranPlannerPage> createState() => _QuranPlannerPageState();
 }
 
-class _QuranPlannerPageState extends State<QuranPlannerPage> {
-  // For plan creation
+class _QuranPlannerPageState extends State<QuranPlannerPage>
+    with TickerProviderStateMixin {
   int _selectedDays = 30;
+  late AnimationController _progressAnimController;
+  late Animation<double> _progressAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _progressAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _progressAnimation = CurvedAnimation(
+      parent: _progressAnimController,
+      curve: Curves.easeOutCubic,
+    );
+    _progressAnimController.forward();
+  }
+
+  @override
+  void dispose() {
+    _progressAnimController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +52,7 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
     final hasPlan = planProvider.hasPlan;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.pearl,
       appBar: AppBar(
         title: const Text('Khatam-ul-Quran'),
         centerTitle: true,
@@ -55,268 +80,512 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
     ThemeData theme,
   ) {
     final plan = provider.plan!;
-    final percentage = (plan.currentPage / plan.completeQuranPages * 100).clamp(0.0, 100.0);
-    
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Header Status Card
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primary.withOpacity(0.8),
-                AppColors.mutedTeal.withOpacity(0.8),
+    final percentage = plan.progressPercentage;
+
+    return CustomScrollView(
+      slivers: [
+        // Progress Header
+        SliverToBoxAdapter(
+          child: _buildProgressHeader(plan, percentage, isDark, theme),
+        ),
+
+        // Status & Stats
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: _buildStatsRow(plan, isDark, theme),
+          ),
+        ),
+
+        // Section Title
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.grid_view_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Tap a Juz to mark as read',
+                  style: AppTypography.heading4(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
+                ),
               ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
+          ),
+        ),
+
+        // Juz Grid
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 0.82,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final juzNumber = index + 1;
+                final juz = JuzData.getJuz(juzNumber)!;
+                final isCompleted = plan.isJuzCompleted(juzNumber);
+                return _buildJuzCard(
+                  juz: juz,
+                  isCompleted: isCompleted,
+                  isDark: isDark,
+                  theme: theme,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    provider.toggleJuz(juzNumber);
+                  },
+                );
+              },
+              childCount: 30,
+            ),
+          ),
+        ),
+
+        // Plan Details
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+            child: _buildPlanDetails(plan, isDark, theme),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgressHeader(
+    QuranPlan plan,
+    double percentage,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  AppColors.mutedTealDark,
+                  AppColors.emeraldGreenDark,
+                ]
+              : [
+                  AppColors.mutedTeal,
+                  AppColors.emeraldGreen,
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.mutedTeal.withOpacity(isDark ? 0.2 : 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Title row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.auto_stories_rounded,
+                color: Colors.white.withOpacity(0.9),
+                size: 28,
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Khatam Progress',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
               ),
             ],
           ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                   Icon(
-                    Icons.auto_stories_rounded,
-                    color: Colors.white.withOpacity(0.9),
-                    size: 32,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Khatam Progress',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Stack(
+          const SizedBox(height: 24),
+
+          // Circular progress
+          AnimatedBuilder(
+            animation: _progressAnimation,
+            builder: (context, child) {
+              final animatedProgress =
+                  percentage * _progressAnimation.value / 100;
+              return Stack(
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    height: 150,
-                    width: 150,
+                    height: 140,
+                    width: 140,
                     child: CircularProgressIndicator(
-                      value: percentage / 100,
-                      strokeWidth: 12,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      valueColor: const AlwaysStoppedAnimation(Colors.white),
+                      value: animatedProgress,
+                      strokeWidth: 10,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: Colors.white.withOpacity(0.15),
+                      valueColor:
+                          const AlwaysStoppedAnimation(Colors.white),
                     ),
                   ),
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '${percentage.toStringAsFixed(1)}%',
+                        '${percentage.toStringAsFixed(0)}%',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 32,
+                          fontSize: 34,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        '${plan.currentPage} / ${plan.completeQuranPages}',
+                        '${plan.completedCount} / ${plan.totalJuz} Juz',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withOpacity(0.85),
                           fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ],
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  plan.statusMessage,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
+              );
+            },
           ),
-        ),
 
-        const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-        // Today's Target Card
-        ElegantCard(
-          padding: const EdgeInsets.all(20),
-          backgroundColor: isDark ? AppColors.darkCard : Colors.white,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                   Icon(
-                    Icons.today_rounded,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Today\'s Goal',
-                    style: AppTypography.heading4(
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          // Status message
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  plan.isOnTrack
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.schedule_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    plan.statusMessage,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildGoalStat(
-                    'Target Page',
-                    '${plan.expectedPage}',
-                    isDark,
-                  ),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: isDark ? AppColors.dividerDark : AppColors.divider,
-                  ),
-                  _buildGoalStat(
-                    'Pages / Day',
-                    '${plan.pagesPerDay}',
-                    isDark,
-                  ),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: isDark ? AppColors.dividerDark : AppColors.divider,
-                  ),
-                  _buildGoalStat(
-                    'Remaining',
-                    '${plan.remainingPages}',
-                    isDark,
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsRow(QuranPlan plan, bool isDark, ThemeData theme) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatChip(
+            icon: Icons.today_rounded,
+            label: 'Expected',
+            value: '${plan.expectedJuz} Juz',
+            isDark: isDark,
+            theme: theme,
           ),
         ),
-
-        const SizedBox(height: 16),
-
-        // Update Progress Card
-        ElegantCard(
-          padding: const EdgeInsets.all(20),
-          backgroundColor: isDark ? AppColors.darkCard : Colors.white,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Update Progress',
-                style: AppTypography.heading4(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Drag slider to update your current page',
-                style: AppTypography.bodySmall(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline_rounded),
-                    color: theme.colorScheme.primary,
-                    onPressed: () => provider.updateProgress(plan.currentPage - 1),
-                  ),
-                  Text(
-                    'Page ${plan.currentPage}',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline_rounded),
-                    color: theme.colorScheme.primary,
-                    onPressed: () => provider.updateProgress(plan.currentPage + 1),
-                  ),
-                ],
-              ),
-              Slider(
-                value: plan.currentPage.toDouble(),
-                min: 0,
-                max: plan.completeQuranPages.toDouble(),
-                activeColor: theme.colorScheme.primary,
-                onChanged: (value) => provider.updateProgress(value.toInt()),
-              ),
-              Center(
-                child: TextButton.icon(
-                  onPressed: () {
-                    // Quick add 10 pages
-                    provider.updateProgress(plan.currentPage + 10);
-                  },
-                  icon: const Icon(Icons.fast_forward_rounded),
-                  label: const Text('Read 10 Pages'),
-                ),
-              ),
-            ],
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildStatChip(
+            icon: Icons.speed_rounded,
+            label: 'Per Day',
+            value: '${plan.juzPerDay.toStringAsFixed(1)}',
+            isDark: isDark,
+            theme: theme,
           ),
         ),
-
-        const SizedBox(height: 16),
-
-        // Plan Details
-        ElegantCard(
-          padding: const EdgeInsets.all(20),
-          backgroundColor: isDark ? AppColors.darkCard : Colors.white,
-          child: Column(
-            children: [
-              _buildPlanDetailRow(
-                'Start Date',
-                DateFormat('MMM d, yyyy').format(plan.startDate),
-                isDark,
-              ),
-              const Divider(height: 24),
-              _buildPlanDetailRow(
-                'Target Duration',
-                '${plan.targetDays} Days',
-                isDark,
-              ),
-              const Divider(height: 24),
-              _buildPlanDetailRow(
-                'Estimated Completion',
-                DateFormat('MMM d, yyyy').format(
-                  plan.startDate.add(Duration(days: plan.targetDays)),
-                ),
-                isDark,
-              ),
-            ],
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildStatChip(
+            icon: Icons.pending_outlined,
+            label: 'Remaining',
+            value: '${plan.remainingJuz} Juz',
+            isDark: isDark,
+            theme: theme,
           ),
         ),
       ],
     );
   }
+
+  Widget _buildStatChip({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isDark,
+    required ThemeData theme,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.cardShadow,
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: theme.colorScheme.primary),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJuzCard({
+    required Juz juz,
+    required bool isCompleted,
+    required bool isDark,
+    required ThemeData theme,
+    required VoidCallback onTap,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: isCompleted
+            ? (isDark ? AppColors.emeraldGreenDark : AppColors.emeraldGreen)
+            : (isDark ? AppColors.darkCard : Colors.white),
+        borderRadius: BorderRadius.circular(16),
+        border: isCompleted
+            ? null
+            : Border.all(
+                color: isDark
+                    ? AppColors.dividerDark
+                    : AppColors.divider,
+                width: 1,
+              ),
+        boxShadow: isCompleted
+            ? [
+                BoxShadow(
+                  color: AppColors.emeraldGreen.withOpacity(isDark ? 0.2 : 0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [
+                if (!isDark)
+                  BoxShadow(
+                    color: AppColors.cardShadow,
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Juz number badge
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? Colors.white.withOpacity(0.2)
+                        : theme.colorScheme.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: isCompleted
+                        ? const Icon(
+                            Icons.check_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          )
+                        : Text(
+                            '${juz.number}',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Arabic name
+                Text(
+                  juz.nameArabic,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: isCompleted
+                        ? Colors.white
+                        : (isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary),
+                    fontFamily: 'Amiri',
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+
+                // Transliteration
+                Text(
+                  juz.nameTransliteration,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isCompleted
+                        ? Colors.white.withOpacity(0.8)
+                        : (isDark
+                            ? AppColors.darkTextTertiary
+                            : AppColors.textTertiary),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                // Juz number for completed state
+                if (isCompleted)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Juz ${juz.number}',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlanDetails(QuranPlan plan, bool isDark, ThemeData theme) {
+    return ElegantCard(
+      padding: const EdgeInsets.all(20),
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Plan Details',
+                style: AppTypography.heading4(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildPlanDetailRow(
+            'Start Date',
+            DateFormat('MMM d, yyyy').format(plan.startDate),
+            isDark,
+          ),
+          const Divider(height: 24),
+          _buildPlanDetailRow(
+            'Target Duration',
+            '${plan.targetDays} Days',
+            isDark,
+          ),
+          const Divider(height: 24),
+          _buildPlanDetailRow(
+            'Estimated Completion',
+            DateFormat('MMM d, yyyy').format(
+              plan.startDate.add(Duration(days: plan.targetDays)),
+            ),
+            isDark,
+          ),
+          const Divider(height: 24),
+          _buildPlanDetailRow(
+            'Days Remaining',
+            '${plan.remainingDays} Days',
+            isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Plan Creation Screen ─────────────────────────────────
 
   Widget _buildPlanCreation(
     BuildContext context,
@@ -327,13 +596,22 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const SizedBox(height: 20),
-        Icon(
-          Icons.book_rounded,
-          size: 80,
-          color: theme.colorScheme.primary.withOpacity(0.5),
+        const SizedBox(height: 30),
+        // Icon
+        Container(
+          width: 90,
+          height: 90,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.menu_book_rounded,
+            size: 44,
+            color: theme.colorScheme.primary,
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         Text(
           'Start Your Khatam Journey',
           style: AppTypography.heading2(
@@ -343,14 +621,16 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Create a personalized reading plan to complete the Holy Quran during Ramadan.',
+          'Track your Quran completion by Juz.\nTap each Juz as you finish reading it.',
           style: AppTypography.bodyMedium(
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            color: isDark
+                ? AppColors.darkTextSecondary
+                : AppColors.textSecondary,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 40),
-        
+
         Text(
           'I want to complete in:',
           style: AppTypography.heading4(
@@ -358,32 +638,28 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         Row(
           children: [
-            Expanded(
-              child: _buildDurationOption(15, theme, isDark),
-            ),
+            Expanded(child: _buildDurationOption(15, theme, isDark)),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildDurationOption(20, theme, isDark),
-            ),
+            Expanded(child: _buildDurationOption(20, theme, isDark)),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildDurationOption(30, theme, isDark),
-            ),
+            Expanded(child: _buildDurationOption(30, theme, isDark)),
           ],
         ),
-        
+
         const SizedBox(height: 40),
-        
+
         SizedBox(
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
             onPressed: () {
+              HapticFeedback.mediumImpact();
               final ramadanProvider = context.read<RamadanProvider>();
-              final startDate = ramadanProvider.settings.ramadanStartDate ?? DateTime.now();
+              final startDate =
+                  ramadanProvider.settings.ramadanStartDate ?? DateTime.now();
               provider.createPlan(
                 targetDays: _selectedDays,
                 startDate: startDate,
@@ -396,14 +672,50 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
               elevation: 4,
+              shadowColor: theme.colorScheme.primary.withOpacity(0.4),
             ),
             child: const Text(
-              'Create Plan',
+              'Start Khatam Plan',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Info note
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.darkCard
+                : AppColors.mutedTealSoft,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline_rounded,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '30 Juz = Complete Quran. You can tap each Juz as you finish reading it to track your progress.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -412,26 +724,34 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
 
   Widget _buildDurationOption(int days, ThemeData theme, bool isDark) {
     final isSelected = _selectedDays == days;
-    final pagesPerDay = (604 / days).ceil();
-    
+    final juzPerDay = (30 / days).toStringAsFixed(1);
+
     return InkWell(
-      onTap: () => setState(() => _selectedDays = days),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _selectedDays = days);
+      },
       borderRadius: BorderRadius.circular(16),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary : (isDark ? AppColors.darkCard : Colors.white),
+          color: isSelected
+              ? theme.colorScheme.primary
+              : (isDark ? AppColors.darkCard : Colors.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.transparent : (isDark ? AppColors.dividerDark : AppColors.divider),
+            color: isSelected
+                ? Colors.transparent
+                : (isDark ? AppColors.dividerDark : AppColors.divider),
             width: 2,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
                     color: theme.colorScheme.primary.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
                 ]
               : null,
@@ -443,28 +763,43 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                color: isSelected
+                    ? Colors.white
+                    : (isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary),
               ),
             ),
             Text(
               'Days',
               style: TextStyle(
                 fontSize: 12,
-                color: isSelected ? Colors.white.withOpacity(0.9) : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                color: isSelected
+                    ? Colors.white.withOpacity(0.9)
+                    : (isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary),
               ),
             ),
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withOpacity(0.2) : (isDark ? AppColors.darkSurface : AppColors.warmBeige),
+                color: isSelected
+                    ? Colors.white.withOpacity(0.2)
+                    : (isDark ? AppColors.darkSurface : AppColors.warmBeige),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                '~$pagesPerDay pgs/day',
+                '$juzPerDay juz/day',
                 style: TextStyle(
                   fontSize: 10,
-                  color: isSelected ? Colors.white : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary),
                 ),
               ),
             ),
@@ -474,28 +809,7 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
     );
   }
 
-  Widget _buildGoalStat(String label, String value, bool isDark) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
+  // ─── Shared Helpers ───────────────────────────────────────
 
   Widget _buildPlanDetailRow(String label, String value, bool isDark) {
     return Row(
@@ -504,7 +818,8 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
         Text(
           label,
           style: AppTypography.bodyMedium(
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            color:
+                isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
           ),
         ),
         Text(
@@ -517,10 +832,12 @@ class _QuranPlannerPageState extends State<QuranPlannerPage> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, QuranPlanProvider provider) {
+  void _showDeleteConfirmation(
+      BuildContext context, QuranPlanProvider provider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Delete Plan?'),
         content: const Text(
           'This will reset your Khatam progress. This action cannot be undone.',
