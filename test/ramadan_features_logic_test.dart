@@ -47,7 +47,7 @@ void main() {
       test('Should determine Eligibility (Nisab) correctly', () {
         // Setup Prices
         zakatProvider.updateData(
-          silverPricePerGram: 1.0, // Easy math
+          silverPricePerUnit: 1.0, // Easy math
           useSilverNisab: true,
         );
         // Nisab Threshold for Silver = 612.36 * 1.0 = 612.36
@@ -64,7 +64,7 @@ void main() {
       test('Should calculate correct Zakat amount (2.5%)', () {
         zakatProvider.updateData(
           cashInHand: 100000,
-          silverPricePerGram: 1.0, 
+          silverPricePerUnit: 1.0, 
         );
         
         // 100,000 * 0.025 = 2,500
