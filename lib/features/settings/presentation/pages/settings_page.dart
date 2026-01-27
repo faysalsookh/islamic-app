@@ -110,6 +110,15 @@ class SettingsPage extends StatelessWidget {
                       onTap: () => _showBengaliTranslationDialog(context, appState),
                       isTablet: isTablet,
                     ),
+                  if (appState.translationLanguage == TranslationLanguage.english ||
+                      appState.translationLanguage == TranslationLanguage.both)
+                    _SettingsTile(
+                      icon: Icons.translate_rounded,
+                      title: 'English Translation Source',
+                      subtitle: _getEnglishTranslationName(appState.selectedEnglishTranslationId),
+                      onTap: () => _showEnglishTranslationDialog(context, appState),
+                      isTablet: isTablet,
+                    ),
                   _SettingsTile(
                     icon: Icons.abc_rounded,
                     title: 'Transliteration',
@@ -629,6 +638,38 @@ class SettingsPage extends StatelessWidget {
             isSelected: appState.selectedBengaliTranslationId == id,
             onTap: () {
               appState.setSelectedBengaliTranslationId(id);
+              Navigator.pop(context);
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _getEnglishTranslationName(int id) {
+    final options = QuranDataService.getEnglishTranslationOptions();
+    final option = options.firstWhere(
+      (o) => o['id'] == id,
+      orElse: () => {'name': 'Unknown'},
+    );
+    return option['name'] as String;
+  }
+
+  void _showEnglishTranslationDialog(
+      BuildContext context, AppStateProvider appState) {
+    final options = QuranDataService.getEnglishTranslationOptions();
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => _SelectionSheet(
+        title: 'English Translation',
+        options: options.map((option) {
+          final id = option['id'] as int;
+          return _SelectionOption(
+            title: option['name'] as String,
+            subtitle: option['description'] as String,
+            isSelected: appState.selectedEnglishTranslationId == id,
+            onTap: () {
+              appState.setSelectedEnglishTranslationId(id);
               Navigator.pop(context);
             },
           );

@@ -226,13 +226,16 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
               ...AudioPlaybackContent.values.map((content) {
                 final isSelected = _audioService.playbackContent == content;
                 final isBengaliOnly = content == AudioPlaybackContent.bengaliOnly;
+                final isEnglishOnly = content == AudioPlaybackContent.englishOnly;
                 final isRecommended = content == AudioPlaybackContent.arabicOnly ||
-                    content == AudioPlaybackContent.arabicThenBengali;
+                    content == AudioPlaybackContent.arabicThenBengali ||
+                    content == AudioPlaybackContent.arabicThenEnglish;
 
                 return _buildLanguageOption(
                   content: content,
                   isSelected: isSelected,
                   isBengaliOnly: isBengaliOnly,
+                  isEnglishOnly: isEnglishOnly,
                   isRecommended: isRecommended,
                   isDark: isDark,
                   theme: theme,
@@ -241,8 +244,14 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
               // Bengali Only Warning
               if (_audioService.playbackContent == AudioPlaybackContent.bengaliOnly)
                 _buildWarningNote(isDark),
-              // Bengali Source Info
-              _buildBengaliSourceInfo(isDark),
+              // Bengali Source Info (show when Bengali is included)
+              if (_audioService.playbackContent == AudioPlaybackContent.bengaliOnly ||
+                  _audioService.playbackContent == AudioPlaybackContent.arabicThenBengali)
+                _buildBengaliSourceInfo(isDark),
+              // English Source Info (show when English is included)
+              if (_audioService.playbackContent == AudioPlaybackContent.englishOnly ||
+                  _audioService.playbackContent == AudioPlaybackContent.arabicThenEnglish)
+                _buildEnglishSourceInfo(isDark),
             ],
           );
         },
@@ -254,6 +263,7 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
     required AudioPlaybackContent content,
     required bool isSelected,
     required bool isBengaliOnly,
+    required bool isEnglishOnly,
     required bool isRecommended,
     required bool isDark,
     required ThemeData theme,
@@ -344,6 +354,12 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
                         _buildBadge(
                           text: 'TTS Audio',
                           color: Colors.orange,
+                          isDark: isDark,
+                        ),
+                      if (isEnglishOnly)
+                        _buildBadge(
+                          text: 'Ibrahim Walk',
+                          color: Colors.blue,
                           isDark: isDark,
                         ),
                     ],
@@ -472,6 +488,41 @@ class _AudioSettingsSheetState extends State<AudioSettingsSheet> {
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: AppColors.forestGreen,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnglishSourceInfo(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: isDark ? 0.08 : 0.06),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _audioService.englishAudioSource == EnglishAudioSource.ibrahimWalk
+                ? Icons.record_voice_over_rounded
+                : Icons.smart_toy_rounded,
+            size: 16,
+            color: Colors.blue,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _audioService.englishAudioSource == EnglishAudioSource.ibrahimWalk
+                  ? 'English: Ibrahim Walk (Sahih International)'
+                  : 'English: AI-generated voice',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue,
               ),
             ),
           ),

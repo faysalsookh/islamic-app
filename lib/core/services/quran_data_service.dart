@@ -48,6 +48,10 @@ class QuranDataService extends ChangeNotifier {
   static const int _bengaliAbuBakr = 213;        // Dr. Abu Bakr Zakaria
   static const int _bengaliMuhiuddin = 9999;     // Muhiuddin Khan (Islamic Foundation) - served via Al-Quran Cloud
 
+  // English Translation IDs (Quran.com)
+  static const int englishSahihInternational = 131;  // Sahih International - Most popular
+  static const int englishClearQuran = 85;           // The Clear Quran by Dr. Mustafa Khattab
+
   // Bengali Tafsir IDs (Quran.com)
   static const int _tafsirIbnKathir = 164;       // Tafseer ibn Kathir (Bengali)
   static const int _tafsirAhsanulBayaan = 165;   // Tafsir Ahsanul Bayaan (Bengali)
@@ -69,10 +73,17 @@ class QuranDataService extends ChangeNotifier {
 
   // Current settings
   int _currentBengaliTranslationId = 161; // Default to Taisirul Quran
+  int _currentEnglishTranslationId = 131; // Default to Sahih International
 
   void setBengaliTranslationId(int id) {
     _currentBengaliTranslationId = id;
   }
+
+  void setEnglishTranslationId(int id) {
+    _currentEnglishTranslationId = id;
+  }
+
+  int get currentEnglishTranslationId => _currentEnglishTranslationId;
 
 
   // Cache version - increment when data structure changes
@@ -151,21 +162,21 @@ class QuranDataService extends ChangeNotifier {
   /// Fetch Quran data using hybrid approach:
   /// - Arabic text: QuranEnc API (King Fahd Quran Complex - Most Authoritative)
   /// - Bengali translation: Quran.com API v4
-  /// - English translation: QuranEnc API
+  /// - English translation: Quran.com API v4 (Sahih International or Clear Quran)
   /// Returns null if API fails, allowing fallback to Al-Quran Cloud
   Future<List<Ayah>?> _fetchFromQuranComApi(int surahNumber) async {
     try {
       // Fetch in parallel for better performance:
-      // 1. QuranEnc for Arabic text + English translation
-      // 2. Quran.com for Bengali translation + metadata + Tajweed text + word-level transliteration
+      // 1. QuranEnc for Arabic text (King Fahd Complex - Most Authoritative)
+      // 2. Quran.com for Bengali + English translations + metadata + Tajweed text + word-level transliteration
       final futures = await Future.wait([
-        _fetchFromQuranEncApi(surahNumber, translationKey: _quranEncEnglishKey),
+        _fetchFromQuranEncApi(surahNumber),
         http.get(Uri.parse(
           '$_quranComBaseUrl/verses/by_chapter/$surahNumber'
-          '?language=bn'
+          '?language=en'
           '&words=true'  // Enable word-level data for transliteration
           '&word_fields=text_uthmani,transliteration'
-          '&translations=$_currentBengaliTranslationId'
+          '&translations=$_currentBengaliTranslationId,$_currentEnglishTranslationId'
           '&fields=text_uthmani,text_uthmani_tajweed,text_indopak,text_uthmani_simple,verse_key,juz_number,page_number,hizb_number'
           '&per_page=300',
         )).timeout(const Duration(seconds: 20)),
@@ -197,14 +208,13 @@ class QuranDataService extends ChangeNotifier {
 
         // Get Arabic text from QuranEnc (King Fahd Complex - Most Authoritative)
         String arabicText = '';
-        String? englishTranslation;
         if (quranEncData != null && i < quranEncData.length) {
           arabicText = quranEncData[i]['arabic_text'] as String? ?? '';
-          englishTranslation = quranEncData[i]['translation'] as String?;
         }
 
-        // Get metadata, Bengali translation, and Tajweed text from Quran.com
+        // Get metadata, translations, and Tajweed text from Quran.com
         String? bengaliTranslation;
+        String? englishTranslation;
         String? indopakText;
         String? tajweedText; // Tajweed-annotated text from Quran.com API
         int juz = 1, page = 1, hizbQuarter = 1;
@@ -227,16 +237,17 @@ class QuranDataService extends ChangeNotifier {
             debugPrint('Tajweed text for ayah 1: ${tajweedText.substring(0, previewLength)}...');
           }
 
-          // Get Bengali translation
+          // Get Bengali and English translations from Quran.com
           final translations = verse['translations'] as List?;
           if (translations != null && translations.isNotEmpty) {
             for (final t in translations) {
-              if (t['resource_id'] == _currentBengaliTranslationId) {
+              final resourceId = t['resource_id'] as int?;
+              if (resourceId == _currentBengaliTranslationId) {
                 bengaliTranslation = _cleanHtmlText(t['text'] as String?);
-                break;
+              } else if (resourceId == _currentEnglishTranslationId) {
+                englishTranslation = _cleanHtmlText(t['text'] as String?);
               }
             }
-            bengaliTranslation ??= _cleanHtmlText(translations.first['text'] as String?);
           }
 
           // Get metadata
@@ -511,6 +522,14 @@ class QuranDataService extends ChangeNotifier {
       {'id': _bengaliAbuBakr, 'name': 'ড. আবু বকর জাকারিয়া', 'nameEn': 'Dr. Abu Bakr Zakaria'},
       {'id': _bengaliMujibur, 'name': 'শেখ মুজিবুর রহমান', 'nameEn': 'Sheikh Mujibur Rahman'},
       {'id': _bengaliRawai, 'name': 'রওয়াই আল-বায়ান', 'nameEn': 'Rawai Al-bayan'},
+    ];
+  }
+
+  /// Get available English Translation options
+  static List<Map<String, dynamic>> getEnglishTranslationOptions() {
+    return [
+      {'id': englishSahihInternational, 'name': 'Sahih International', 'description': 'Clear, modern English - Most popular'},
+      {'id': englishClearQuran, 'name': 'The Clear Quran', 'description': 'Dr. Mustafa Khattab - Very readable'},
     ];
   }
 

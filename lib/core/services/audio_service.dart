@@ -34,6 +34,12 @@ enum AudioPlaybackContent {
 
   /// Play Arabic first, then Bengali translation
   arabicThenBengali,
+
+  /// Play only English translation audio (Ibrahim Walk - Sahih International)
+  englishOnly,
+
+  /// Play Arabic first, then English translation
+  arabicThenEnglish,
 }
 
 extension AudioPlaybackContentExtension on AudioPlaybackContent {
@@ -45,6 +51,10 @@ extension AudioPlaybackContentExtension on AudioPlaybackContent {
         return 'Bengali Only';
       case AudioPlaybackContent.arabicThenBengali:
         return 'Arabic + Bengali';
+      case AudioPlaybackContent.englishOnly:
+        return 'English Only';
+      case AudioPlaybackContent.arabicThenEnglish:
+        return 'Arabic + English';
     }
   }
 
@@ -56,6 +66,10 @@ extension AudioPlaybackContentExtension on AudioPlaybackContent {
         return 'শুধু বাংলা';
       case AudioPlaybackContent.arabicThenBengali:
         return 'আরবি + বাংলা';
+      case AudioPlaybackContent.englishOnly:
+        return 'শুধু ইংরেজি';
+      case AudioPlaybackContent.arabicThenEnglish:
+        return 'আরবি + ইংরেজি';
     }
   }
 
@@ -67,6 +81,10 @@ extension AudioPlaybackContentExtension on AudioPlaybackContent {
         return Icons.translate_rounded;
       case AudioPlaybackContent.arabicThenBengali:
         return Icons.playlist_play_rounded;
+      case AudioPlaybackContent.englishOnly:
+        return Icons.record_voice_over_rounded;
+      case AudioPlaybackContent.arabicThenEnglish:
+        return Icons.queue_music_rounded;
     }
   }
 }
@@ -134,6 +152,84 @@ extension BengaliAudioSourceExtension on BengaliAudioSource {
 
   /// Whether this source provides full surah audio
   bool get isFullSurah => this == BengaliAudioSource.humanVoice;
+}
+
+/// Enum for English translation audio source types
+enum EnglishAudioSource {
+  /// Ibrahim Walk - Sahih International (Human voice from EveryAyah.com)
+  /// Verse-by-verse audio at 192kbps
+  ibrahimWalk,
+
+  /// Cloud TTS (Text-to-Speech) - Google TTS for English
+  cloudTTS,
+}
+
+extension EnglishAudioSourceExtension on EnglishAudioSource {
+  String get displayName {
+    switch (this) {
+      case EnglishAudioSource.ibrahimWalk:
+        return 'Ibrahim Walk (Sahih Intl)';
+      case EnglishAudioSource.cloudTTS:
+        return 'TTS Voice (Cloud)';
+    }
+  }
+
+  String get displayNameBengali {
+    switch (this) {
+      case EnglishAudioSource.ibrahimWalk:
+        return 'ইব্রাহিম ওয়াক (সহীহ ইন্টল)';
+      case EnglishAudioSource.cloudTTS:
+        return 'টিটিএস ভয়েস (ক্লাউড)';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case EnglishAudioSource.ibrahimWalk:
+        return 'Human voice - Sahih International translation (192kbps)';
+      case EnglishAudioSource.cloudTTS:
+        return 'Computer generated voice (Google TTS)';
+    }
+  }
+
+  String get descriptionBengali {
+    switch (this) {
+      case EnglishAudioSource.ibrahimWalk:
+        return 'মানুষের কণ্ঠ - সহীহ ইন্টারন্যাশনাল অনুবাদ';
+      case EnglishAudioSource.cloudTTS:
+        return 'কম্পিউটার জেনারেটেড ভয়েস (গুগল টিটিএস)';
+    }
+  }
+
+  /// Base URL for Ibrahim Walk English translation audio
+  static const String _ibrahimWalkBaseUrl =
+      'https://everyayah.com/data/English/Sahih_Intnl_Ibrahim_Walk_192kbps';
+
+  /// Get audio URL for a specific ayah
+  String getAudioUrl(int surahNumber, int ayahNumber) {
+    switch (this) {
+      case EnglishAudioSource.ibrahimWalk:
+        final surahStr = surahNumber.toString().padLeft(3, '0');
+        final ayahStr = ayahNumber.toString().padLeft(3, '0');
+        return '$_ibrahimWalkBaseUrl/$surahStr$ayahStr.mp3';
+      case EnglishAudioSource.cloudTTS:
+        // Cloud TTS doesn't have a direct URL - it's generated on demand
+        return '';
+    }
+  }
+
+  /// Whether this source provides verse-by-verse audio
+  bool get isVerseByVerse => true;
+
+  /// Audio quality description
+  String get audioQuality {
+    switch (this) {
+      case EnglishAudioSource.ibrahimWalk:
+        return '192 kbps (High Quality)';
+      case EnglishAudioSource.cloudTTS:
+        return 'Variable (TTS)';
+    }
+  }
 }
 
 /// Enum for Bengali translation reciters (legacy - kept for compatibility)
@@ -430,6 +526,7 @@ class AudioService extends ChangeNotifier {
   Reciter _currentReciter = Reciter.misharyRashidAlafasy;
   BengaliTranslator _currentBengaliTranslator = BengaliTranslator.quranComBengali;
   BengaliAudioSource _bengaliAudioSource = BengaliAudioSource.humanVoice;
+  EnglishAudioSource _englishAudioSource = EnglishAudioSource.ibrahimWalk;
   String? _errorMessage;
   AudioRepeatMode _repeatMode = AudioRepeatMode.none;
   AudioPlaybackContent _playbackContent = AudioPlaybackContent.arabicOnly;
@@ -439,6 +536,7 @@ class AudioService extends ChangeNotifier {
 
   // Track which part of the ayah is currently playing (for combined modes)
   bool _isPlayingBengaliPart = false;
+  bool _isPlayingEnglishPart = false;
 
   // Track current content label for UI
   String _currentContentLabel = 'Arabic';
@@ -454,6 +552,7 @@ class AudioService extends ChangeNotifier {
   Reciter get currentReciter => _currentReciter;
   BengaliTranslator get currentBengaliTranslator => _currentBengaliTranslator;
   BengaliAudioSource get bengaliAudioSource => _bengaliAudioSource;
+  EnglishAudioSource get englishAudioSource => _englishAudioSource;
   AudioRepeatMode get repeatMode => _repeatMode;
   AudioPlaybackContent get playbackContent => _playbackContent;
   double get playbackSpeed => _playbackSpeed;
@@ -461,6 +560,7 @@ class AudioService extends ChangeNotifier {
   Duration get duration => _duration;
   AudioPlayer get player => _player;
   bool get isPlayingBengaliPart => _isPlayingBengaliPart;
+  bool get isPlayingEnglishPart => _isPlayingEnglishPart;
   bool get isPlayingFullSurahBengali => _isPlayingFullSurahBengali;
   String get currentContentLabel => _currentContentLabel;
   String? get errorMessage => _errorMessage;
@@ -521,6 +621,9 @@ class AudioService extends ChangeNotifier {
             return;
           }
         }
+
+        // For English playback, completion is handled normally
+        // (Ibrahim Walk audio is single file per ayah, no chunking needed)
         _handlePlaybackComplete();
       }
     });
@@ -544,10 +647,11 @@ class AudioService extends ChangeNotifier {
     // Stop any ongoing playback
     await _flutterTts.stop();
     _isPlayingDeviceTTS = false;
-    
+
     _currentSurah = surahNumber;
     _currentAyah = ayahNumber;
     _isPlayingBengaliPart = false;
+    _isPlayingEnglishPart = false;
     _isPlayingFullSurahBengali = false;
 
     switch (_playbackContent) {
@@ -571,6 +675,15 @@ class AudioService extends ChangeNotifier {
           _isPlayingBengaliPart = false;
           await _playArabicAyah(surahNumber, ayahNumber);
         }
+        break;
+      case AudioPlaybackContent.englishOnly:
+        // Play only English translation audio
+        await _playEnglishAyah(surahNumber, ayahNumber);
+        break;
+      case AudioPlaybackContent.arabicThenEnglish:
+        // Play Arabic first, then English translation
+        _isPlayingEnglishPart = false;
+        await _playArabicAyah(surahNumber, ayahNumber);
         break;
     }
   }
@@ -1132,7 +1245,7 @@ class AudioService extends ChangeNotifier {
 
   /// Handle playback completion based on repeat mode and playback content
   void _handlePlaybackComplete() {
-    debugPrint('Playback complete - content: ${_playbackContent.name}, isPlayingBengali: $_isPlayingBengaliPart, FullSurah: $_isPlayingFullSurahBengali');
+    debugPrint('Playback complete - content: ${_playbackContent.name}, isPlayingBengali: $_isPlayingBengaliPart, isPlayingEnglish: $_isPlayingEnglishPart, FullSurah: $_isPlayingFullSurahBengali');
 
     // If we were playing full surah (Human Voice Mixed), we are done with the surah.
     if (_isPlayingFullSurahBengali) {
@@ -1151,8 +1264,19 @@ class AudioService extends ChangeNotifier {
       }
     }
 
-    // For Arabic Only mode or after Bengali completes: move to next ayah
+    // For Arabic+English mode: after Arabic finishes, play English
+    if (_playbackContent == AudioPlaybackContent.arabicThenEnglish && !_isPlayingEnglishPart) {
+      debugPrint('Arabic finished, now playing English...');
+      _isPlayingEnglishPart = true;
+      if (_currentSurah != null && _currentAyah != null) {
+        _playEnglishAyah(_currentSurah!, _currentAyah!);
+        return;
+      }
+    }
+
+    // For Arabic Only mode or after Bengali/English completes: move to next ayah
     _isPlayingBengaliPart = false;
+    _isPlayingEnglishPart = false;
     _moveToNextAyahBasedOnRepeatMode();
   }
 
@@ -1250,6 +1374,111 @@ class AudioService extends ChangeNotifier {
     _bengaliAudioSource = source;
     debugPrint('Bengali audio source changed to: ${source.displayName}');
     notifyListeners();
+  }
+
+  void setEnglishAudioSource(EnglishAudioSource source) {
+    if (_englishAudioSource == source) return;
+    _englishAudioSource = source;
+    debugPrint('English audio source changed to: ${source.displayName}');
+    notifyListeners();
+  }
+
+  /// Play English translation audio for a specific ayah
+  /// Uses Ibrahim Walk (Sahih International) from EveryAyah.com
+  Future<void> _playEnglishAyah(int surahNumber, int ayahNumber) async {
+    try {
+      await _flutterTts.stop(); // Ensure TTS is stopped
+      _isPlayingDeviceTTS = false;
+
+      _isLoading = true;
+      _currentContentLabel = 'English';
+      _errorMessage = null;
+      notifyListeners();
+
+      // Get audio URL based on selected source
+      final url = _englishAudioSource.getAudioUrl(surahNumber, ayahNumber);
+
+      if (_englishAudioSource == EnglishAudioSource.cloudTTS) {
+        // Use Cloud TTS for English
+        await _playEnglishCloudTTS(surahNumber, ayahNumber);
+        return;
+      }
+
+      // Play Ibrahim Walk audio from EveryAyah.com
+      debugPrint('🎵 Playing English audio (Ibrahim Walk) for $surahNumber:$ayahNumber');
+      debugPrint('   URL: $url');
+
+      await _player.setUrl(url);
+      await _player.setSpeed(_playbackSpeed);
+      await _player.play();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Unable to load English audio: ${e.toString()}';
+      debugPrint('❌ Error playing English audio: $e');
+      notifyListeners();
+
+      // If English audio fails, try Cloud TTS as fallback
+      if (_englishAudioSource == EnglishAudioSource.ibrahimWalk) {
+        debugPrint('⏭️ Falling back to Cloud TTS for English...');
+        await _playEnglishCloudTTS(surahNumber, ayahNumber);
+      } else {
+        _handleEnglishAudioFailed();
+      }
+    }
+  }
+
+  /// Play English translation using Cloud TTS (Google TTS)
+  Future<void> _playEnglishCloudTTS(int surahNumber, int ayahNumber) async {
+    try {
+      _currentContentLabel = 'English (TTS)';
+      _errorMessage = null;
+      notifyListeners();
+
+      // Get the ayah data with English translation
+      final ayahs = await _quranDataService.getAyahsForSurah(surahNumber);
+      final ayah = ayahs.firstWhere(
+        (a) => a.numberInSurah == ayahNumber,
+        orElse: () => throw Exception('Ayah not found'),
+      );
+
+      final englishText = ayah.translationEnglish;
+
+      if (englishText == null || englishText.isEmpty) {
+        _errorMessage = 'English translation not found.';
+        debugPrint('English translation not found for $surahNumber:$ayahNumber');
+        _isLoading = false;
+        _handleEnglishAudioFailed();
+        return;
+      }
+
+      debugPrint('Playing English Cloud TTS for $surahNumber:$ayahNumber');
+
+      // Use Google TTS API for English (similar to Bengali Cloud TTS)
+      final ttsUrl = 'https://translate.google.com/translate_tts'
+          '?ie=UTF-8&client=tw-ob&tl=en&q=${Uri.encodeComponent(englishText)}';
+
+      await _player.setUrl(ttsUrl);
+      await _player.setSpeed(_playbackSpeed);
+      await _player.play();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error playing English TTS: $e';
+      debugPrint('Error playing English Cloud TTS: $e');
+      notifyListeners();
+      _handleEnglishAudioFailed();
+    }
+  }
+
+  /// Handle when English audio fails
+  void _handleEnglishAudioFailed() {
+    _isPlayingEnglishPart = false;
+    _handlePlaybackComplete();
   }
 
   Future<void> playFullSurahBengali(int surahNumber) async {

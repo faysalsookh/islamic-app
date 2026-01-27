@@ -120,6 +120,9 @@ class AppStateProvider extends ChangeNotifier {
   int _selectedBengaliTranslationId = 161; // Default to Taisirul Quran
   int get selectedBengaliTranslationId => _selectedBengaliTranslationId;
 
+  int _selectedEnglishTranslationId = 131; // Default to Sahih International
+  int get selectedEnglishTranslationId => _selectedEnglishTranslationId;
+
   bool _showTranslation = true;
   bool get showTranslation => _showTranslation;
 
@@ -231,17 +234,19 @@ class AppStateProvider extends ChangeNotifier {
     _autoPlayOnPageOpen = prefs.getBool('auto_play_on_page_open') ?? false;
     _defaultRepeatMode = AudioRepeatMode.values[prefs.getInt('default_repeat_mode') ?? 0];
 
-    // Bengali Translation settings
+    // Translation settings
     _selectedBengaliTranslationId = prefs.getInt('selected_bengali_translation_id') ?? 161; // Default to Taisirul
+    _selectedEnglishTranslationId = prefs.getInt('selected_english_translation_id') ?? 131; // Default to Sahih International
 
     // Sync external services
     AudioService().setReciter(_selectedReciter);
     AudioService().setBengaliAudioSource(_bengaliAudioSource);
     AudioService().setPlaybackSpeed(_defaultPlaybackSpeed);
     AudioService().setRepeatMode(_defaultRepeatMode);
-    
+
     // Sync QuranDataService
     QuranDataService().setBengaliTranslationId(_selectedBengaliTranslationId);
+    QuranDataService().setEnglishTranslationId(_selectedEnglishTranslationId);
 
     notifyListeners();
   }
@@ -295,11 +300,23 @@ class AppStateProvider extends ChangeNotifier {
     _selectedBengaliTranslationId = id;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('selected_bengali_translation_id', id);
-    
+
     // Update service and clear cache to force re-fetch
     QuranDataService().setBengaliTranslationId(id);
     await QuranDataService().clearCache();
-    
+
+    notifyListeners();
+  }
+
+  Future<void> setSelectedEnglishTranslationId(int id) async {
+    _selectedEnglishTranslationId = id;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('selected_english_translation_id', id);
+
+    // Update service and clear cache to force re-fetch
+    QuranDataService().setEnglishTranslationId(id);
+    await QuranDataService().clearCache();
+
     notifyListeners();
   }
 
