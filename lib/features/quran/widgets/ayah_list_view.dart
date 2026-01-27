@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/models/surah.dart';
 import '../../../core/models/ayah.dart';
 import '../../../core/models/tajweed.dart';
+import '../../../core/models/bookmark.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../../core/services/tajweed_service.dart';
 import '../../../core/widgets/ayah_number_badge.dart';
@@ -428,18 +429,79 @@ class _AyahListViewState extends State<AyahListView> {
 
   void _handleBookmarkTap(BuildContext context, Ayah ayah) {
     final appState = context.read<AppStateProvider>();
-    // Toggle bookmark logic would go here
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          appState.isAyahBookmarked(widget.surah.number, ayah.numberInSurah)
-              ? 'Bookmark removed'
-              : 'Bookmark added',
+    final isCurrentlyBookmarked =
+        appState.isAyahBookmarked(widget.surah.number, ayah.numberInSurah);
+
+    if (isCurrentlyBookmarked) {
+      // Find and remove the bookmark
+      final bookmark = appState.bookmarks.firstWhere(
+        (b) =>
+            b.surahNumber == widget.surah.number &&
+            b.ayahNumber == ayah.numberInSurah,
+      );
+      appState.removeBookmark(bookmark.id);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.bookmark_remove_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text('Bookmark removed'),
+            ],
+          ),
+          backgroundColor: AppColors.textSecondary,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 1),
-      ),
-    );
+      );
+    } else {
+      // Add new bookmark
+      final bookmark = Bookmark(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        surahNumber: widget.surah.number,
+        surahNameArabic: widget.surah.nameArabic,
+        surahNameEnglish: widget.surah.nameTransliteration,
+        ayahNumber: ayah.numberInSurah,
+        ayahSnippet: ayah.textArabic.length > 50
+            ? '${ayah.textArabic.substring(0, 50)}...'
+            : ayah.textArabic,
+        createdAt: DateTime.now(),
+        label: null, // User can add label later from bookmarks page
+      );
+      appState.addBookmark(bookmark);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.bookmark_added_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text('Bookmark added'),
+            ],
+          ),
+          backgroundColor: AppColors.mutedTeal,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
   }
 
   void _handleTafsirTap(BuildContext context, Ayah ayah) {
