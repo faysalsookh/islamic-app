@@ -42,6 +42,7 @@ class TajweedRulesPage extends StatelessWidget {
                     'তাজবীদের নিয়মাবলী',
                     style: TextStyle(
                       color: Colors.white,
+                      fontFamily: 'NotoSansBengali',
                       fontWeight: FontWeight.bold,
                       fontSize: isTablet ? 22 : 18,
                     ),
@@ -114,7 +115,7 @@ class TajweedRulesPage extends StatelessWidget {
                             color: isDark
                                 ? AppColors.darkTextPrimary
                                 : AppColors.textPrimary,
-                          ),
+                          ).copyWith(fontFamily: 'NotoSansBengali'),
                         ),
                       ),
                     ],
@@ -126,7 +127,7 @@ class TajweedRulesPage extends StatelessWidget {
                       color: isDark
                           ? AppColors.darkTextSecondary
                           : AppColors.textSecondary,
-                    ),
+                    ).copyWith(fontFamily: 'NotoSansBengali'),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -165,7 +166,7 @@ class TajweedRulesPage extends StatelessWidget {
                       color: isDark
                           ? AppColors.darkTextPrimary
                           : AppColors.textPrimary,
-                    ),
+                    ).copyWith(fontFamily: 'NotoSansBengali'),
                   ),
                 ],
               ),
@@ -211,7 +212,7 @@ class TajweedRulesPage extends StatelessWidget {
                             color: isDark
                                 ? AppColors.darkTextPrimary
                                 : AppColors.textPrimary,
-                          ),
+                          ).copyWith(fontFamily: 'NotoSansBengali'),
                         ),
                         Text(
                           'Arabic Alphabet & Articulation Points',
@@ -252,7 +253,7 @@ class TajweedRulesPage extends StatelessWidget {
                   color: isDark
                       ? AppColors.darkTextSecondary
                       : AppColors.textSecondary,
-                ),
+                ).copyWith(fontFamily: 'NotoSansBengali'),
               ),
             ),
           ),
@@ -302,7 +303,7 @@ class TajweedRulesPage extends StatelessWidget {
                             color: isDark
                                 ? AppColors.darkTextPrimary
                                 : AppColors.textPrimary,
-                          ),
+                          ).copyWith(fontFamily: 'NotoSansBengali'),
                         ),
                         Text(
                           'Waqf Signs (Stopping Marks)',
@@ -343,7 +344,7 @@ class TajweedRulesPage extends StatelessWidget {
                   color: isDark
                       ? AppColors.darkTextSecondary
                       : AppColors.textSecondary,
-                ),
+                ).copyWith(fontFamily: 'NotoSansBengali'),
               ),
             ),
           ),
@@ -384,7 +385,7 @@ class TajweedRulesPage extends StatelessWidget {
                             color: isDark
                                 ? AppColors.darkTextPrimary
                                 : AppColors.textPrimary,
-                          ),
+                          ).copyWith(fontFamily: 'NotoSansBengali'),
                         ),
                         Text(
                           'Color Coding in Translation',
@@ -527,6 +528,7 @@ class _ArabicLetterCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: nameFontSize,
                     fontWeight: FontWeight.w600,
+                    fontFamily: 'NotoSansBengali',
                     color: isDark
                         ? AppColors.darkTextPrimary
                         : AppColors.textPrimary,
@@ -546,6 +548,7 @@ class _ArabicLetterCard extends StatelessWidget {
                     letter.pronunciationBengali,
                     style: TextStyle(
                       fontSize: pronunciationFontSize,
+                      fontFamily: 'NotoSansBengali',
                       color: isDark ? AppColors.softRose : AppColors.forestGreen,
                       fontWeight: FontWeight.w500,
                     ),
@@ -604,6 +607,7 @@ class _ArabicLetterCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    fontFamily: 'NotoSansBengali',
                     color: isDark
                         ? AppColors.darkTextPrimary
                         : AppColors.textPrimary,
@@ -622,6 +626,7 @@ class _ArabicLetterCard extends StatelessWidget {
                     letter.pronunciationBengali,
                     style: TextStyle(
                       fontSize: 16,
+                      fontFamily: 'NotoSansBengali',
                       color: isDark ? AppColors.softRose : AppColors.forestGreen,
                       fontWeight: FontWeight.w600,
                     ),
@@ -656,6 +661,7 @@ class _ArabicLetterCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
+                          fontFamily: 'NotoSansBengali',
                           color: isDark ? AppColors.softRose : AppColors.forestGreen,
                         ),
                       ),
@@ -666,6 +672,7 @@ class _ArabicLetterCard extends StatelessWidget {
                     letter.makhrajBengali,
                     style: TextStyle(
                       fontSize: 16,
+                      fontFamily: 'NotoSansBengali',
                       color: isDark
                           ? AppColors.darkTextPrimary
                           : AppColors.textPrimary,
@@ -809,6 +816,7 @@ class _WaqfSignCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: nameFontSize,
                           fontWeight: FontWeight.bold,
+                          fontFamily: 'NotoSansBengali',
                           color: isDark
                               ? AppColors.darkTextPrimary
                               : AppColors.textPrimary,
@@ -902,6 +910,7 @@ class _WaqfSignCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                fontFamily: 'NotoSansBengali',
                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               ),
             ),
@@ -931,6 +940,7 @@ class _WaqfSignCard extends StatelessWidget {
                     statusText,
                     style: TextStyle(
                       color: statusColor,
+                      fontFamily: 'NotoSansBengali',
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -952,6 +962,7 @@ class _WaqfSignCard extends StatelessWidget {
                 sign.descriptionBengali,
                 style: TextStyle(
                   fontSize: 16,
+                  fontFamily: 'NotoSansBengali',
                   color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   height: 1.5,
                 ),
@@ -1022,6 +1033,7 @@ class _TranslationColorCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: nameFontSize,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'NotoSansBengali',
                       color: colorInfo.color,
                     ),
                   ),
@@ -1030,6 +1042,7 @@ class _TranslationColorCard extends StatelessWidget {
                     colorInfo.descriptionBengali,
                     style: TextStyle(
                       fontSize: descriptionFontSize,
+                      fontFamily: 'NotoSansBengali',
                       color: isDark
                           ? AppColors.darkTextSecondary
                           : AppColors.textSecondary,

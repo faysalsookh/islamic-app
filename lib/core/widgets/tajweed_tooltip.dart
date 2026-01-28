@@ -101,6 +101,7 @@ class TajweedTooltip extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
+                    fontFamily: 'NotoSansBengali',
                     color: isDark
                         ? AppColors.darkTextSecondary
                         : AppColors.textSecondary,
@@ -112,6 +113,7 @@ class TajweedTooltip extends StatelessWidget {
                   rule.bengaliDescription,
                   style: TextStyle(
                     fontSize: 15,
+                    fontFamily: 'NotoSansBengali',
                     height: 1.6,
                     color: isDark
                         ? AppColors.darkTextPrimary
@@ -194,6 +196,7 @@ class TajweedTooltip extends StatelessWidget {
                       rule.bengaliName,
                       style: TextStyle(
                         fontSize: 14,
+                        fontFamily: 'NotoSansBengali',
                         color: isDark
                             ? AppColors.darkTextSecondary
                             : AppColors.textSecondary,

@@ -116,7 +116,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
                             color: isDark
                                 ? AppColors.darkTextPrimary
                                 : AppColors.textPrimary,
-                          ),
+                          ).copyWith(fontFamily: 'NotoSansBengali'),
                         ),
                         const SizedBox(height: 4),
                         // Arabic name
@@ -188,7 +188,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
           const SizedBox(height: 12),
 
           // Bengali description
-          _buildSectionTitle('বিবরণ:', isDark),
+          _buildSectionTitle('বিবরণ:', isDark, isBengali: true),
           const SizedBox(height: 8),
           Text(
             widget.rule.descriptionBengali,
@@ -196,7 +196,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
               color: isDark
                   ? AppColors.darkTextSecondary
                   : AppColors.textSecondary,
-            ),
+            ).copyWith(fontFamily: 'NotoSansBengali'),
           ),
           const SizedBox(height: 16),
 
@@ -217,7 +217,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
 
           // Arabic letters
           if (widget.rule.arabicLetters.isNotEmpty) ...[
-            _buildSectionTitle('হরফসমূহ (Letters):', isDark),
+            _buildSectionTitle('হরফসমূহ (Letters):', isDark, isBengali: true),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -254,7 +254,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
 
           // Example
           if (widget.rule.exampleArabic.isNotEmpty) ...[
-            _buildSectionTitle('উদাহরণ (Example):', isDark),
+            _buildSectionTitle('উদাহরণ (Example):', isDark, isBengali: true),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
@@ -288,12 +288,13 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
     );
   }
 
-  Widget _buildSectionTitle(String title, bool isDark) {
+  Widget _buildSectionTitle(String title, bool isDark, {bool isBengali = false}) {
     return Text(
       title,
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
+        fontFamily: isBengali ? 'NotoSansBengali' : null,
         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
       ),
     );

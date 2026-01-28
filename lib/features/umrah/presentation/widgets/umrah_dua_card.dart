@@ -285,7 +285,8 @@ class UmrahDuaCard extends StatelessWidget {
         padding: const EdgeInsets.only(top: 16),
         child: Text(
           dua.translationBengali!,
-          style: GoogleFonts.hindSiliguri(
+          style: TextStyle(
+            fontFamily: 'NotoSansBengali',
             fontSize: 15,
             color: _textBrown.withValues(alpha: 0.85),
             height: 1.8,
