@@ -111,6 +111,13 @@ class FontSettingsSheet extends StatelessWidget {
 
                    const SizedBox(height: 32),
 
+                   // Language Section
+                   _buildSectionTitle('Languages', isDark),
+                   const SizedBox(height: 16),
+                   _buildLanguageSelectors(context, theme, isDark),
+
+                   const SizedBox(height: 32),
+
                    // Toggles Section
                    _buildSectionTitle('View Options', isDark),
                    const SizedBox(height: 16),
@@ -406,6 +413,99 @@ class FontSettingsSheet extends StatelessWidget {
         activeColor: activeColor,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Widget _buildLanguageSelectors(BuildContext context, ThemeData theme, bool isDark) {
+    return Consumer<AppStateProvider>(
+      builder: (context, appState, child) {
+        return Column(
+          children: [
+            _buildDropdownTile<TranslationLanguage>(
+              title: 'Translation Language',
+              value: appState.translationLanguage,
+              items: TranslationLanguage.values,
+              onChanged: (val) {
+                if (val != null) appState.setTranslationLanguage(val);
+              },
+              isDark: isDark,
+              theme: theme,
+              getLabel: (val) => val.displayName,
+            ),
+            const SizedBox(height: 12),
+            _buildDropdownTile<TransliterationLanguage>(
+              title: 'Transliteration Language',
+              value: appState.transliterationLanguage,
+              items: TransliterationLanguage.values,
+              onChanged: (val) {
+                if (val != null) appState.setTransliterationLanguage(val);
+              },
+              isDark: isDark,
+              theme: theme,
+              getLabel: (val) => val.displayName,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDropdownTile<T>({
+    required String title,
+    required T value,
+    required List<T> items,
+    required Function(T?) onChanged,
+    required bool isDark,
+    required ThemeData theme,
+    required String Function(T) getLabel,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.dividerDark : AppColors.divider,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ),
+          ),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              value: value,
+              items: items.map((item) {
+                return DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(
+                    getLabel(item),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: onChanged,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              dropdownColor: isDark ? AppColors.darkCard : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ],
       ),
     );
   }
