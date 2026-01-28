@@ -387,7 +387,6 @@ class _SurahListPageState extends State<SurahListPage>
                           filter == 'Meccan'
                               ? 'assets/images/meccan.png'
                               : 'assets/images/Madina.png',
-                          color: isSelected ? Colors.white : null,
                         ),
                       ),
                     Text(
