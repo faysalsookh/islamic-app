@@ -78,9 +78,10 @@ class UmrahDuaCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Card number badge
-                  _buildCardNumberBadge(),
+                  Center(child: _buildCardNumberBadge()),
 
                   const SizedBox(height: 16),
 
@@ -94,6 +95,7 @@ class UmrahDuaCard extends StatelessWidget {
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildArabicText(fontFamily),
                           const SizedBox(height: 24),
@@ -115,7 +117,7 @@ class UmrahDuaCard extends StatelessWidget {
                           // Reference
                           if (dua.reference != null) ...[
                             const SizedBox(height: 24),
-                            _buildReference(),
+                            Center(child: _buildReference()),
                           ],
 
                           const SizedBox(height: 16),
