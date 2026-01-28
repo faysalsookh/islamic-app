@@ -258,22 +258,27 @@ class TajweedRulesPage extends StatelessWidget {
             ),
           ),
 
-          // Arabic Alphabet Grid
-          SliverPadding(
-            padding: EdgeInsets.all(horizontalPadding),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: isTablet ? 3 : 2,
-                childAspectRatio: isTablet ? 1.0 : 1.1,
-                crossAxisSpacing: isTablet ? 16 : 12,
-                mainAxisSpacing: isTablet ? 16 : 12,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final letter = ArabicAlphabetData.allLetters[index];
-                  return _ArabicLetterCard(letter: letter, isDark: isDark, isTablet: isTablet);
-                },
-                childCount: ArabicAlphabetData.allLetters.length,
+          // Arabic Alphabet Grid (RTL)
+          SliverToBoxAdapter(
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Padding(
+                padding: EdgeInsets.all(horizontalPadding),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isTablet ? 3 : 2,
+                    childAspectRatio: isTablet ? 1.0 : 1.1,
+                    crossAxisSpacing: isTablet ? 16 : 12,
+                    mainAxisSpacing: isTablet ? 16 : 12,
+                  ),
+                  itemCount: ArabicAlphabetData.allLetters.length,
+                  itemBuilder: (context, index) {
+                    final letter = ArabicAlphabetData.allLetters[index];
+                    return _ArabicLetterCard(letter: letter, isDark: isDark, isTablet: isTablet);
+                  },
+                ),
               ),
             ),
           ),
@@ -485,7 +490,7 @@ class _ArabicLetterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final letterFontSize = isTablet ? 50.0 : 42.0;
+    final letterFontSize = isTablet ? 75.0 : 60.0;
     final nameFontSize = isTablet ? 16.0 : 14.0;
     final pronunciationFontSize = isTablet ? 14.0 : 12.0;
 

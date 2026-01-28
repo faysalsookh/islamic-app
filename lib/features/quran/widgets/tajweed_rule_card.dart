@@ -222,6 +222,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
             Wrap(
               spacing: 8,
               runSpacing: 8,
+              textDirection: TextDirection.rtl,
               children: widget.rule.arabicLetters.map((letter) {
                 return Container(
                   padding: const EdgeInsets.symmetric(
@@ -240,7 +241,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
                     letter,
                     textDirection: TextDirection.rtl,
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: widget.rule.color,
                       fontFamily: fontFamily ?? 'Amiri', // Default or dynamic
@@ -274,7 +275,7 @@ class _TajweedRuleCardState extends State<TajweedRuleCard>
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.center,
                 style: AppTypography.quranText(
-                  fontSize: 22,
+                  fontSize: 32,
                   color: isDark
                       ? AppColors.darkTextPrimary
                       : AppColors.textArabic,
