@@ -46,6 +46,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
   double _heading = 0;
   double _qiblaBearing = 0;
   double _distanceKm = 0;
+  double? _sunBearing;
   CompassAccuracy _accuracy = CompassAccuracy.unknown;
   CompassTheme _selectedTheme = CompassTheme.golden;
 
@@ -122,6 +123,11 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
       _position!.latitude,
       _position!.longitude,
     );
+
+    // Calculate approximate sun position for user reference
+    // Formula: (Hour-12)*15 + 180. noon=180(South), 6am=90(East), 6pm=270(West)
+    final now = DateTime.now();
+    _sunBearing = ((now.hour + now.minute / 60.0 - 12.0) * 15.0 + 180.0) % 360;
 
     final compassAvailable = await CompassService.isCompassAvailable();
 
@@ -550,6 +556,7 @@ class _QiblaPageState extends State<QiblaPage> with WidgetsBindingObserver {
                             QiblaCompassWidget(
                               heading: _heading,
                               qiblaBearing: _qiblaBearing,
+                              sunBearing: _sunBearing,
                               isTablet: isTablet,
                               theme: _selectedTheme,
                             ),

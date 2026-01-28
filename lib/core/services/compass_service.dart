@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as _math;
 import 'package:flutter_compass/flutter_compass.dart';
 
 /// Compass accuracy levels
@@ -47,8 +48,42 @@ class CompassService {
     _compassSubscription = FlutterCompass.events?.listen(
       (event) {
         if (event.heading != null) {
-          _lastHeading = event.heading!;
-          _headingController.add(event.heading!);
+          // Apply low-pass filter using vector smoothing
+          // This prevents the "wrap-around" issue at 0/360 degrees
+          
+          double currentHeading = event.heading!;
+          
+          if (_lastHeading != null) {
+            // Convert to radians
+            final currentRad = currentHeading * (3.14159265359 / 180);
+            final lastRad = _lastHeading! * (3.14159265359 / 180);
+            
+            // Convert to vectors
+            final currentX = _math.cos(currentRad);
+            final currentY = _math.sin(currentRad);
+            
+            final lastX = _math.cos(lastRad);
+            final lastY = _math.sin(lastRad);
+            
+            // Smooth factor (0.1 = very smooth/slow, 0.9 = very responsive/jittery)
+            const double alpha = 0.15;
+            
+            final newX = lastX + alpha * (currentX - lastX);
+            final newY = lastY + alpha * (currentY - lastY);
+            
+            // Convert back to angle
+            double newRad = _math.atan2(newY, newX);
+            double newHeading = newRad * (180 / 3.14159265359);
+            
+            // Normalize to 0-360
+            newHeading = (newHeading + 360) % 360;
+            
+            _lastHeading = newHeading;
+          } else {
+            _lastHeading = currentHeading;
+          }
+          
+          _headingController.add(_lastHeading!);
 
           // Determine accuracy from heading accuracy if available
           final accuracy = _determineAccuracy(event.accuracy);

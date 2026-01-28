@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:adhan/adhan.dart';
 
 /// Service for calculating Qibla direction and distance to Kaaba
 class QiblaCalculator {
@@ -8,30 +9,11 @@ class QiblaCalculator {
 
   /// Calculate Qibla bearing from given location using forward azimuth formula
   /// Returns bearing in degrees (0-360) where 0 is North
+  /// Calculate Qibla bearing from given location using Adhan package
+  /// Returns bearing in degrees (0-360) where 0 is North
   static double calculateQiblaBearing(double latitude, double longitude) {
-    // Convert to radians
-    final lat1 = _toRadians(latitude);
-    final lon1 = _toRadians(longitude);
-    final lat2 = _toRadians(kaabaLatitude);
-    final lon2 = _toRadians(kaabaLongitude);
-
-    // Calculate difference in longitude
-    final deltaLon = lon2 - lon1;
-
-    // Forward azimuth formula
-    final x = sin(deltaLon) * cos(lat2);
-    final y = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLon);
-
-    // Calculate bearing in radians
-    var bearing = atan2(x, y);
-
-    // Convert to degrees
-    bearing = _toDegrees(bearing);
-
-    // Normalize to 0-360
-    bearing = (bearing + 360) % 360;
-
-    return bearing;
+    final coordinates = Coordinates(latitude, longitude);
+    return Qibla(coordinates).direction;
   }
 
   /// Calculate distance to Kaaba in kilometers using Haversine formula

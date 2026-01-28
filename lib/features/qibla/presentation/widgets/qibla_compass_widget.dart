@@ -16,6 +16,7 @@ enum CompassTheme {
 class QiblaCompassWidget extends StatefulWidget {
   final double heading;
   final double qiblaBearing;
+  final double? sunBearing;
   final bool isTablet;
   final CompassTheme theme;
 
@@ -23,6 +24,7 @@ class QiblaCompassWidget extends StatefulWidget {
     super.key,
     required this.heading,
     required this.qiblaBearing,
+    this.sunBearing,
     this.isTablet = false,
     this.theme = CompassTheme.golden,
   });
@@ -233,36 +235,38 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget>
   }
 
   Widget _buildSunIndicator(double size) {
-    // Calculate sun position based on time (simplified)
-    final now = DateTime.now();
-    final sunAngle = ((now.hour * 60 + now.minute) / (24 * 60)) * 360 - 90;
+    if (widget.sunBearing == null) return const SizedBox.shrink();
 
     return Transform.rotate(
-      angle: (-widget.heading + sunAngle) * pi / 180,
+      angle: (widget.sunBearing! - widget.heading) * pi / 180,
       child: SizedBox(
         width: size,
         height: size,
         child: Align(
-          alignment: const Alignment(-0.6, 0.6),
-          child: Container(
-            width: widget.isTablet ? 28 : 24,
-            height: widget.isTablet ? 28 : 24,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFFFFE082),
-                  const Color(0xFFFFC107),
-                  const Color(0xFFFF9800),
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Container(
+              width: widget.isTablet ? 32 : 26,
+              height: widget.isTablet ? 32 : 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFFE082),
+                    const Color(0xFFFFC107),
+                    const Color(0xFFFF9800),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFB300).withValues(alpha: 0.6),
+                    blurRadius: 12,
+                    spreadRadius: 3,
+                  ),
                 ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFB300).withValues(alpha: 0.5),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ],
+              child: Icon(Icons.wb_sunny_rounded, color: Colors.orange[900], size: widget.isTablet ? 20 : 16),
             ),
           ),
         ),
@@ -419,10 +423,11 @@ class _ProfessionalCompassPainter extends CustomPainter {
       ..color = themeColors.tickColor
       ..strokeCap = StrokeCap.round;
 
-    for (var i = 0; i < 360; i += 2) {
+    for (var i = 0; i < 360; i += 1) {
       final angle = i * pi / 180 - pi / 2;
       final isMajor = i % 30 == 0;
       final isMedium = i % 10 == 0;
+      final isMinor = i % 5 == 0;
 
       double startRadius;
       double endRadius;
@@ -437,11 +442,16 @@ class _ProfessionalCompassPainter extends CustomPainter {
         endRadius = radius - (isTablet ? 16 : 12);
         tickPaint.strokeWidth = isTablet ? 1.5 : 1.2;
         tickPaint.color = themeColors.tickColor;
+      } else if (isMinor) {
+        startRadius = radius - (isTablet ? 8 : 6);
+        endRadius = radius - (isTablet ? 14 : 10);
+        tickPaint.strokeWidth = 1;
+        tickPaint.color = themeColors.tickColor.withValues(alpha: 0.8);
       } else {
         startRadius = radius - (isTablet ? 8 : 6);
-        endRadius = radius - (isTablet ? 12 : 9);
-        tickPaint.strokeWidth = 1;
-        tickPaint.color = themeColors.tickColor.withValues(alpha: 0.5);
+        endRadius = radius - (isTablet ? 12 : 8);
+        tickPaint.strokeWidth = 0.5;
+        tickPaint.color = themeColors.tickColor.withValues(alpha: 0.3);
       }
 
       final startX = center.dx + startRadius * cos(angle);
